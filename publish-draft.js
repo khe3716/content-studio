@@ -15,17 +15,26 @@ const sharp = require('sharp');
 const { spawnSync } = require('child_process');
 const { renderThumbnailPng } = require('./economy-blog/generate-thumbnail');
 
-// ========== .env 읽기 ==========
+// ========== 환경 변수 로드 (로컬: .env, CI: process.env) ==========
 const envPath = path.join(__dirname, '.env');
-const envContent = fs.readFileSync(envPath, 'utf8');
 const env = {};
-envContent.split('\n').forEach(line => {
-  const trimmed = line.trim();
-  if (!trimmed || trimmed.startsWith('#')) return;
-  const eqIdx = trimmed.indexOf('=');
-  if (eqIdx > 0) env[trimmed.slice(0, eqIdx).trim()] = trimmed.slice(eqIdx + 1).trim();
-});
-const { BLOG_ID, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN } = env;
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx > 0) env[trimmed.slice(0, eqIdx).trim()] = trimmed.slice(eqIdx + 1).trim();
+  });
+}
+const BLOG_ID = env.BLOG_ID || process.env.BLOG_ID;
+const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+const GOOGLE_REFRESH_TOKEN = env.GOOGLE_REFRESH_TOKEN || process.env.GOOGLE_REFRESH_TOKEN;
+if (!BLOG_ID || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TOKEN) {
+  console.error('❌ 환경변수 누락: BLOG_ID / GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REFRESH_TOKEN');
+  process.exit(1);
+}
 
 // ========== 인자 파싱 ==========
 const [dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labelsStr] = process.argv.slice(2);
