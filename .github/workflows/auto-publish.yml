@@ -42,6 +42,14 @@ jobs:
       - name: 3. 의존성 설치
         run: npm ci
 
+      - name: 3-1. 한국어 폰트 설치 (썸네일용)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-color-emoji
+          fc-cache -f
+          echo "=== 설치된 한국어 폰트 ==="
+          fc-list :lang=ko | head -5
+
       - name: 4. 로봇 두뇌 실행 (auto-publish.js)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
