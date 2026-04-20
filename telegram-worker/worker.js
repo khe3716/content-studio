@@ -62,9 +62,7 @@ async function handleCommand(env, chatId, text) {
   if (text === '/start' || text === '/help') {
     await sendMessage(env, chatId,
       '🤖 <b>경제블로그 명령어</b>\n\n' +
-      '<b>/publish</b> - 다음 ready 주제 발행\n' +
-      '<b>/publish 15</b> - Day 15 강제 발행\n' +
-      '<b>/dryrun 15</b> - Day 15 글만 생성 (업로드 X)\n' +
+      '<b>/publish</b> - 다음 주제 발행\n' +
       '<b>/status</b> - 최근 실행 3건 상태\n' +
       '<b>/help</b> - 이 도움말'
     );
@@ -91,27 +89,9 @@ async function handleCommand(env, chatId, text) {
     return;
   }
 
-  const publishMatch = text.match(/^\/publish(?:\s+(\d+))?$/);
-  if (publishMatch) {
-    const day = publishMatch[1];
-    await triggerWorkflow(env, { day, dry_run: 'false' });
-    await sendMessage(env, chatId,
-      day
-        ? `🚀 Day ${day} 발행 시작!\n1-2분 후 결과 알림 도착합니다.`
-        : `🚀 다음 ready 주제 발행 시작!\n1-2분 후 결과 알림 도착합니다.`
-    );
-    return;
-  }
-
-  const dryrunMatch = text.match(/^\/dryrun(?:\s+(\d+))?$/);
-  if (dryrunMatch) {
-    const day = dryrunMatch[1];
-    await triggerWorkflow(env, { day, dry_run: 'true' });
-    await sendMessage(env, chatId,
-      day
-        ? `🧪 Day ${day} 드라이런 시작 (업로드 없음)`
-        : `🧪 드라이런 시작 (업로드 없음)`
-    );
+  if (text === '/publish') {
+    await triggerWorkflow(env, { dry_run: 'false' });
+    await sendMessage(env, chatId, '🚀 다음 주제 발행 시작!\n1-2분 후 결과 알림 도착합니다.');
     return;
   }
 
