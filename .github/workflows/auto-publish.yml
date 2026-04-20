@@ -29,22 +29,42 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      - name: 0. 자동 스케줄 시작일 체크 (2026-04-24 금요일 이전엔 skip)
+        id: date_guard
+        env:
+          TZ: Asia/Seoul
+          EVENT: ${{ github.event_name }}
+        run: |
+          today=$(date +%Y%m%d)
+          start_date="20260424"
+          if [ "$EVENT" = "schedule" ] && [ "$today" -lt "$start_date" ]; then
+            echo "📅 $today < $start_date: 스케줄 시작일 전이라 스킵"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "✅ 실행 진행 (event=$EVENT, today=$today)"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: 1. 코드 체크아웃
+        if: steps.date_guard.outputs.skip != 'true'
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: 2. Node.js 설치
+        if: steps.date_guard.outputs.skip != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: 3. 의존성 설치
+        if: steps.date_guard.outputs.skip != 'true'
         run: npm ci
 
       - name: 3-1. 한국어 폰트 설치 (썸네일용)
+        if: steps.date_guard.outputs.skip != 'true'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-color-emoji
@@ -53,6 +73,7 @@ jobs:
           fc-list :lang=ko | head -5
 
       - name: 4. 로봇 두뇌 실행 (auto-publish.js)
+        if: steps.date_guard.outputs.skip != 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           BLOG_ID: ${{ secrets.BLOG_ID }}
@@ -74,7 +95,7 @@ jobs:
           node auto-publish.js $ARGS
 
       - name: 5. 업데이트된 topics.yaml 커밋 (자동 실행 시)
-        if: ${{ !inputs.dry_run }}
+        if: steps.date_guard.outputs.skip != 'true' && !inputs.dry_run
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
