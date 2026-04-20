@@ -82,6 +82,46 @@ function loadPersona(name) {
   return fs.readFileSync(path.join(__dirname, 'agents', `${name}.md`), 'utf8');
 }
 
+// ========== Imagen 4 Fast 이미지 생성 ==========
+async function generateImage(prompt, outputPath) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${GEMINI_API_KEY}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      instances: [{ prompt }],
+      parameters: { sampleCount: 1, aspectRatio: '1:1', personGeneration: 'dont_allow' },
+    }),
+  });
+  if (!res.ok) throw new Error(`Imagen API ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const j = await res.json();
+  const b64 = j.predictions?.[0]?.bytesBase64Encoded;
+  if (!b64) throw new Error('Imagen 응답에 이미지 없음: ' + JSON.stringify(j).slice(0, 300));
+  fs.writeFileSync(outputPath, Buffer.from(b64, 'base64'));
+  return outputPath;
+}
+
+// 주제에 맞는 영문 이미지 프롬프트 2개 생성 (Gemini로)
+async function generateImagePrompts(topic) {
+  const systemPrompt = `You are a prompt engineer for food photography. Generate two distinct English prompts for photorealistic food photography matching the given Korean fruit blog topic. Each prompt must be single line, under 200 characters, describing a different composition or angle. Return ONLY two prompts separated by " ||| " - no numbering, no explanation.`;
+  const userPrompt = `Topic (Korean): ${topic.title}
+Keywords: ${(topic.labels || []).join(', ')}
+Cluster: ${topic.cluster}
+
+Write 2 photography prompts - both natural, professional, food-blog style. No people. Korean fruits if mentioned should be specific (e.g., "Korean wild raspberries bokbunja" for 산딸기, "gold mango" for 골드망고).
+
+Example output:
+A close-up photograph of fresh Korean wild raspberries in a wooden bowl, natural light, rustic wooden table, food photography ||| A basket of ripe Korean raspberries on a kitchen counter with mint leaves, soft morning light, overhead shot, high quality`;
+  const raw = await callGemini(userPrompt, systemPrompt, { temperature: 0.7, maxTokens: 2000 });
+  const parts = raw.split('|||').map(s => s.trim()).filter(Boolean);
+  if (parts.length < 2) {
+    // 폴백: 주제 단순화 프롬프트
+    const fallback = `A photorealistic photograph of fresh ${topic.thumb_title || topic.cluster}, natural light, food photography, high quality`;
+    return [fallback, fallback];
+  }
+  return [parts[0], parts[1]];
+}
+
 function loadProducts() {
   const p = path.join(__dirname, 'fruit-blog', 'products.json');
   if (!fs.existsSync(p)) return [];
@@ -334,61 +374,20 @@ async function main() {
   const topicIdx = topicsData.topics.findIndex(t => t.day === topic.day);
   const nextTopic = topicsData.topics[topicIdx + 1];
 
-  // 관련 상품 이미지 3개 찾기 (썸네일 1 + 본문 2)
+  // 관련 상품 정보 (참고용으로만, 본문 이미지는 AI로 생성)
   const allProducts = loadProducts();
   const relatedImages = findRelatedProducts(topic, allProducts, 3);
-  console.log(`🖼️  관련 상품 이미지 ${relatedImages.length}개:`);
-  relatedImages.forEach((p, i) => console.log(`   ${i + 1}. ${p.name}`));
-  console.log('');
 
   console.log('📝 [1/4] 박과일 초안 작성 중...');
   let articleHtml = await writeArticle(topic, nextTopic, relatedImages);
   articleHtml = articleHtml.replace(/^```html\s*/gm, '').replace(/^```\s*$/gm, '').trim();
   articleHtml = articleHtml.replace(/^\s*<h2>[^<]*Day\s*\d+[^<]*<\/h2>\s*/i, '');
 
-  // Gemini가 실수로 끼워넣은 외부 이미지 태그 전부 제거 (unsplash 등)
+  // Gemini가 실수로 끼워넣은 외부 이미지·placeholder 전부 제거
   articleHtml = articleHtml.replace(/<img[^>]*>/gi, '');
   articleHtml = articleHtml.replace(/<div[^>]*>\s*<\/div>/gi, '');
-  // placeholder 흔적도 제거
   articleHtml = articleHtml.replace(/\[\[IMAGE_BODY_\d\]\]/g, '');
   articleHtml = articleHtml.replace(/\{\{IMAGE_BODY_\d\}\}/g, '');
-
-  // 본문 이미지 2장 프로그래밍 방식으로 삽입
-  // 전략: <h2> 태그 기준으로 섹션 나눠서, 2번째 <h2> 앞 + 4번째 <h2> 앞에 이미지 배치
-  // 썸네일(커버)은 생성된 디자인 썸네일 사용. 본문 2장은 관련 상품 실물 사진.
-  if (relatedImages.length >= 1) {
-    const h2Positions = [];
-    const h2Regex = /<h2[^>]*>/gi;
-    let m;
-    while ((m = h2Regex.exec(articleHtml)) !== null) {
-      h2Positions.push(m.index);
-    }
-
-    const body1 = imgTag(relatedImages[0].image, relatedImages[0].name, '');
-    const body2Product = relatedImages[1] || relatedImages[0];
-    const body2 = imgTag(body2Product.image, body2Product.name, '');
-
-    // 역순으로 삽입 (앞쪽 인덱스 삽입해도 뒤쪽 인덱스 영향 없게)
-    const insertAt = [];
-    if (h2Positions.length >= 4) {
-      insertAt.push({ pos: h2Positions[3], html: body2 });
-      insertAt.push({ pos: h2Positions[1], html: body1 });
-    } else if (h2Positions.length >= 3) {
-      insertAt.push({ pos: h2Positions[2], html: body2 });
-      insertAt.push({ pos: h2Positions[1], html: body1 });
-    } else if (h2Positions.length >= 2) {
-      insertAt.push({ pos: h2Positions[1], html: body1 });
-      // body2는 맨 끝에
-      articleHtml = articleHtml.replace(
-        /(<p[^>]*text-align:center[^>]*>📍[^<]*<\/p>)/,
-        `${body2}\n$1`
-      );
-    }
-
-    for (const { pos, html } of insertAt) {
-      articleHtml = articleHtml.slice(0, pos) + html + '\n' + articleHtml.slice(pos);
-    }
-  }
 
   console.log(`   ✓ ${articleHtml.length}자 초안 완료\n`);
 
@@ -414,6 +413,92 @@ async function main() {
   const dayId = `day-${String(topic.day).padStart(2, '0')}`;
   const htmlRelPath = `fruit-blog/drafts/${dayId}-${topic.slug}.html`;
   const htmlAbsPath = path.join(__dirname, htmlRelPath);
+
+  // AI 본문 이미지 2장 생성 + HTML에 삽입
+  console.log('🎨 [이미지] Imagen 4 Fast로 본문 이미지 2장 생성 중...');
+  try {
+    const prompts = await generateImagePrompts(topic);
+    console.log(`   프롬프트 1: ${prompts[0].slice(0, 80)}...`);
+    console.log(`   프롬프트 2: ${prompts[1].slice(0, 80)}...`);
+
+    const imgDir = path.join(__dirname, 'fruit-blog', 'images');
+    if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
+    const img1RelPath = `fruit-blog/images/${dayId}-body-1.png`;
+    const img2RelPath = `fruit-blog/images/${dayId}-body-2.png`;
+    const img1AbsPath = path.join(__dirname, img1RelPath);
+    const img2AbsPath = path.join(__dirname, img2RelPath);
+
+    await generateImage(prompts[0], img1AbsPath);
+    console.log(`   ✓ 이미지 1 저장: ${img1RelPath}`);
+    await generateImage(prompts[1], img2AbsPath);
+    console.log(`   ✓ 이미지 2 저장: ${img2RelPath}`);
+
+    // HTML에 이미지 삽입 위치 결정: 2번째 <h2> 앞, 4번째 <h2> 앞
+    const repo = process.env.GITHUB_REPOSITORY;
+    const isCI = process.env.GITHUB_ACTIONS === 'true' && repo;
+
+    let img1Src, img2Src;
+    if (isCI) {
+      img1Src = `https://raw.githubusercontent.com/${repo}/main/${img1RelPath}`;
+      img2Src = `https://raw.githubusercontent.com/${repo}/main/${img2RelPath}`;
+    } else {
+      // 로컬: base64
+      img1Src = `data:image/png;base64,${fs.readFileSync(img1AbsPath).toString('base64')}`;
+      img2Src = `data:image/png;base64,${fs.readFileSync(img2AbsPath).toString('base64')}`;
+    }
+
+    const h2Positions = [];
+    const h2Regex = /<h2[^>]*>/gi;
+    let m;
+    while ((m = h2Regex.exec(articleHtml)) !== null) {
+      h2Positions.push(m.index);
+    }
+    const body1Tag = imgTag(img1Src, prompts[0].slice(0, 80));
+    const body2Tag = imgTag(img2Src, prompts[1].slice(0, 80));
+    const insertAt = [];
+    if (h2Positions.length >= 4) {
+      insertAt.push({ pos: h2Positions[3], html: body2Tag });
+      insertAt.push({ pos: h2Positions[1], html: body1Tag });
+    } else if (h2Positions.length >= 3) {
+      insertAt.push({ pos: h2Positions[2], html: body2Tag });
+      insertAt.push({ pos: h2Positions[1], html: body1Tag });
+    } else if (h2Positions.length >= 2) {
+      insertAt.push({ pos: h2Positions[1], html: body1Tag });
+      articleHtml = articleHtml.replace(
+        /(<p[^>]*text-align:center[^>]*>📍[^<]*<\/p>)/,
+        `${body2Tag}\n$1`
+      );
+    }
+    for (const { pos, html } of insertAt) {
+      articleHtml = articleHtml.slice(0, pos) + html + '\n' + articleHtml.slice(pos);
+    }
+
+    // CI에서는 이미지를 GitHub에 커밋 & 푸시
+    if (isCI) {
+      const run = (args) => {
+        const r = spawnSync('git', args, { cwd: __dirname, encoding: 'utf8' });
+        if (r.status !== 0) throw new Error(`git ${args.join(' ')}: ${r.stderr || r.stdout}`);
+        return r.stdout;
+      };
+      try {
+        run(['config', 'user.name', 'github-actions[bot]']);
+        run(['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
+        run(['add', img1RelPath, img2RelPath]);
+        const diff = spawnSync('git', ['diff', '--cached', '--quiet'], { cwd: __dirname });
+        if (diff.status !== 0) {
+          run(['commit', '-m', `chore: AI body images for fruit ${dayId} [skip ci]`]);
+          run(['push']);
+          console.log('   ✓ 이미지 GitHub 푸시 완료');
+        }
+      } catch (e) {
+        console.warn(`   ⚠️ 이미지 푸시 실패: ${e.message}`);
+      }
+    }
+    console.log('');
+  } catch (e) {
+    console.warn(`   ⚠️ 본문 이미지 생성 실패 (이미지 없이 진행): ${e.message}\n`);
+  }
+
   fs.writeFileSync(htmlAbsPath, articleHtml, 'utf8');
   console.log(`💾 저장: ${htmlRelPath}\n`);
 
