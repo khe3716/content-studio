@@ -1,0 +1,16 @@
+# 과일 연구소 블로그 주제 로드맵
+#
+# 각 주제 필드 설명:
+#   day:          순서 번호 (1, 2, 3, ...)
+#   cluster:      주제 그룹 (SEO 동선용)
+#   title:        글 제목 (Blogger 제목)
+#   thumb_title:  썸네일 안에 들어갈 짧은 제목 (5자 내외)
+#   subtitle:     썸네일 안 부제목 2줄
+#   emoji:        썸네일 이모지 이름 (예: grape, peach, melon)
+#   slug:         영문 파머링크 (복붙용)
+#   labels:       Blogger 라벨 (검색 태그)
+#   status:       ready(다음)/pending(대기)/draft(업로드됨)/published(발행됨)
+#
+# 사장님이 원하는 주제 방향 알려주시면 30일치 로드맵 자동 작성합니다.
+
+topics: []
