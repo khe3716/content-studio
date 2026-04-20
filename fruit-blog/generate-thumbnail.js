@@ -10,8 +10,8 @@ function generateBaseSvg({ title, subtitle, brand = '과일정보연구소' }) {
   const size = 800;
   const c = size / 2;
 
-  // 타이틀 길이 기반 폰트 크기
-  const titleFontSize = title.length <= 5 ? 130 : title.length <= 8 ? 100 : title.length <= 11 ? 78 : 62;
+  // 타이틀 길이 기반 폰트 크기 (작은 썸네일에서도 잘 보이게 확대)
+  const titleFontSize = title.length <= 5 ? 170 : title.length <= 8 ? 130 : title.length <= 11 ? 100 : 80;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
@@ -41,7 +41,7 @@ function generateBaseSvg({ title, subtitle, brand = '과일정보연구소' }) {
   ${subtitleLines
     .map(
       (line, i) =>
-        `<text x="${c}" y="${size / 2 + 80 + i * 56}" class="subtitle" font-size="44" fill="#AD1457" text-anchor="middle" dominant-baseline="middle">${escapeXml(line)}</text>`
+        `<text x="${c}" y="${size / 2 + 120 + i * 72}" class="subtitle" font-size="60" fill="#AD1457" text-anchor="middle" dominant-baseline="middle">${escapeXml(line)}</text>`
     )
     .join('\n  ')}
 
