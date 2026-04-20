@@ -88,8 +88,54 @@ function loadProducts() {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
 
+// 주제 키워드와 매칭되는 관련 상품 3개 추려냄 (이미지 있는 것만)
+function findRelatedProducts(topic, products, count = 3) {
+  if (!products || products.length === 0) return [];
+  const withImage = products.filter(p => p.image && p.name);
+  if (withImage.length === 0) return [];
+
+  const keywords = [
+    topic.cluster,
+    topic.thumb_title,
+    ...(topic.labels || []),
+  ].filter(Boolean).map(k => k.toLowerCase());
+
+  const scored = withImage.map(p => {
+    const hay = (p.name + ' ' + (p.tags || []).join(' ') + ' ' + (p.category || '')).toLowerCase();
+    const score = keywords.reduce((s, k) => s + (hay.includes(k) ? 1 : 0), 0);
+    return { product: p, score };
+  });
+
+  const matched = scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score);
+  const matchedProducts = matched.map(s => s.product);
+
+  // 부족하면 같은 과일 카테고리에서 랜덤 보충
+  if (matchedProducts.length < count) {
+    const usedNos = new Set(matchedProducts.map(p => p.no));
+    const fruitCategory = withImage.filter(p =>
+      !usedNos.has(p.no) && (p.category || '').includes('과일')
+    );
+    // 섞어서 보충
+    const shuffled = fruitCategory.sort(() => Math.random() - 0.5);
+    matchedProducts.push(...shuffled.slice(0, count - matchedProducts.length));
+  }
+
+  return matchedProducts.slice(0, count);
+}
+
+// 이미지 태그 HTML 생성 (가운데 정렬, 둥근 모서리)
+function imgTag(url, alt = '', caption = '') {
+  const captionHtml = caption
+    ? `<p style="text-align:center;color:#888;font-size:14px;font-style:italic;margin:8px 0 0 0;">${caption}</p>`
+    : '';
+  return `<div style="text-align:center;margin:32px 0;">` +
+    `<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);"/>` +
+    captionHtml +
+    `</div>`;
+}
+
 // ========== 1단계: 박과일 초안 작성 ==========
-async function writeArticle(topic, nextTopic) {
+async function writeArticle(topic, nextTopic, images) {
   const parkGwail = loadPersona('park-gwail');
   const products = loadProducts();
 
@@ -106,11 +152,20 @@ async function writeArticle(topic, nextTopic) {
     ? `\n\n# 참고: 현재 이 블로그 운영자가 판매하는 관련 상품 (직접 언급 금지, 상식 수준 참고만)\n${relatedProducts.join('\n')}`
     : '';
 
+  const imagePlaceholderHint = images && images.length >= 2
+    ? `\n\n# 이미지 배치 규칙 (매우 중요)
+본문에 다음 두 개 placeholder를 반드시 독립 줄에 배치하세요:
+- [[IMAGE_BODY_1]]: 섹션 1과 2 사이 (제품 실물감을 보여줄 위치)
+- [[IMAGE_BODY_2]]: 섹션 3과 4 사이 또는 섹션 3 직후 (실전 적용 후 위치)
+
+각 placeholder는 <p>[[IMAGE_BODY_1]]</p> 같이 독립 줄로 배치. 다른 HTML 태그나 설명 없이 placeholder 문자열만.`
+    : '';
+
   const nextPreviewHint = nextTopic
     ? `다음 글 예고 문구에 반드시 "**${nextTopic.title}**" 언급.`
     : '다음 글 예고는 "다음에도 과일 정보 꾸준히 올릴 예정입니다" 식으로.';
 
-  const systemPrompt = `${parkGwail}${productHint}`;
+  const systemPrompt = `${parkGwail}${productHint}${imagePlaceholderHint}`;
 
   const userPrompt = `오늘 쓸 글 정보:
 - Day: ${topic.day}
@@ -241,10 +296,10 @@ function saveTopics(data) {
 }
 
 // ========== publish-draft-fruit.js 실행 ==========
-function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels }) {
+function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, coverImageUrl = '', coverImageAlt = '' }) {
   const r = spawnSync(
     'node',
-    ['publish-draft-fruit.js', dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels],
+    ['publish-draft-fruit.js', dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, coverImageUrl, coverImageAlt],
     { cwd: __dirname, stdio: 'inherit' }
   );
   return r.status === 0;
@@ -280,10 +335,34 @@ async function main() {
   const topicIdx = topicsData.topics.findIndex(t => t.day === topic.day);
   const nextTopic = topicsData.topics[topicIdx + 1];
 
+  // 관련 상품 이미지 3개 찾기 (썸네일 1 + 본문 2)
+  const allProducts = loadProducts();
+  const relatedImages = findRelatedProducts(topic, allProducts, 3);
+  console.log(`🖼️  관련 상품 이미지 ${relatedImages.length}개:`);
+  relatedImages.forEach((p, i) => console.log(`   ${i + 1}. ${p.name}`));
+  console.log('');
+
   console.log('📝 [1/4] 박과일 초안 작성 중...');
-  let articleHtml = await writeArticle(topic, nextTopic);
+  let articleHtml = await writeArticle(topic, nextTopic, relatedImages);
   articleHtml = articleHtml.replace(/^```html\s*/gm, '').replace(/^```\s*$/gm, '').trim();
   articleHtml = articleHtml.replace(/^\s*<h2>[^<]*Day\s*\d+[^<]*<\/h2>\s*/i, '');
+
+  // 본문 이미지 placeholder 치환
+  if (relatedImages.length >= 2) {
+    articleHtml = articleHtml.replace(
+      /\[\[IMAGE_BODY_1\]\]/g,
+      imgTag(relatedImages[1].image, relatedImages[1].name, '')
+    );
+    articleHtml = articleHtml.replace(
+      /\[\[IMAGE_BODY_2\]\]/g,
+      imgTag(relatedImages[2] ? relatedImages[2].image : relatedImages[1].image,
+             relatedImages[2] ? relatedImages[2].name : relatedImages[1].name, '')
+    );
+  } else {
+    // 이미지 없으면 placeholder 제거
+    articleHtml = articleHtml.replace(/\[\[IMAGE_BODY_\d\]\]/g, '');
+  }
+
   console.log(`   ✓ ${articleHtml.length}자 초안 완료\n`);
 
   console.log('🔍 [2/4] 팩트체크 중...');
@@ -326,6 +405,9 @@ async function main() {
   }
 
   console.log('☁️ [업로드] Blogger에 임시저장 중...');
+  // 썸네일은 관련 상품 이미지 URL 직접 사용 (없으면 생성된 썸네일로 폴백)
+  const coverImageUrl = relatedImages[0]?.image || '';
+  const coverImageAlt = relatedImages[0]?.name || topic.title;
   const ok = runPublishDraft({
     dayId,
     emoji: topic.emoji,
@@ -335,6 +417,8 @@ async function main() {
     sub2: topic.subtitle[1] || '',
     htmlPath: htmlRelPath,
     labels: (topic.labels || []).join(','),
+    coverImageUrl,
+    coverImageAlt,
   });
   if (!ok) throw new Error(`Blogger 업로드 실패 (Day ${topic.day})`);
 
