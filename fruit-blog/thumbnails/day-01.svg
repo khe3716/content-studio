@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5FFF0"/>
+      <stop offset="50%" stop-color="#EFFAE4"/>
+      <stop offset="100%" stop-color="#D9F0C1"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2E7D32"/>
+      <stop offset="100%" stop-color="#558B2F"/>
+    </linearGradient>
+    <style>
+      .title { font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif; font-weight: 900; letter-spacing: -2px; }
+      .subtitle { font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif; font-weight: 700; letter-spacing: -1px; }
+      .brand { font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif; font-weight: 700; }
+    </style>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="600" height="600" fill="url(#bgGrad)"/>
+
+  <!-- 배경 장식 원 (과일 색상: 빨강·보라·주황) -->
+  <circle cx="60" cy="70" r="55" fill="#E53935" opacity="0.08"/>
+  <circle cx="30" cy="130" r="35" fill="#8E24AA" opacity="0.10"/>
+  <circle cx="540" cy="90" r="50" fill="#FF6B35" opacity="0.10"/>
+  <circle cx="570" cy="140" r="30" fill="#F9A825" opacity="0.12"/>
+
+  <!-- 메인 제목 -->
+  <text x="300" y="320" class="title" font-size="74" fill="#1B5E20" text-anchor="middle">산딸기 선별</text>
+
+  <!-- 서브 타이틀 -->
+  <text x="300" y="390" class="subtitle" font-size="41" fill="#558B2F" text-anchor="middle">실패 없는</text>
+  <text x="300" y="438" class="subtitle" font-size="41" fill="#558B2F" text-anchor="middle">선별 공식</text>
+
+  <!-- 하단 브랜드 바 -->
+  <rect x="0" y="532" width="600" height="68" fill="url(#accentGrad)"/>
+  <text x="300" y="575" class="brand" font-size="29" fill="white" text-anchor="middle">🍎 과일정보연구소</text>
+</svg>

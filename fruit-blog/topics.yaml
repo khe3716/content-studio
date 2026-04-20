@@ -1,10 +1,3 @@
-# 과일 연구소 블로그 30일 로드맵
-# 달콤살랑 스마트스토어 실제 판매 상품 기반 (2026-04-20 기준 21개)
-#
-# 순서 전략:
-# - 1~10일: 현재 제철 & 주력 상품 (봄~초여름: 산딸기, 토마토, 블루베리, 망고)
-# - 11~20일: 여름 과일 (수박, 복숭아, 자두 등) + 여름 대비 보관법
-# - 21~30일: 클러스터별 심화 (보관·선별 종합)
 topics:
   - day: 1
     cluster: strawberry
@@ -20,8 +13,8 @@ topics:
       - 산딸기
       - 제철과일
       - 봄과일
-    status: ready
-
+    status: draft
+    generated_at: '2026-04-20T08:59:17.376Z'
   - day: 2
     cluster: blueberry
     title: 무농약 블루베리와 일반 블루베리, 뭐가 다를까요
@@ -36,8 +29,7 @@ topics:
       - 무농약
       - 과일선별
       - 건강과일
-    status: pending
-
+    status: ready
   - day: 3
     cluster: tomato
     title: 스테비아 방울토마토가 달콤한 이유, 진짜일까요
@@ -53,7 +45,6 @@ topics:
       - 건강과일
       - 토마토
     status: pending
-
   - day: 4
     cluster: melon
     title: 양구 가야백자 메론이 비싼 이유, 어떻게 고를까요
@@ -69,7 +60,6 @@ topics:
       - 메론선별
       - 고당도
     status: pending
-
   - day: 5
     cluster: mango
     title: 애플망고 vs 골드망고, 뭐가 더 달콤할까요
@@ -85,7 +75,6 @@ topics:
       - 망고선별
       - 열대과일
     status: pending
-
   - day: 6
     cluster: mango
     title: 마하차녹 망고, 한국인이 잘 모르는 태국 보물
@@ -101,7 +90,6 @@ topics:
       - 망고종류
       - 열대과일
     status: pending
-
   - day: 7
     cluster: fig
     title: 영암 무화과가 특별한 이유, 제철과 선별법
@@ -117,7 +105,6 @@ topics:
       - 제철과일
       - 과일선별
     status: pending
-
   - day: 8
     cluster: grape
     title: 씨없는 포도 4종 비교, 어떤 게 나한테 맞을까요
@@ -133,7 +120,6 @@ topics:
       - 포도비교
       - 과일선별
     status: pending
-
   - day: 9
     cluster: tomato
     title: 대저토마토가 '짭짤한' 이유, 과학적으로 알려드려요
@@ -149,7 +135,6 @@ topics:
       - 토마토종류
       - 제철과일
     status: pending
-
   - day: 10
     cluster: pear
     title: 못난이 배, 정말 맛은 똑같을까요
@@ -165,7 +150,6 @@ topics:
       - 신고배
       - 경제소비
     status: pending
-
   - day: 11
     cluster: melon
     title: 파파야멜론·개구리참외, 이름만 다른가요
@@ -181,7 +165,6 @@ topics:
       - 멜론종류
       - 제철과일
     status: pending
-
   - day: 12
     cluster: chamoe
     title: 성주참외가 최고인 이유, 산지의 비밀
@@ -197,7 +180,6 @@ topics:
       - 제철과일
       - 산지
     status: pending
-
   - day: 13
     cluster: apple
     title: 세척사과 껍질째 먹어도 정말 괜찮을까요
@@ -213,7 +195,6 @@ topics:
       - 식품안전
       - 사과
     status: pending
-
   - day: 14
     cluster: dragonfruit
     title: 백용과는 왜 비쌀까요, 영양소와 제철 가이드
@@ -229,7 +210,6 @@ topics:
       - 열대과일
       - 수입과일
     status: pending
-
   - day: 15
     cluster: storage
     title: 과일 냉장고 보관 위치, 이렇게 바꾸세요
@@ -245,7 +225,6 @@ topics:
       - 식품보관
       - 신선도
     status: pending
-
   - day: 16
     cluster: storage
     title: 바나나와 사과 같이 보관하면? 에틸렌 효과
@@ -261,7 +240,6 @@ topics:
       - 후숙
       - 식품과학
     status: pending
-
   - day: 17
     cluster: selection
     title: 제철 과일 구분법, 1분 컷 가이드
@@ -277,7 +255,6 @@ topics:
       - 계절별
       - 구매팁
     status: pending
-
   - day: 18
     cluster: health
     title: 임산부가 먹기 좋은 과일 Top 5
@@ -293,7 +270,6 @@ topics:
       - 임신영양
       - 과일추천
     status: pending
-
   - day: 19
     cluster: health
     title: 당뇨에 좋다는 토마토·용과, 정말 효과 있을까요
@@ -309,7 +285,6 @@ topics:
       - 건강과일
       - 토마토
     status: pending
-
   - day: 20
     cluster: health
     title: 다이어트 중 먹어도 되는 과일, 기준은 이것
@@ -325,7 +300,6 @@ topics:
       - 체중관리
       - 건강
     status: pending
-
   - day: 21
     cluster: kids
     title: 아이 간식 과일, 이것부터 시작하세요
@@ -341,7 +315,6 @@ topics:
       - 과일추천
       - 육아
     status: pending
-
   - day: 22
     cluster: selection
     title: 산지직송 과일이 진짜 더 달콤할까요
@@ -357,7 +330,6 @@ topics:
       - 유통
       - 팩트체크
     status: pending
-
   - day: 23
     cluster: gift
     title: 과일 선물, 상견례·병문안별 완벽 가이드
@@ -373,7 +345,6 @@ topics:
       - 병문안과일
       - 선물가이드
     status: pending
-
   - day: 24
     cluster: storage
     title: 과일 세척법, 소금물과 베이킹소다 중 뭐가 나을까요
@@ -389,7 +360,6 @@ topics:
       - 베이킹소다
       - 소금물
     status: pending
-
   - day: 25
     cluster: storage
     title: 냉동 과일, 영양소는 그대로일까요
@@ -405,7 +375,6 @@ topics:
       - 영양소
       - 식품과학
     status: pending
-
   - day: 26
     cluster: price
     title: 비싼 과일과 싼 과일, 맛 차이 진짜 있을까요
@@ -421,7 +390,6 @@ topics:
       - 과일비교
       - 경제소비
     status: pending
-
   - day: 27
     cluster: selection
     title: 가정용 못난이 과일, 어떻게 활용해야 할까요
@@ -437,7 +405,6 @@ topics:
       - 과일활용
       - 절약팁
     status: pending
-
   - day: 28
     cluster: health
     title: 과일 당도 Brix, 높으면 무조건 좋을까요
@@ -453,7 +420,6 @@ topics:
       - 과일선별
       - 식품과학
     status: pending
-
   - day: 29
     cluster: selection
     title: 마트 vs 스마트스토어 과일, 어디가 나을까요
@@ -469,7 +435,6 @@ topics:
       - 대형마트
       - 소비가이드
     status: pending
-
   - day: 30
     cluster: wrap-up
     title: 30일 과일 가이드 총정리 + 다음 시리즈 예고
