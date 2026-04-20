@@ -1,0 +1,37 @@
+# 비밀 정보 (절대 GitHub에 올리면 안 됨)
+.env
+.env.local
+.env.*.local
+*.token
+*.credentials
+
+# Node.js
+node_modules/
+dist/
+build/
+
+# 운영체제
+.DS_Store
+Thumbs.db
+
+# 에디터
+.vscode/
+.idea/
+.claude/
+*.swp
+
+# 로그
+*.log
+logs/
+
+# 디버그 파일
+debug-*.png
+debug-*.html
+try-*.js
+check-post.js
+
+# 기타 프로젝트 (이 저장소와 무관)
+remotion/
+
+# 일회성 인증 스크립트 (refresh_token은 .env에 저장됨)
+get-refresh-token.js
