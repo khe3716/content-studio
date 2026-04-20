@@ -1,0 +1,71 @@
+name: 경제 블로그 자동 발행
+
+on:
+  # 핸드폰에서 버튼으로 수동 실행
+  workflow_dispatch:
+    inputs:
+      day:
+        description: '특정 Day 번호 (비우면 ready 상태인 다음 주제 자동 선택)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run (글만 생성, Blogger 업로드 안 함)'
+        required: false
+        type: boolean
+        default: false
+
+  # 자동 스케줄: 월·수·금 오전 9시 KST (UTC 0시)
+  schedule:
+    - cron: '0 0 * * 1,3,5'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 1. 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 2. Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 3. 의존성 설치
+        run: npm ci
+
+      - name: 4. 로봇 두뇌 실행 (auto-publish.js)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BLOG_ID: ${{ secrets.BLOG_ID }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          TZ: Asia/Seoul
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.day }}" ]; then
+            ARGS="$ARGS --day ${{ inputs.day }}"
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          echo "실행: node auto-publish.js $ARGS"
+          node auto-publish.js $ARGS
+
+      - name: 5. 업데이트된 topics.yaml 커밋 (자동 실행 시)
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add economy-blog/topics.yaml economy-blog/drafts/*.html economy-blog/thumbnails/*.png economy-blog/thumbnails/*.svg 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "변경사항 없음, 커밋 스킵"
+          else
+            git commit -m "chore: auto-publish updated drafts and topics.yaml [skip ci]"
+            git push
+          fi
