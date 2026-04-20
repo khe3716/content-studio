@@ -45,6 +45,8 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TZ: Asia/Seoul
         run: |
           ARGS=""
@@ -69,3 +71,27 @@ jobs:
             git commit -m "chore: auto-publish updated drafts and topics.yaml [skip ci]"
             git push
           fi
+
+      - name: 6. 실패 시 텔레그램 알림 (인프라 장애 대비 안전망)
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "텔레그램 시크릿 없음, 알림 스킵"
+            exit 0
+          fi
+          node -e "
+            fetch('https://api.telegram.org/bot' + process.env.TELEGRAM_BOT_TOKEN + '/sendMessage', {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({
+                chat_id: process.env.TELEGRAM_CHAT_ID,
+                text: '🚨 <b>워크플로 실패</b>\n\nGitHub Actions 실행이 중단됐습니다.\n\n로그 확인:\n' + process.env.RUN_URL,
+                parse_mode: 'HTML',
+                disable_web_page_preview: true
+              })
+            }).then(r => r.json()).then(j => console.log(JSON.stringify(j)));
+          "

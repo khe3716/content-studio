@@ -42,6 +42,25 @@ if (!GEMINI_API_KEY) {
   process.exit(1);
 }
 
+// ========== 텔레그램 알림 ==========
+async function notifyTelegram(text) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true }),
+    });
+    if (!res.ok) {
+      console.error('⚠️ 텔레그램 알림 실패:', await res.text());
+    }
+  } catch (e) {
+    console.error('⚠️ 텔레그램 알림 예외:', e.message);
+  }
+}
+
 // ========== 제미나이 호출 ==========
 async function callGemini(userPrompt, systemPrompt, { temperature = 0.7, maxTokens = 16384 } = {}) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
@@ -235,7 +254,7 @@ function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, html
 }
 
 // ========== 메인 ==========
-(async () => {
+async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
   const dayArg = args.indexOf('--day') >= 0 ? parseInt(args[args.indexOf('--day') + 1]) : null;
@@ -249,6 +268,7 @@ function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, html
     topic = topicsData.topics.find(t => t.status === 'ready');
     if (!topic) {
       console.log('✋ 다음 쓸 주제가 없습니다 (ready 상태인 topic 없음).');
+      await notifyTelegram('ℹ️ <b>발행 스킵</b>\n다음 쓸 주제가 없습니다 (ready 상태인 topic 없음).');
       return;
     }
   }
@@ -318,8 +338,7 @@ function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, html
   });
 
   if (!ok) {
-    console.error('❌ 업로드 실패');
-    process.exit(1);
+    throw new Error(`Blogger 업로드 실패 (Day ${topic.day})`);
   }
 
   // 6. topics.yaml 업데이트 (status: ready → draft)
@@ -334,4 +353,28 @@ function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, html
   saveTopics(topicsData);
 
   console.log('\n🎉 로봇 사이클 완료!');
-})();
+
+  // 7. 텔레그램 성공 알림
+  const nextInfo = nextPending
+    ? `\n\n🔜 <b>내일 예정:</b> Day ${nextPending.day} — ${nextPending.title}`
+    : '\n\n🏁 모든 주제 소진 (pending 없음)';
+  await notifyTelegram(
+    `✅ <b>발행 성공</b>\n\n` +
+    `📌 <b>Day ${topic.day}</b> — ${topic.title}\n` +
+    `🏷️ ${(topic.labels || []).join(', ')}\n\n` +
+    `💡 Blogger 임시저장 완료. 검토 후 발행하세요:\n` +
+    `https://www.blogger.com/u/0/blog/posts/${process.env.BLOG_ID || ''}` +
+    nextInfo
+  );
+}
+
+main().catch(async (err) => {
+  console.error('❌ 실행 중 에러:', err);
+  await notifyTelegram(
+    `🚨 <b>발행 실패</b>\n\n` +
+    `에러: ${String(err.message || err).slice(0, 500)}\n\n` +
+    `GitHub Actions 로그 확인:\n` +
+    `https://github.com/khe3716/content-studio/actions`
+  );
+  process.exit(1);
+});
