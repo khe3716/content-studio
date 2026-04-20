@@ -232,6 +232,30 @@ ${articleHtml}`;
   return await callGemini(userPrompt, systemPrompt, { temperature: 0.3 });
 }
 
+// ========== 4단계: SEO 검색 설명 생성 ==========
+async function generateSearchDescription(topic, articleHtml) {
+  const systemPrompt = `당신은 SEO 전문가입니다. 블로그 포스트의 "검색 설명(meta description)"을 작성합니다.
+규칙:
+- 정확히 120~150자 (공백 포함)
+- 핵심 키워드 앞쪽 배치
+- 클릭 유도형 문장 (과장 금지)
+- "~입니다", "~해요" 같은 어미 통일
+- 특수문자·따옴표·줄바꿈 금지
+- 평문만 출력 (HTML, 마크다운 금지)`;
+
+  const userPrompt = `다음 블로그 글의 검색 설명을 한 문장 또는 두 문장으로 작성하세요.
+제목: ${topic.title}
+라벨: ${(topic.labels || []).join(', ')}
+
+본문 앞부분:
+${articleHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 800)}
+
+**한 줄로, 120~150자, 평문만 출력.**`;
+
+  const raw = await callGemini(userPrompt, systemPrompt, { temperature: 0.5, maxTokens: 500 });
+  return raw.replace(/^["']|["']$/g, '').replace(/\s+/g, ' ').trim();
+}
+
 // ========== 주제 선정 ==========
 function loadTopics() {
   const p = path.join(__dirname, 'economy-blog', 'topics.yaml');
@@ -319,6 +343,16 @@ async function main() {
   fs.writeFileSync(htmlAbsPath, articleHtml, 'utf8');
   console.log(`💾 저장: ${htmlRelPath}\n`);
 
+  // 4. SEO 검색 설명 생성
+  console.log('🔎 [SEO] 검색 설명 생성 중...');
+  let searchDescription = '';
+  try {
+    searchDescription = await generateSearchDescription(topic, articleHtml);
+    console.log(`   ✓ ${searchDescription.length}자: ${searchDescription}\n`);
+  } catch (e) {
+    console.warn(`   ⚠️ 검색 설명 생성 실패: ${e.message}`);
+  }
+
   if (dryRun) {
     console.log('✋ --dry-run 옵션: 업로드는 생략합니다.');
     return;
@@ -357,18 +391,29 @@ async function main() {
 
   console.log('\n🎉 로봇 사이클 완료!');
 
-  // 7. 텔레그램 성공 알림
+  // 7. 텔레그램 성공 알림 (파머링크 + 검색설명 포함)
   const nextInfo = nextPending
-    ? `\n\n🔜 <b>내일 예정:</b> Day ${nextPending.day} — ${nextPending.title}`
+    ? `\n\n🔜 <b>다음 예정:</b> Day ${nextPending.day} — ${nextPending.title}`
     : '\n\n🏁 모든 주제 소진 (pending 없음)';
+  const seoBlock = searchDescription
+    ? `\n\n📎 <b>파머링크 (복사용)</b>\n<code>${topic.slug}</code>\n\n📝 <b>검색 설명 (복사용)</b>\n<code>${escapeHtml(searchDescription)}</code>`
+    : `\n\n📎 <b>파머링크 (복사용)</b>\n<code>${topic.slug}</code>`;
   await notifyTelegram(
     `✅ <b>발행 성공</b>\n\n` +
     `📌 <b>Day ${topic.day}</b> — ${topic.title}\n` +
-    `🏷️ ${(topic.labels || []).join(', ')}\n\n` +
-    `💡 Blogger 임시저장 완료. 검토 후 발행하세요:\n` +
+    `🏷️ ${(topic.labels || []).join(', ')}` +
+    seoBlock +
+    `\n\n💡 Blogger 임시저장 열어서 파머링크·검색 설명 붙여넣고 발행:\n` +
     `https://www.blogger.com/u/0/blog/posts/${process.env.BLOG_ID || ''}` +
     nextInfo
   );
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 main().catch(async (err) => {
