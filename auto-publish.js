@@ -252,7 +252,7 @@ ${articleHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 800)}
 
 **한 줄로, 120~150자, 평문만 출력.**`;
 
-  const raw = await callGemini(userPrompt, systemPrompt, { temperature: 0.5, maxTokens: 500 });
+  const raw = await callGemini(userPrompt, systemPrompt, { temperature: 0.5, maxTokens: 2000 });
   return raw.replace(/^["']|["']$/g, '').replace(/\s+/g, ' ').trim();
 }
 
