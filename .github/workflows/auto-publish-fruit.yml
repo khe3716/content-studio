@@ -104,7 +104,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git pull --rebase --autostash || true
-          git add fruit-blog/topics.yaml fruit-blog/drafts/*.html fruit-blog/thumbnails/*.png fruit-blog/thumbnails/*.svg fruit-blog/products.json 2>/dev/null || true
+          git add fruit-blog/topics.yaml fruit-blog/drafts/*.html fruit-blog/thumbnails/*.png fruit-blog/thumbnails/*.svg fruit-blog/images/*.jpg fruit-blog/images/*.png fruit-blog/products.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "변경사항 없음, 커밋 스킵"
           else

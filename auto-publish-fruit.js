@@ -13,6 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
+const sharp = require('sharp');
 const { spawnSync } = require('child_process');
 
 // ========== 환경 변수 ==========
@@ -85,7 +86,7 @@ function loadPersona(name) {
   return fs.readFileSync(path.join(__dirname, 'agents', `${name}.md`), 'utf8');
 }
 
-// ========== Imagen 4 Fast 이미지 생성 ==========
+// ========== Imagen 4 Fast 이미지 생성 (생성 후 리사이즈) ==========
 async function generateImage(prompt, outputPath) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${GEMINI_API_KEY}`;
   const res = await fetch(url, {
@@ -100,8 +101,16 @@ async function generateImage(prompt, outputPath) {
   const j = await res.json();
   const b64 = j.predictions?.[0]?.bytesBase64Encoded;
   if (!b64) throw new Error('Imagen 응답에 이미지 없음: ' + JSON.stringify(j).slice(0, 300));
-  fs.writeFileSync(outputPath, Buffer.from(b64, 'base64'));
-  return outputPath;
+  // 본문 이미지는 600×600 JPG로 압축 (Blogger가 작은 파일을 대표 썸네일 후보에서 제외)
+  // → 디자인 썸네일(1500×1500 PNG, 30KB)이 대표로 선택됨
+  const resized = await sharp(Buffer.from(b64, 'base64'))
+    .resize(600, 600, { kernel: 'lanczos3' })
+    .jpeg({ quality: 75 })
+    .toBuffer();
+  // 확장자 .jpg로 저장 (outputPath이 .png여도 JPG로 저장)
+  const jpgPath = outputPath.replace(/\.png$/i, '.jpg');
+  fs.writeFileSync(jpgPath, resized);
+  return jpgPath;
 }
 
 // 주제에 맞는 영문 이미지 프롬프트 2개 생성 (Gemini로)
@@ -437,15 +446,25 @@ async function main() {
 
     const imgDir = path.join(__dirname, 'fruit-blog', 'images');
     if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
-    const img1RelPath = `fruit-blog/images/${dayId}-body-1.png`;
-    const img2RelPath = `fruit-blog/images/${dayId}-body-2.png`;
+    // 매 업로드마다 타임스탬프 붙여 Blogger CDN 캐시 회피
+    const imgTs = Date.now();
+    const img1RelPath = `fruit-blog/images/${dayId}-${imgTs}-body-1.jpg`;
+    const img2RelPath = `fruit-blog/images/${dayId}-${imgTs}-body-2.jpg`;
     const img1AbsPath = path.join(__dirname, img1RelPath);
     const img2AbsPath = path.join(__dirname, img2RelPath);
 
+    // 같은 dayId의 기존 이미지 파일 정리 (로컬)
+    try {
+      const oldImgs = fs.readdirSync(imgDir).filter(f => f.startsWith(dayId + '-') && (f.endsWith('.jpg') || f.endsWith('.png')) && !f.includes(String(imgTs)));
+      oldImgs.forEach(f => fs.unlinkSync(path.join(imgDir, f)));
+    } catch {}
+
     await generateImage(prompts[0], img1AbsPath);
-    console.log(`   ✓ 이미지 1 저장: ${img1RelPath}`);
+    const img1Size = fs.statSync(img1AbsPath).size;
+    console.log(`   ✓ 이미지 1 저장: ${img1RelPath} (${Math.round(img1Size / 1024)}KB)`);
     await generateImage(prompts[1], img2AbsPath);
-    console.log(`   ✓ 이미지 2 저장: ${img2RelPath}`);
+    const img2Size = fs.statSync(img2AbsPath).size;
+    console.log(`   ✓ 이미지 2 저장: ${img2RelPath} (${Math.round(img2Size / 1024)}KB)`);
 
     // HTML에 이미지 삽입 위치 결정: 2번째 <h2> 앞, 4번째 <h2> 앞
     const repo = process.env.GITHUB_REPOSITORY;
@@ -456,9 +475,9 @@ async function main() {
       img1Src = `https://raw.githubusercontent.com/${repo}/main/${img1RelPath}`;
       img2Src = `https://raw.githubusercontent.com/${repo}/main/${img2RelPath}`;
     } else {
-      // 로컬: base64
-      img1Src = `data:image/png;base64,${fs.readFileSync(img1AbsPath).toString('base64')}`;
-      img2Src = `data:image/png;base64,${fs.readFileSync(img2AbsPath).toString('base64')}`;
+      // 로컬: base64 (JPG)
+      img1Src = `data:image/jpeg;base64,${fs.readFileSync(img1AbsPath).toString('base64')}`;
+      img2Src = `data:image/jpeg;base64,${fs.readFileSync(img2AbsPath).toString('base64')}`;
     }
 
     const h2Positions = [];

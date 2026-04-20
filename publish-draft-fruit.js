@@ -71,11 +71,14 @@ async function uploadDraft(token, title, labels, content) {
 (async () => {
   try {
     // 1. 디자인 썸네일 생성 (빨강/핑크 텍스트 스타일)
-    console.log(`\n[1/3] 🎨 ${dayId} 디자인 썸네일 생성 중...`);
+    // 매 업로드마다 파일명에 타임스탬프 붙여 Blogger CDN 캐시 방지
+    const ts = Date.now();
+    const thumbId = `${dayId}-${ts}`;
+    console.log(`\n[1/3] 🎨 ${thumbId} 디자인 썸네일 생성 중...`);
     const thumbDir = path.join(__dirname, 'fruit-blog', 'thumbnails');
     if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
-    const pngPath = path.join(thumbDir, `${dayId}.png`);
-    const svgPath = path.join(thumbDir, `${dayId}.svg`);
+    const pngPath = path.join(thumbDir, `${thumbId}.png`);
+    const svgPath = path.join(thumbDir, `${thumbId}.svg`);
     const { svg, pngBuffer } = await renderThumbnailPng({
       title: thumbTitle,
       subtitle: [sub1, sub2].filter(Boolean),
@@ -95,7 +98,7 @@ async function uploadDraft(token, title, labels, content) {
     const repo = process.env.GITHUB_REPOSITORY;
     const isCI = process.env.GITHUB_ACTIONS === 'true' && repo;
     if (isCI) {
-      const relThumb = `fruit-blog/thumbnails/${dayId}.png`;
+      const relThumb = `fruit-blog/thumbnails/${thumbId}.png`;
       const run = (args) => {
         const r = spawnSync('git', args, { cwd: __dirname, encoding: 'utf8' });
         if (r.status !== 0) throw new Error(`git ${args.join(' ')} 실패: ${r.stderr || r.stdout}`);
@@ -104,10 +107,15 @@ async function uploadDraft(token, title, labels, content) {
       try {
         run(['config', 'user.name', 'github-actions[bot]']);
         run(['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
-        run(['add', relThumb]);
+        run(['add', relThumb, `fruit-blog/thumbnails/${thumbId}.svg`]);
+        // 같은 dayId의 오래된 썸네일 파일들은 git rm (cleanup)
+        const oldPngs = fs.readdirSync(thumbDir).filter(f => f.startsWith(dayId + '-') && f !== `${thumbId}.png` && f !== `${thumbId}.svg` && (f.endsWith('.png') || f.endsWith('.svg')));
+        if (oldPngs.length > 0) {
+          try { run(['rm', '-f', ...oldPngs.map(f => `fruit-blog/thumbnails/${f}`)]); } catch {}
+        }
         const diff = spawnSync('git', ['diff', '--cached', '--quiet'], { cwd: __dirname });
         if (diff.status !== 0) {
-          run(['commit', '-m', `chore: thumbnail for fruit ${dayId} [skip ci]`]);
+          run(['commit', '-m', `chore: thumbnail for fruit ${thumbId} [skip ci]`]);
           run(['push']);
           console.log(`  ✓ 썸네일 GitHub 푸시 완료`);
         }
