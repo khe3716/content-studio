@@ -344,11 +344,14 @@ async function main() {
   // 6. topics.yaml 업데이트 (status: ready → draft)
   topic.status = 'draft';
   topic.generated_at = new Date().toISOString();
-  // 다음 pending 하나를 ready로 승격
-  const nextPending = topicsData.topics.find(t => t.status === 'pending');
-  if (nextPending) {
-    nextPending.status = 'ready';
-    console.log(`\n🔄 다음 주제 자동 지정: Day ${nextPending.day} — ${nextPending.title}`);
+  // 자동 실행일 때만 다음 pending 하나를 ready로 승격 (--day 재업로드 시엔 skip)
+  let nextPending = null;
+  if (!dayArg) {
+    nextPending = topicsData.topics.find(t => t.status === 'pending');
+    if (nextPending) {
+      nextPending.status = 'ready';
+      console.log(`\n🔄 다음 주제 자동 지정: Day ${nextPending.day} — ${nextPending.title}`);
+    }
   }
   saveTopics(topicsData);
 
