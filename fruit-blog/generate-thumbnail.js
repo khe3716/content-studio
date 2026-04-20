@@ -57,13 +57,11 @@ function escapeXml(s) {
 
 async function renderThumbnailPng({ title, subtitle, brand, emoji, outputPath }) {
   const svg = generateBaseSvg({ title, subtitle, brand });
-  let pngBuffer = await sharp(Buffer.from(svg), { density: 600 })
-    .resize(1600, 1600)
+  // 1500×1500 최종 출력 (AI 본문 이미지 1024×1024 보다 큰 크기)
+  // → Blogger가 대표 썸네일로 자동 선택
+  const pngBuffer = await sharp(Buffer.from(svg), { density: 600 })
+    .resize(1500, 1500)
     .png({ quality: 100, compressionLevel: 9 })
-    .toBuffer();
-  pngBuffer = await sharp(pngBuffer)
-    .resize(800, 800, { kernel: 'lanczos3' })
-    .png({ quality: 95, compressionLevel: 9 })
     .toBuffer();
   fs.writeFileSync(outputPath, pngBuffer);
   return { svg, pngBuffer };
