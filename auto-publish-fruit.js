@@ -59,13 +59,16 @@ async function notifyTelegram(text) {
 }
 
 // ========== 제미나이 ==========
-async function callGemini(userPrompt, systemPrompt, { temperature = 0.7, maxTokens = 16384 } = {}) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+async function callGemini(userPrompt, systemPrompt, { temperature = 0.7, maxTokens = 16384, model = GEMINI_MODEL, disableThinking = false } = {}) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
     generationConfig: { temperature, maxOutputTokens: maxTokens },
   };
+  if (disableThinking) {
+    body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -112,7 +115,13 @@ Write 2 photography prompts - both natural, professional, food-blog style. No pe
 
 Example output:
 A close-up photograph of fresh Korean wild raspberries in a wooden bowl, natural light, rustic wooden table, food photography ||| A basket of ripe Korean raspberries on a kitchen counter with mint leaves, soft morning light, overhead shot, high quality`;
-  const raw = await callGemini(userPrompt, systemPrompt, { temperature: 0.7, maxTokens: 2000 });
+  // flash 모델 + thinking 비활성화 (pro는 thinking 토큰이 예산 다 잡아먹음)
+  const raw = await callGemini(userPrompt, systemPrompt, {
+    temperature: 0.7,
+    maxTokens: 500,
+    model: 'gemini-2.5-flash',
+    disableThinking: true,
+  });
   const parts = raw.split('|||').map(s => s.trim()).filter(Boolean);
   if (parts.length < 2) {
     // 폴백: 주제 단순화 프롬프트
@@ -320,7 +329,12 @@ async function generateSearchDescription(topic, articleHtml) {
 ${articleHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 800)}
 
 **한 줄로, 120~150자, 평문만.**`;
-  const raw = await callGemini(userPrompt, systemPrompt, { temperature: 0.5, maxTokens: 2000 });
+  const raw = await callGemini(userPrompt, systemPrompt, {
+    temperature: 0.5,
+    maxTokens: 500,
+    model: 'gemini-2.5-flash',
+    disableThinking: true,
+  });
   return raw.replace(/^["']|["']$/g, '').replace(/\s+/g, ' ').trim();
 }
 
