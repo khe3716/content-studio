@@ -152,14 +152,13 @@ async function writeArticle(topic, nextTopic, images) {
     ? `\n\n# 참고: 현재 이 블로그 운영자가 판매하는 관련 상품 (직접 언급 금지, 상식 수준 참고만)\n${relatedProducts.join('\n')}`
     : '';
 
-  const imagePlaceholderHint = images && images.length >= 2
-    ? `\n\n# 이미지 배치 규칙 (매우 중요)
-본문에 다음 두 개 placeholder를 반드시 독립 줄에 배치하세요:
-- [[IMAGE_BODY_1]]: 섹션 1과 2 사이 (제품 실물감을 보여줄 위치)
-- [[IMAGE_BODY_2]]: 섹션 3과 4 사이 또는 섹션 3 직후 (실전 적용 후 위치)
-
-각 placeholder는 <p>[[IMAGE_BODY_1]]</p> 같이 독립 줄로 배치. 다른 HTML 태그나 설명 없이 placeholder 문자열만.`
-    : '';
+  // 이미지 삽입은 Gemini에 맡기지 않음 (Gemini가 placeholder 무시하고 엉뚱한 URL 넣음)
+  // 대신 생성 후 코드에서 <h2> 경계 찾아 프로그래밍 방식으로 삽입
+  const imagePlaceholderHint = `\n\n# 이미지 규칙 (매우 중요)
+- 본문에 <img> 태그를 절대 삽입하지 마세요.
+- [[...]], {{...}} 같은 placeholder도 쓰지 마세요.
+- 외부 URL (unsplash, pexels 등) 이미지 추가 금지.
+- 오직 텍스트와 표·박스 HTML만 출력. 이미지는 자동화 스크립트가 나중에 알아서 끼워 넣습니다.`;
 
   const nextPreviewHint = nextTopic
     ? `다음 글 예고 문구에 반드시 "**${nextTopic.title}**" 언급.`
@@ -296,10 +295,10 @@ function saveTopics(data) {
 }
 
 // ========== publish-draft-fruit.js 실행 ==========
-function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, coverImageUrl = '', coverImageAlt = '' }) {
+function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels }) {
   const r = spawnSync(
     'node',
-    ['publish-draft-fruit.js', dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, coverImageUrl, coverImageAlt],
+    ['publish-draft-fruit.js', dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels],
     { cwd: __dirname, stdio: 'inherit' }
   );
   return r.status === 0;
@@ -347,20 +346,48 @@ async function main() {
   articleHtml = articleHtml.replace(/^```html\s*/gm, '').replace(/^```\s*$/gm, '').trim();
   articleHtml = articleHtml.replace(/^\s*<h2>[^<]*Day\s*\d+[^<]*<\/h2>\s*/i, '');
 
-  // 본문 이미지 placeholder 치환
-  if (relatedImages.length >= 2) {
-    articleHtml = articleHtml.replace(
-      /\[\[IMAGE_BODY_1\]\]/g,
-      imgTag(relatedImages[1].image, relatedImages[1].name, '')
-    );
-    articleHtml = articleHtml.replace(
-      /\[\[IMAGE_BODY_2\]\]/g,
-      imgTag(relatedImages[2] ? relatedImages[2].image : relatedImages[1].image,
-             relatedImages[2] ? relatedImages[2].name : relatedImages[1].name, '')
-    );
-  } else {
-    // 이미지 없으면 placeholder 제거
-    articleHtml = articleHtml.replace(/\[\[IMAGE_BODY_\d\]\]/g, '');
+  // Gemini가 실수로 끼워넣은 외부 이미지 태그 전부 제거 (unsplash 등)
+  articleHtml = articleHtml.replace(/<img[^>]*>/gi, '');
+  articleHtml = articleHtml.replace(/<div[^>]*>\s*<\/div>/gi, '');
+  // placeholder 흔적도 제거
+  articleHtml = articleHtml.replace(/\[\[IMAGE_BODY_\d\]\]/g, '');
+  articleHtml = articleHtml.replace(/\{\{IMAGE_BODY_\d\}\}/g, '');
+
+  // 본문 이미지 2장 프로그래밍 방식으로 삽입
+  // 전략: <h2> 태그 기준으로 섹션 나눠서, 2번째 <h2> 앞 + 4번째 <h2> 앞에 이미지 배치
+  // 썸네일(커버)은 생성된 디자인 썸네일 사용. 본문 2장은 관련 상품 실물 사진.
+  if (relatedImages.length >= 1) {
+    const h2Positions = [];
+    const h2Regex = /<h2[^>]*>/gi;
+    let m;
+    while ((m = h2Regex.exec(articleHtml)) !== null) {
+      h2Positions.push(m.index);
+    }
+
+    const body1 = imgTag(relatedImages[0].image, relatedImages[0].name, '');
+    const body2Product = relatedImages[1] || relatedImages[0];
+    const body2 = imgTag(body2Product.image, body2Product.name, '');
+
+    // 역순으로 삽입 (앞쪽 인덱스 삽입해도 뒤쪽 인덱스 영향 없게)
+    const insertAt = [];
+    if (h2Positions.length >= 4) {
+      insertAt.push({ pos: h2Positions[3], html: body2 });
+      insertAt.push({ pos: h2Positions[1], html: body1 });
+    } else if (h2Positions.length >= 3) {
+      insertAt.push({ pos: h2Positions[2], html: body2 });
+      insertAt.push({ pos: h2Positions[1], html: body1 });
+    } else if (h2Positions.length >= 2) {
+      insertAt.push({ pos: h2Positions[1], html: body1 });
+      // body2는 맨 끝에
+      articleHtml = articleHtml.replace(
+        /(<p[^>]*text-align:center[^>]*>📍[^<]*<\/p>)/,
+        `${body2}\n$1`
+      );
+    }
+
+    for (const { pos, html } of insertAt) {
+      articleHtml = articleHtml.slice(0, pos) + html + '\n' + articleHtml.slice(pos);
+    }
   }
 
   console.log(`   ✓ ${articleHtml.length}자 초안 완료\n`);
@@ -405,9 +432,7 @@ async function main() {
   }
 
   console.log('☁️ [업로드] Blogger에 임시저장 중...');
-  // 썸네일은 관련 상품 이미지 URL 직접 사용 (없으면 생성된 썸네일로 폴백)
-  const coverImageUrl = relatedImages[0]?.image || '';
-  const coverImageAlt = relatedImages[0]?.name || topic.title;
+  // 썸네일은 디자인 썸네일 (빨강/핑크 텍스트) 사용. 본문 이미지는 이미 HTML에 삽입됨.
   const ok = runPublishDraft({
     dayId,
     emoji: topic.emoji,
@@ -417,8 +442,6 @@ async function main() {
     sub2: topic.subtitle[1] || '',
     htmlPath: htmlRelPath,
     labels: (topic.labels || []).join(','),
-    coverImageUrl,
-    coverImageAlt,
   });
   if (!ok) throw new Error(`Blogger 업로드 실패 (Day ${topic.day})`);
 

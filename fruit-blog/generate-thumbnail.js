@@ -1,5 +1,5 @@
-// 과일 블로그 썸네일 생성기 (600×600, 슈퍼샘플링)
-// 경제블로그 스타일 베이스, 색상만 과일 친화적 그린/핑크 톤
+// 과일 블로그 썸네일 생성기 (800×800, 슈퍼샘플링)
+// 스타일: 빨강/핑크 볼드 타이틀 + 밝은 크림/핑크 배경 (기존 블로그 스타일 매칭)
 
 const fs = require('fs');
 const path = require('path');
@@ -7,114 +7,64 @@ const sharp = require('sharp');
 
 function generateBaseSvg({ title, subtitle, brand = '과일정보연구소' }) {
   const subtitleLines = Array.isArray(subtitle) ? subtitle : [subtitle];
-  const size = 600;
+  const size = 800;
   const c = size / 2;
+
+  // 타이틀 길이 기반 폰트 크기
+  const titleFontSize = title.length <= 5 ? 130 : title.length <= 8 ? 100 : title.length <= 11 ? 78 : 62;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#F5FFF0"/>
-      <stop offset="50%" stop-color="#EFFAE4"/>
-      <stop offset="100%" stop-color="#D9F0C1"/>
-    </linearGradient>
-    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#2E7D32"/>
-      <stop offset="100%" stop-color="#558B2F"/>
+      <stop offset="0%" stop-color="#FFF8F5"/>
+      <stop offset="100%" stop-color="#FFE4E1"/>
     </linearGradient>
     <style>
-      .title { font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif; font-weight: 900; letter-spacing: -2px; }
-      .subtitle { font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif; font-weight: 700; letter-spacing: -1px; }
-      .brand { font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif; font-weight: 700; }
+      .title { font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif; font-weight: 900; letter-spacing: -3px; }
+      .subtitle { font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif; font-weight: 800; letter-spacing: -2px; }
+      .brand { font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif; font-weight: 700; letter-spacing: -1px; }
     </style>
   </defs>
 
-  <!-- 배경 -->
+  <!-- 배경 (크림 → 연분홍 그라디언트) -->
   <rect width="${size}" height="${size}" fill="url(#bgGrad)"/>
 
-  <!-- 배경 장식 원 (과일 색상: 빨강·보라·주황) -->
-  <circle cx="60" cy="70" r="55" fill="#E53935" opacity="0.08"/>
-  <circle cx="30" cy="130" r="35" fill="#8E24AA" opacity="0.10"/>
-  <circle cx="${size - 60}" cy="90" r="50" fill="#FF6B35" opacity="0.10"/>
-  <circle cx="${size - 30}" cy="140" r="30" fill="#F9A825" opacity="0.12"/>
+  <!-- 상단 장식 (얇은 빨간 선 + 작은 라벨) -->
+  <rect x="80" y="120" width="80" height="6" fill="#E53935"/>
+  <text x="80" y="108" class="brand" font-size="24" fill="#E53935">FRUIT GUIDE</text>
 
-  <!-- 메인 제목 -->
-  <text x="${c}" y="320" class="title" font-size="${
-    title.length <= 5 ? 91 : title.length <= 8 ? 74 : title.length <= 11 ? 58 : 48
-  }" fill="#1B5E20" text-anchor="middle">${title}</text>
+  <!-- 메인 타이틀 (빨강 볼드) -->
+  <text x="${c}" y="${size / 2 - 20}" class="title" font-size="${titleFontSize}" fill="#C62828" text-anchor="middle" dominant-baseline="middle">${escapeXml(title)}</text>
 
-  <!-- 서브 타이틀 -->
+  <!-- 서브 타이틀 (진한 핑크) -->
   ${subtitleLines
     .map(
       (line, i) =>
-        `<text x="${c}" y="${390 + i * 48}" class="subtitle" font-size="41" fill="#558B2F" text-anchor="middle">${line}</text>`
+        `<text x="${c}" y="${size / 2 + 80 + i * 56}" class="subtitle" font-size="44" fill="#AD1457" text-anchor="middle" dominant-baseline="middle">${escapeXml(line)}</text>`
     )
     .join('\n  ')}
 
-  <!-- 하단 브랜드 바 -->
-  <rect x="0" y="${size - 68}" width="${size}" height="68" fill="url(#accentGrad)"/>
-  <text x="${c}" y="${size - 25}" class="brand" font-size="29" fill="white" text-anchor="middle">🍎 ${brand}</text>
+  <!-- 하단 장식 (얇은 빨간 선 + 브랜드) -->
+  <rect x="${size - 160}" y="${size - 126}" width="80" height="6" fill="#E53935"/>
+  <text x="${size - 80}" y="${size - 88}" class="brand" font-size="26" fill="#37474F" text-anchor="end">📍 ${escapeXml(brand)}</text>
 </svg>`;
 }
 
-// 이모지 풀백 매핑: 존재하는 파일명으로 재매핑
-const EMOJI_FALLBACK = {
-  apple: 'red_apple',
-  dragon_fruit: 'mango',  // 임시 대체
-  fig: 'grapes',          // 임시 대체
-  refrigerator: 'blueberries',
-  calendar: 'melon',
-  pregnant_woman: 'strawberry',
-  test_tube: 'kiwi_fruit',
-  shopping_cart: 'pear',
-  gift: 'peach',
-  trophy: 'pineapple',
-  droplet: 'watermelon',
-  ice_cube: 'blueberries',
-  truck: 'tomato',
-  money_with_wings: 'banana',
-  baby: 'strawberry',
-};
-
-function resolveEmojiFile(emoji) {
-  const dir = path.join(__dirname, 'emojis');
-  const target = EMOJI_FALLBACK[emoji] || emoji;
-  const p = path.join(dir, `${target}.png`);
-  if (fs.existsSync(p)) return p;
-  // 최종 폴백: red_apple
-  const fallback = path.join(dir, 'red_apple.png');
-  return fs.existsSync(fallback) ? fallback : null;
+function escapeXml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
 async function renderThumbnailPng({ title, subtitle, brand, emoji, outputPath }) {
   const svg = generateBaseSvg({ title, subtitle, brand });
-
   let pngBuffer = await sharp(Buffer.from(svg), { density: 600 })
-    .resize(1200, 1200)
+    .resize(1600, 1600)
     .png({ quality: 100, compressionLevel: 9 })
     .toBuffer();
-
-  if (emoji) {
-    const emojiPath = resolveEmojiFile(emoji);
-    if (emojiPath) {
-      const emojiResized = await sharp(emojiPath)
-        .resize(310, 310, { kernel: 'lanczos3' })
-        .png()
-        .toBuffer();
-      pngBuffer = await sharp(pngBuffer)
-        .composite([{ input: emojiResized, left: 444, top: 110 }])
-        .png({ quality: 100, compressionLevel: 9 })
-        .toBuffer();
-    } else {
-      console.warn(`⚠️ 이모지 파일 없음: ${emoji}`);
-    }
-  }
-
   pngBuffer = await sharp(pngBuffer)
-    .resize(600, 600, { kernel: 'lanczos3' })
+    .resize(800, 800, { kernel: 'lanczos3' })
     .png({ quality: 95, compressionLevel: 9 })
     .toBuffer();
-
   fs.writeFileSync(outputPath, pngBuffer);
   return { svg, pngBuffer };
 }
@@ -136,10 +86,10 @@ if (require.main === module) {
       title,
       subtitle: [sub1, sub2].filter(Boolean),
       brand: '과일정보연구소',
-      emoji: emoji || 'red_apple',
+      emoji,
       outputPath: pngPath,
     });
     fs.writeFileSync(svgPath, svg, 'utf8');
-    console.log(`✅ ${dayId} 썸네일 생성! (${Math.round(pngBuffer.length / 1024)}KB)`);
+    console.log(`✅ ${dayId} 썸네일 (${Math.round(pngBuffer.length / 1024)}KB)`);
   })();
 }

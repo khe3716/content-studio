@@ -28,9 +28,9 @@ if (!BLOG_ID || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TO
   process.exit(1);
 }
 
-const [dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labelsStr, coverImageUrlArg = '', coverImageAltArg = ''] = process.argv.slice(2);
+const [dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labelsStr] = process.argv.slice(2);
 if (!dayId || !emoji || !postTitle || !thumbTitle || !htmlPath) {
-  console.error('사용법: node publish-draft-fruit.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>" [coverImageUrl] [coverImageAlt]');
+  console.error('사용법: node publish-draft-fruit.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>"');
   process.exit(1);
 }
 
@@ -70,66 +70,58 @@ async function uploadDraft(token, title, labels, content) {
 
 (async () => {
   try {
-    // 1. 커버 이미지 결정 (제품 이미지 우선, 없으면 생성된 썸네일 폴백)
-    console.log(`\n[1/3] 🖼️  커버 이미지 결정 중...`);
+    // 1. 디자인 썸네일 생성 (빨강/핑크 텍스트 스타일)
+    console.log(`\n[1/3] 🎨 ${dayId} 디자인 썸네일 생성 중...`);
+    const thumbDir = path.join(__dirname, 'fruit-blog', 'thumbnails');
+    if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
+    const pngPath = path.join(thumbDir, `${dayId}.png`);
+    const svgPath = path.join(thumbDir, `${dayId}.svg`);
+    const { svg, pngBuffer } = await renderThumbnailPng({
+      title: thumbTitle,
+      subtitle: [sub1, sub2].filter(Boolean),
+      brand: '과일정보연구소',
+      emoji,
+      outputPath: pngPath,
+    });
+    fs.writeFileSync(svgPath, svg, 'utf8');
+    console.log(`  ✓ 썸네일 생성 (${Math.round(pngBuffer.length / 1024)}KB)`);
+
+    // 2. HTML 맨 위에 썸네일 삽입 (CI: raw URL, 로컬: base64)
+    console.log(`\n[2/3] 📝 HTML에 썸네일 삽입 중...`);
     const htmlFullPath = path.join(__dirname, htmlPath);
     const originalHtml = fs.readFileSync(htmlFullPath, 'utf8');
-    let coverSrc = '';
-    let coverAlt = '';
 
-    if (coverImageUrlArg && coverImageUrlArg.startsWith('http')) {
-      // 제품 이미지 URL 사용
-      coverSrc = coverImageUrlArg;
-      coverAlt = coverImageAltArg || thumbTitle;
-      console.log(`  ✓ 제품 이미지 사용: ${coverAlt}`);
-    } else {
-      // 폴백: 생성된 썸네일
-      console.log(`  ⚠️ 제품 이미지 없음, 디자인 썸네일 생성`);
-      const thumbDir = path.join(__dirname, 'fruit-blog', 'thumbnails');
-      if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
-      const pngPath = path.join(thumbDir, `${dayId}.png`);
-      const svgPath = path.join(thumbDir, `${dayId}.svg`);
-      const { svg, pngBuffer } = await renderThumbnailPng({
-        title: thumbTitle,
-        subtitle: [sub1, sub2].filter(Boolean),
-        brand: '과일정보연구소',
-        emoji,
-        outputPath: pngPath,
-      });
-      fs.writeFileSync(svgPath, svg, 'utf8');
-
-      const repo = process.env.GITHUB_REPOSITORY;
-      const isCI = process.env.GITHUB_ACTIONS === 'true' && repo;
-      if (isCI) {
-        const relThumb = `fruit-blog/thumbnails/${dayId}.png`;
-        const run = (args) => {
-          const r = spawnSync('git', args, { cwd: __dirname, encoding: 'utf8' });
-          if (r.status !== 0) throw new Error(`git ${args.join(' ')} 실패: ${r.stderr || r.stdout}`);
-          return r.stdout;
-        };
-        try {
-          run(['config', 'user.name', 'github-actions[bot]']);
-          run(['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
-          run(['add', relThumb]);
-          const diff = spawnSync('git', ['diff', '--cached', '--quiet'], { cwd: __dirname });
-          if (diff.status !== 0) {
-            run(['commit', '-m', `chore: thumbnail for fruit ${dayId} [skip ci]`]);
-            run(['push']);
-          }
-          coverSrc = `https://raw.githubusercontent.com/${repo}/main/${relThumb}`;
-        } catch (e) {
-          coverSrc = `data:image/png;base64,${pngBuffer.toString('base64')}`;
+    let thumbSrc;
+    const repo = process.env.GITHUB_REPOSITORY;
+    const isCI = process.env.GITHUB_ACTIONS === 'true' && repo;
+    if (isCI) {
+      const relThumb = `fruit-blog/thumbnails/${dayId}.png`;
+      const run = (args) => {
+        const r = spawnSync('git', args, { cwd: __dirname, encoding: 'utf8' });
+        if (r.status !== 0) throw new Error(`git ${args.join(' ')} 실패: ${r.stderr || r.stdout}`);
+        return r.stdout;
+      };
+      try {
+        run(['config', 'user.name', 'github-actions[bot]']);
+        run(['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
+        run(['add', relThumb]);
+        const diff = spawnSync('git', ['diff', '--cached', '--quiet'], { cwd: __dirname });
+        if (diff.status !== 0) {
+          run(['commit', '-m', `chore: thumbnail for fruit ${dayId} [skip ci]`]);
+          run(['push']);
+          console.log(`  ✓ 썸네일 GitHub 푸시 완료`);
         }
-      } else {
-        coverSrc = `data:image/png;base64,${pngBuffer.toString('base64')}`;
+        thumbSrc = `https://raw.githubusercontent.com/${repo}/main/${relThumb}`;
+      } catch (e) {
+        console.warn(`  ⚠️ 푸시 실패, base64 폴백: ${e.message}`);
+        thumbSrc = `data:image/png;base64,${pngBuffer.toString('base64')}`;
       }
-      coverAlt = thumbTitle;
+    } else {
+      thumbSrc = `data:image/png;base64,${pngBuffer.toString('base64')}`;
     }
 
-    // 2. HTML 맨 위에 커버 이미지 삽입
-    console.log(`\n[2/3] 📝 HTML에 커버 이미지 삽입 중...`);
-    const coverTag = `<div style="text-align:center;margin:0 0 32px 0;"><img src="${coverSrc}" alt="${coverAlt}" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);"/></div>\n`;
-    // 기존 커버 제거 (base64, raw URL, 외부 URL 모두)
+    const coverTag = `<div style="text-align:center;margin:0 0 32px 0;"><img src="${thumbSrc}" alt="${thumbTitle}" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);"/></div>\n`;
+    // 기존 커버 제거 (base64 · raw URL · 외부 URL 모두)
     const cleanedHtml = originalHtml.replace(
       /<div style="text-align:center;margin:0 0 (?:24|32)px 0;"><img src="[^"]+" alt="[^"]*"[^>]*\/><\/div>\s*/g,
       ''
