@@ -12,6 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
+const { spawnSync } = require('child_process');
 const { renderThumbnailPng } = require('./economy-blog/generate-thumbnail');
 
 // ========== .env 읽기 ==========
@@ -94,15 +95,51 @@ async function uploadDraft(accessToken, title, labels, content) {
     fs.writeFileSync(svgPath, svg, 'utf8');
     console.log(`  ✓ 썸네일: ${pngPath} (${Math.round(pngBuffer.length / 1024)}KB)`);
 
-    // 2. HTML에 썸네일 삽입
+    // 2. HTML에 썸네일 삽입 (CI: GitHub raw URL 사용, 로컬: base64 폴백)
     console.log(`\n[2/3] 📝 HTML에 썸네일 삽입 중...`);
     const htmlFullPath = path.join(__dirname, htmlPath);
     const originalHtml = fs.readFileSync(htmlFullPath, 'utf8');
-    const base64 = pngBuffer.toString('base64');
-    const thumbnailTag = `<div style="text-align:center;margin:0 0 24px 0;"><img src="data:image/png;base64,${base64}" alt="썸네일" style="max-width:100%;height:auto;border-radius:8px;" /></div>\n`;
-    // 기존 썸네일 제거 (중복 방지)
+
+    let thumbSrc;
+    const repo = process.env.GITHUB_REPOSITORY; // "owner/repo" format
+    const isCI = process.env.GITHUB_ACTIONS === 'true' && repo;
+
+    if (isCI) {
+      // GitHub에 썸네일 먼저 푸시
+      const relThumb = `economy-blog/thumbnails/${dayId}.png`;
+      const run = (args) => {
+        const r = spawnSync('git', args, { cwd: __dirname, encoding: 'utf8' });
+        if (r.status !== 0) throw new Error(`git ${args.join(' ')} 실패: ${r.stderr || r.stdout}`);
+        return r.stdout;
+      };
+      try {
+        run(['config', 'user.name', 'github-actions[bot]']);
+        run(['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
+        run(['add', relThumb]);
+        const diff = spawnSync('git', ['diff', '--cached', '--quiet'], { cwd: __dirname });
+        if (diff.status !== 0) {
+          run(['commit', '-m', `chore: thumbnail for ${dayId} [skip ci]`]);
+          run(['push']);
+          console.log(`  ✓ 썸네일 GitHub 푸시 완료`);
+        } else {
+          console.log(`  ✓ 썸네일 변경 없음 (이미 푸시됨)`);
+        }
+        thumbSrc = `https://raw.githubusercontent.com/${repo}/main/${relThumb}`;
+      } catch (e) {
+        console.warn(`  ⚠️ 썸네일 푸시 실패, base64로 폴백: ${e.message}`);
+        const base64 = pngBuffer.toString('base64');
+        thumbSrc = `data:image/png;base64,${base64}`;
+      }
+    } else {
+      // 로컬 실행: base64
+      const base64 = pngBuffer.toString('base64');
+      thumbSrc = `data:image/png;base64,${base64}`;
+    }
+
+    const thumbnailTag = `<div style="text-align:center;margin:0 0 24px 0;"><img src="${thumbSrc}" alt="썸네일" style="max-width:100%;height:auto;border-radius:8px;" /></div>\n`;
+    // 기존 썸네일 제거 (base64 또는 raw URL 둘 다)
     const cleanedHtml = originalHtml.replace(
-      /<div style="text-align:center;margin:0 0 24px 0;"><img src="data:image\/png;base64,[^"]+" alt="썸네일"[^>]*\/><\/div>\s*/g,
+      /<div style="text-align:center;margin:0 0 24px 0;"><img src="(?:data:image\/png;base64,[^"]+|https:\/\/raw\.githubusercontent\.com\/[^"]+)" alt="썸네일"[^>]*\/><\/div>\s*/g,
       ''
     );
     const finalHtml = thumbnailTag + cleanedHtml;
