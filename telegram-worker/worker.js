@@ -15,6 +15,7 @@
 
 const FRUIT_WORKFLOW = 'auto-publish-fruit.yml';
 const NAVER_WORKFLOW = 'naver-convert.yml';
+const SEO_WORKFLOW = 'audit-seo.yml';
 
 export default {
   async fetch(request, env) {
@@ -63,6 +64,8 @@ async function handleCommand(env, chatId, text) {
       '📝 <b>네이버 블로그 변환</b>\n' +
       '<b>/naver</b> - 최근 과일블로그 글을 네이버용 HTML로 변환\n' +
       '<b>/naver 3</b> - 특정 Day (예: 3)\n\n' +
+      '🛒 <b>스마트스토어</b>\n' +
+      '<b>/seo</b> - 상품 SEO 진단 리포트 (21개 전부)\n\n' +
       '📊 <b>공통</b>\n' +
       '<b>/status</b> - 경제 최근 실행 3건\n' +
       '<b>/fruitstatus</b> - 과일 최근 실행 3건\n' +
@@ -106,6 +109,14 @@ async function handleCommand(env, chatId, text) {
     await triggerWorkflow(env, NAVER_WORKFLOW, { day });
     await sendMessage(env, chatId,
       `📝 네이버 블로그 변환 시작${day ? ` (Day ${day})` : ''}!\n1분 후 복사 안내 도착합니다.`
+    );
+    return;
+  }
+
+  if (text === '/seo') {
+    await triggerWorkflow(env, SEO_WORKFLOW, {});
+    await sendMessage(env, chatId,
+      '🛒 스마트스토어 SEO 진단 시작!\n1-2분 후 21개 상품 리포트 도착합니다.'
     );
     return;
   }
