@@ -192,33 +192,59 @@ function formatReport(audits) {
   return out;
 }
 
-function formatTelegram(audits) {
+const TELEGRAM_LIMIT = 3800; // 4096 여유
+
+function renderProduct(a, rank) {
+  const shortName = a.name.length > 36 ? a.name.slice(0, 36) + '…' : a.name;
+  let block = `<b>${rank}. ${a.total}점</b> — ${shortName}\n`;
+  a.issues.forEach(([area, msg]) => {
+    block += `  • [${area}] ${msg}\n`;
+  });
+  if (a.issues.length === 0) {
+    block += `  ✅ 문제 없음\n`;
+  }
+  return block + `\n`;
+}
+
+// 전체 상품을 낮은 점수부터 모두 담되, 4096자 넘으면 여러 메시지로 쪼갬
+function buildTelegramMessages(audits) {
   const avg = Math.round(audits.reduce((s, a) => s + a.total, 0) / audits.length);
   const sorted = [...audits].sort((a, b) => a.total - b.total);
-  const worst = sorted.slice(0, 3);
 
-  let out = `📊 <b>달콤살랑 SEO 진단</b>\n`;
-  out += `━━━━━━━━━━━━━━\n`;
-  out += `총 <b>${audits.length}개</b> 상품 / 평균 <b>${avg}점</b>\n\n`;
-  out += `🚨 <b>우선 고쳐야 할 상품 Top ${worst.length}</b>\n\n`;
+  const header = `📊 <b>달콤살랑 SEO 진단</b>\n`
+    + `━━━━━━━━━━━━━━\n`
+    + `총 <b>${audits.length}개</b> 상품 / 평균 <b>${avg}점</b>\n`
+    + `(점수 낮은 순으로 정렬 — 위부터 고치세요)\n\n`;
 
-  worst.forEach((a, i) => {
-    const shortName = a.name.length > 30 ? a.name.slice(0, 30) + '…' : a.name;
-    out += `<b>${i + 1}. ${a.total}점</b> — ${shortName}\n`;
-    a.issues.slice(0, 3).forEach(([area, msg]) => {
-      out += `  • [${area}] ${msg}\n`;
-    });
-    if (a.issues.length > 3) out += `  • 외 ${a.issues.length - 3}건\n`;
-    out += `\n`;
+  const footer = `\n💡 <b>개선 순서</b>\n`
+    + `1. 상품명에 산지·중량·용도 키워드 넣기\n`
+    + `2. 태그 10개 꽉 채우기 (유사어는 빼고)\n`
+    + `3. 재고·할인가 상태 점검`;
+
+  const messages = [];
+  let current = header;
+  let isFirst = true;
+  sorted.forEach((a, i) => {
+    const block = renderProduct(a, i + 1);
+    if ((current + block).length > TELEGRAM_LIMIT) {
+      messages.push(current.trimEnd());
+      current = `📊 <b>달콤살랑 SEO 진단 (계속 ${messages.length + 1}/?)</b>\n\n` + block;
+      isFirst = false;
+    } else {
+      current += block;
+    }
   });
+  current += footer;
+  messages.push(current);
 
-  out += `💡 <b>개선 순서</b>\n`;
-  out += `1. 상품명에 산지·중량·용도 키워드 넣기\n`;
-  out += `2. 태그 10개 꽉 채우기 (유사어는 빼고)\n`;
-  out += `3. 재고·할인가 상태 점검\n\n`;
-  out += `전체 리포트는 콘솔에서 확인 (<code>node scripts/audit-smartstore-seo.js</code>)`;
-
-  return out;
+  // 제목에 총 페이지 수 반영
+  if (messages.length > 1) {
+    messages.forEach((m, i) => {
+      if (i === 0) return;
+      messages[i] = m.replace('계속 ' + (i + 1) + '/?', '계속 ' + (i + 1) + '/' + messages.length);
+    });
+  }
+  return messages;
 }
 
 async function sendTelegram(text) {
@@ -226,7 +252,7 @@ async function sendTelegram(text) {
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) {
     console.error('⚠️ TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID 없음 — 텔레그램 발송 생략');
-    return;
+    return false;
   }
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
@@ -235,9 +261,9 @@ async function sendTelegram(text) {
   });
   if (!res.ok) {
     console.error('❌ 텔레그램 발송 실패:', await res.text());
-  } else {
-    console.log('✅ 텔레그램 발송 완료');
+    return false;
   }
+  return true;
 }
 
 (async () => {
@@ -246,6 +272,12 @@ async function sendTelegram(text) {
   console.log(formatReport(audits));
 
   if (process.argv.includes('--telegram')) {
-    await sendTelegram(formatTelegram(audits));
+    const messages = buildTelegramMessages(audits);
+    for (let i = 0; i < messages.length; i++) {
+      const ok = await sendTelegram(messages[i]);
+      if (!ok) break;
+      await new Promise(r => setTimeout(r, 400)); // rate limit 여유
+    }
+    console.log(`✅ 텔레그램 ${messages.length}개 메시지 발송`);
   }
 })();
