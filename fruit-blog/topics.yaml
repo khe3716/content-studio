@@ -1,4 +1,10 @@
+# 과일 연구소 블로그 30일 로드맵 (과일별 2~3편 클러스터)
+# 달콤살랑 스마트스토어 실제 판매 상품 기반
+#
+# 전략: 한 과일당 2~3편 연속 발행 → SEO 클러스터 효과 + 전문성 구축
+# 각 과일마다 보통 "고르는 법 → 보관법 → 효능/활용" 순서
 topics:
+  # ========== 산딸기 (Day 1~3) ==========
   - day: 1
     cluster: strawberry
     title: 산딸기 고르는 법, 이 3가지만 체크하세요
@@ -15,13 +21,47 @@ topics:
       - 봄과일
     status: draft
     generated_at: '2026-04-20T10:22:43.940Z'
+
   - day: 2
-    cluster: blueberry
-    title: 무농약 블루베리와 일반 블루베리, 뭐가 다를까요
-    thumb_title: 블루베리
+    cluster: strawberry
+    title: 산딸기 빨리 무르지 않게 하는 3단계 보관법
+    thumb_title: 산딸기 보관
     subtitle:
-      - 무농약·일반
-      - 차이 정리
+      - 3단계
+      - 완벽 보관
+    emoji: strawberry
+    slug: how-to-store-korean-raspberry
+    labels:
+      - 과일보관법
+      - 산딸기
+      - 신선도
+      - 봄과일
+    status: ready
+
+  - day: 3
+    cluster: strawberry
+    title: 산딸기 수제청·잼, 실패 없이 만드는 황금비율
+    thumb_title: 산딸기 활용
+    subtitle:
+      - 수제청 황금비율
+      - 실패 제로
+    emoji: strawberry
+    slug: korean-raspberry-recipe
+    labels:
+      - 과일활용
+      - 산딸기
+      - 수제청
+      - 과일잼
+    status: pending
+
+  # ========== 블루베리 (Day 4~6) ==========
+  - day: 4
+    cluster: blueberry
+    title: 무농약 블루베리와 일반 블루베리, 진짜 차이는
+    thumb_title: 블루베리 비교
+    subtitle:
+      - 무농약 vs 일반
+      - 진짜 차이
     emoji: blueberries
     slug: organic-vs-regular-blueberry
     labels:
@@ -29,11 +69,45 @@ topics:
       - 무농약
       - 과일선별
       - 건강과일
-    status: ready
-  - day: 3
+    status: pending
+
+  - day: 5
+    cluster: blueberry
+    title: 블루베리 오래 싱싱하게 보관하는 5가지 비법
+    thumb_title: 블루베리 보관
+    subtitle:
+      - 5가지 비법
+      - 오래 싱싱
+    emoji: blueberries
+    slug: how-to-store-blueberry
+    labels:
+      - 블루베리
+      - 과일보관법
+      - 신선도
+      - 냉동과일
+    status: pending
+
+  - day: 6
+    cluster: blueberry
+    title: 블루베리 하루 얼마씩 먹어야 효과 있을까요
+    thumb_title: 블루베리 섭취
+    subtitle:
+      - 하루 권장량
+      - 효능 정리
+    emoji: blueberries
+    slug: blueberry-daily-intake
+    labels:
+      - 블루베리
+      - 건강과일
+      - 섭취량
+      - 영양소
+    status: pending
+
+  # ========== 토마토 (Day 7~9) ==========
+  - day: 7
     cluster: tomato
     title: 스테비아 방울토마토가 달콤한 이유, 진짜일까요
-    thumb_title: 스테비아토마토
+    thumb_title: 스테비아
     subtitle:
       - 달콤한 이유
       - 진실은?
@@ -45,82 +119,8 @@ topics:
       - 건강과일
       - 토마토
     status: pending
-  - day: 4
-    cluster: melon
-    title: 양구 가야백자 메론이 비싼 이유, 어떻게 고를까요
-    thumb_title: 양구메론
-    subtitle:
-      - 고당도 메론
-      - 선별 팁
-    emoji: melon
-    slug: yanggu-gayabaekja-melon
-    labels:
-      - 양구메론
-      - 가야백자
-      - 메론선별
-      - 고당도
-    status: pending
-  - day: 5
-    cluster: mango
-    title: 애플망고 vs 골드망고, 뭐가 더 달콤할까요
-    thumb_title: 애플 vs 골드
-    subtitle:
-      - 망고 비교
-      - 완벽 정리
-    emoji: mango
-    slug: apple-mango-vs-gold-mango
-    labels:
-      - 애플망고
-      - 골드망고
-      - 망고선별
-      - 열대과일
-    status: pending
-  - day: 6
-    cluster: mango
-    title: 마하차녹 망고, 한국인이 잘 모르는 태국 보물
-    thumb_title: 마하차녹
-    subtitle:
-      - 숨겨진 명품
-      - 태국 망고
-    emoji: mango
-    slug: mahachanok-mango
-    labels:
-      - 마하차녹
-      - 태국망고
-      - 망고종류
-      - 열대과일
-    status: pending
-  - day: 7
-    cluster: fig
-    title: 영암 무화과가 특별한 이유, 제철과 선별법
-    thumb_title: 영암 무화과
-    subtitle:
-      - 제철·선별
-      - 완벽 가이드
-    emoji: fig
-    slug: yeongam-fig-guide
-    labels:
-      - 무화과
-      - 영암무화과
-      - 제철과일
-      - 과일선별
-    status: pending
+
   - day: 8
-    cluster: grape
-    title: 씨없는 포도 4종 비교, 어떤 게 나한테 맞을까요
-    thumb_title: 씨없는 포도
-    subtitle:
-      - 4종 비교
-      - 맞춤 선택
-    emoji: grapes
-    slug: seedless-grape-comparison
-    labels:
-      - 씨없는포도
-      - 샤인머스켓
-      - 포도비교
-      - 과일선별
-    status: pending
-  - day: 9
     cluster: tomato
     title: 대저토마토가 '짭짤한' 이유, 과학적으로 알려드려요
     thumb_title: 대저토마토
@@ -135,37 +135,173 @@ topics:
       - 토마토종류
       - 제철과일
     status: pending
-  - day: 10
-    cluster: pear
-    title: 못난이 배, 정말 맛은 똑같을까요
-    thumb_title: 못난이 배
+
+  - day: 9
+    cluster: tomato
+    title: 방울토마토 고르는 법 + 오래 싱싱한 보관 꿀팁
+    thumb_title: 토마토 선별
     subtitle:
-      - 맛 차이
-      - 진실 확인
-    emoji: pear
-    slug: not-pretty-pear-truth
+      - 선별·보관
+      - 꿀팁 정리
+    emoji: tomato
+    slug: how-to-pick-store-cherry-tomato
     labels:
-      - 나주배
-      - 못난이과일
-      - 신고배
-      - 경제소비
+      - 방울토마토
+      - 과일선별
+      - 과일보관법
+      - 토마토
     status: pending
-  - day: 11
-    cluster: melon
-    title: 파파야멜론·개구리참외, 이름만 다른가요
-    thumb_title: 파파야멜론
+
+  # ========== 망고 (Day 10~12) ==========
+  - day: 10
+    cluster: mango
+    title: 애플망고 vs 골드망고, 뭐가 더 달콤할까요
+    thumb_title: 망고 비교
     subtitle:
-      - 이름·품종
-      - 다 정리
-    emoji: melon
-    slug: papaya-melon-vs-chamoe
+      - 애플 vs 골드
+      - 완벽 비교
+    emoji: mango
+    slug: apple-mango-vs-gold-mango
     labels:
-      - 파파야멜론
-      - 참외
-      - 멜론종류
+      - 애플망고
+      - 골드망고
+      - 망고선별
+      - 열대과일
+    status: pending
+
+  - day: 11
+    cluster: mango
+    title: 마하차녹 망고, 한국인이 잘 모르는 태국 보물
+    thumb_title: 마하차녹
+    subtitle:
+      - 숨겨진 명품
+      - 태국 망고
+    emoji: mango
+    slug: mahachanok-mango
+    labels:
+      - 마하차녹
+      - 태국망고
+      - 망고종류
+      - 열대과일
+    status: pending
+
+  - day: 12
+    cluster: mango
+    title: 망고 후숙과 보관, 실패 없는 완벽 가이드
+    thumb_title: 망고 후숙
+    subtitle:
+      - 후숙·보관
+      - 완벽 가이드
+    emoji: mango
+    slug: mango-ripening-storage
+    labels:
+      - 망고
+      - 과일후숙
+      - 과일보관법
+      - 열대과일
+    status: pending
+
+  # ========== 무화과 (Day 13~14) ==========
+  - day: 13
+    cluster: fig
+    title: 영암 무화과가 특별한 이유, 제철과 선별법
+    thumb_title: 영암 무화과
+    subtitle:
+      - 제철·선별
+      - 완벽 가이드
+    emoji: fig
+    slug: yeongam-fig-guide
+    labels:
+      - 무화과
+      - 영암무화과
+      - 제철과일
+      - 과일선별
+    status: pending
+
+  - day: 14
+    cluster: fig
+    title: 무화과 3일 내로 상하는 이유, 보관 꿀팁
+    thumb_title: 무화과 보관
+    subtitle:
+      - 상하는 이유
+      - 보관 비법
+    emoji: fig
+    slug: fig-storage-tips
+    labels:
+      - 무화과
+      - 과일보관법
+      - 신선도
       - 제철과일
     status: pending
-  - day: 12
+
+  # ========== 포도 (Day 15~16) ==========
+  - day: 15
+    cluster: grape
+    title: 씨없는 포도 4종 비교, 어떤 게 나한테 맞을까요
+    thumb_title: 씨없는 포도
+    subtitle:
+      - 4종 비교
+      - 맞춤 선택
+    emoji: grapes
+    slug: seedless-grape-comparison
+    labels:
+      - 씨없는포도
+      - 샤인머스켓
+      - 포도비교
+      - 과일선별
+    status: pending
+
+  - day: 16
+    cluster: grape
+    title: 애플청포도와 샤인머스켓, 무엇을 먹을까요
+    thumb_title: 청포도 비교
+    subtitle:
+      - 당도·식감
+      - 완벽 비교
+    emoji: grapes
+    slug: apple-green-grape-vs-shine-muscat
+    labels:
+      - 청포도
+      - 샤인머스켓
+      - 포도선별
+      - 고당도
+    status: pending
+
+  # ========== 메론 (Day 17~18) ==========
+  - day: 17
+    cluster: melon
+    title: 양구 가야백자 메론이 비싼 이유, 어떻게 고를까요
+    thumb_title: 양구메론
+    subtitle:
+      - 고당도 메론
+      - 선별 팁
+    emoji: melon
+    slug: yanggu-gayabaekja-melon
+    labels:
+      - 양구메론
+      - 가야백자
+      - 메론선별
+      - 고당도
+    status: pending
+
+  - day: 18
+    cluster: melon
+    title: 메론 완숙 판정법, 꼭지·냄새·두드리기 3단계
+    thumb_title: 메론 완숙
+    subtitle:
+      - 3단계 판정
+      - 실패 없이
+    emoji: melon
+    slug: how-to-tell-melon-ripe
+    labels:
+      - 메론
+      - 완숙
+      - 과일선별
+      - 머스크메론
+    status: pending
+
+  # ========== 참외 (Day 19~20) ==========
+  - day: 19
     cluster: chamoe
     title: 성주참외가 최고인 이유, 산지의 비밀
     thumb_title: 성주참외
@@ -180,9 +316,60 @@ topics:
       - 제철과일
       - 산지
     status: pending
-  - day: 13
+
+  - day: 20
+    cluster: chamoe
+    title: 파파야멜론·개구리참외, 이름만 다른가요
+    thumb_title: 참외 비교
+    subtitle:
+      - 이름·품종
+      - 다 정리
+    emoji: melon
+    slug: papaya-melon-vs-chamoe
+    labels:
+      - 파파야멜론
+      - 참외
+      - 멜론종류
+      - 제철과일
+    status: pending
+
+  # ========== 배 (Day 21~22) ==========
+  - day: 21
+    cluster: pear
+    title: 나주 신고배가 유명한 이유, 산지와 품종
+    thumb_title: 나주 신고배
+    subtitle:
+      - 산지·품종
+      - 명품 비결
+    emoji: pear
+    slug: naju-singo-pear-guide
+    labels:
+      - 나주배
+      - 신고배
+      - 배선별
+      - 가을과일
+    status: pending
+
+  - day: 22
+    cluster: pear
+    title: 못난이 배, 정말 맛은 똑같을까요
+    thumb_title: 못난이 배
+    subtitle:
+      - 맛 차이
+      - 진실 확인
+    emoji: pear
+    slug: imperfect-pear-truth
+    labels:
+      - 못난이과일
+      - 나주배
+      - 경제소비
+      - 과일구매
+    status: pending
+
+  # ========== 사과 (Day 23~24) ==========
+  - day: 23
     cluster: apple
-    title: 세척사과 껍질째 먹어도 정말 괜찮을까요
+    title: 세척사과 껍질째 먹어도 정말 안전할까요
     thumb_title: 세척사과
     subtitle:
       - 껍질째 섭취
@@ -195,7 +382,25 @@ topics:
       - 식품안전
       - 사과
     status: pending
-  - day: 14
+
+  - day: 24
+    cluster: apple
+    title: 한입 사과와 일반 사과, 어떤 게 더 나을까요
+    thumb_title: 사과 비교
+    subtitle:
+      - 크기·맛·가격
+      - 완벽 비교
+    emoji: apple
+    slug: mini-apple-vs-regular
+    labels:
+      - 한입사과
+      - 사과비교
+      - 과일구매
+      - 사과
+    status: pending
+
+  # ========== 용과 (Day 25~26) ==========
+  - day: 25
     cluster: dragonfruit
     title: 백용과는 왜 비쌀까요, 영양소와 제철 가이드
     thumb_title: 백용과
@@ -210,14 +415,48 @@ topics:
       - 열대과일
       - 수입과일
     status: pending
-  - day: 15
+
+  - day: 26
+    cluster: dragonfruit
+    title: 용과 고르는 법, 색깔별 맛 차이까지
+    thumb_title: 용과 선별
+    subtitle:
+      - 색깔별 맛
+      - 선별 팁
+    emoji: dragon_fruit
+    slug: how-to-pick-dragon-fruit
+    labels:
+      - 용과
+      - 드래곤프루트
+      - 과일선별
+      - 열대과일
+    status: pending
+
+  # ========== 종합 (Day 27~30) ==========
+  - day: 27
+    cluster: seasonal
+    title: 봄 제철 과일 Top 5, 지금 꼭 먹어야 할 이유
+    thumb_title: 봄 과일 Top 5
+    subtitle:
+      - 지금 제철
+      - 5가지 과일
+    emoji: strawberry
+    slug: spring-fruits-top-5
+    labels:
+      - 봄과일
+      - 제철과일
+      - 과일추천
+      - 계절별
+    status: pending
+
+  - day: 28
     cluster: storage
     title: 과일 냉장고 보관 위치, 이렇게 바꾸세요
     thumb_title: 냉장고 보관
     subtitle:
       - 위치별
       - 최적 보관
-    emoji: refrigerator
+    emoji: blueberries
     slug: fruit-fridge-storage-guide
     labels:
       - 과일보관법
@@ -225,44 +464,15 @@ topics:
       - 식품보관
       - 신선도
     status: pending
-  - day: 16
-    cluster: storage
-    title: 바나나와 사과 같이 보관하면? 에틸렌 효과
-    thumb_title: 에틸렌
-    subtitle:
-      - 후숙 원리
-      - 완벽 이해
-    emoji: banana
-    slug: ethylene-fruit-ripening
-    labels:
-      - 과일보관법
-      - 에틸렌
-      - 후숙
-      - 식품과학
-    status: pending
-  - day: 17
-    cluster: selection
-    title: 제철 과일 구분법, 1분 컷 가이드
-    thumb_title: 제철 구분
-    subtitle:
-      - 1분 컷
-      - 구분 공식
-    emoji: calendar
-    slug: seasonal-fruit-guide
-    labels:
-      - 제철과일
-      - 과일선별
-      - 계절별
-      - 구매팁
-    status: pending
-  - day: 18
+
+  - day: 29
     cluster: health
     title: 임산부가 먹기 좋은 과일 Top 5
     thumb_title: 임산부 과일
     subtitle:
       - 영양 Top 5
       - 안전 선택
-    emoji: pregnant_woman
+    emoji: strawberry
     slug: fruits-for-pregnant-women
     labels:
       - 임산부과일
@@ -270,171 +480,7 @@ topics:
       - 임신영양
       - 과일추천
     status: pending
-  - day: 19
-    cluster: health
-    title: 당뇨에 좋다는 토마토·용과, 정말 효과 있을까요
-    thumb_title: 당뇨와 과일
-    subtitle:
-      - 효능 진실
-      - 과학 확인
-    emoji: tomato
-    slug: diabetes-friendly-fruits
-    labels:
-      - 당뇨과일
-      - 혈당관리
-      - 건강과일
-      - 토마토
-    status: pending
-  - day: 20
-    cluster: health
-    title: 다이어트 중 먹어도 되는 과일, 기준은 이것
-    thumb_title: 다이어트 과일
-    subtitle:
-      - GI지수·당도
-      - 기준 정리
-    emoji: apple
-    slug: diet-friendly-fruits-criteria
-    labels:
-      - 다이어트과일
-      - GI지수
-      - 체중관리
-      - 건강
-    status: pending
-  - day: 21
-    cluster: kids
-    title: 아이 간식 과일, 이것부터 시작하세요
-    thumb_title: 아이 간식
-    subtitle:
-      - 시작 과일
-      - 안전 가이드
-    emoji: baby
-    slug: fruits-for-kids-beginners
-    labels:
-      - 아이간식
-      - 이유식
-      - 과일추천
-      - 육아
-    status: pending
-  - day: 22
-    cluster: selection
-    title: 산지직송 과일이 진짜 더 달콤할까요
-    thumb_title: 산지직송
-    subtitle:
-      - 진짜 차이
-      - 팩트 체크
-    emoji: truck
-    slug: direct-from-farm-myth
-    labels:
-      - 산지직송
-      - 과일구매
-      - 유통
-      - 팩트체크
-    status: pending
-  - day: 23
-    cluster: gift
-    title: 과일 선물, 상견례·병문안별 완벽 가이드
-    thumb_title: 과일 선물
-    subtitle:
-      - 상황별
-      - 완벽 가이드
-    emoji: gift
-    slug: fruit-gift-occasion-guide
-    labels:
-      - 과일선물
-      - 상견례선물
-      - 병문안과일
-      - 선물가이드
-    status: pending
-  - day: 24
-    cluster: storage
-    title: 과일 세척법, 소금물과 베이킹소다 중 뭐가 나을까요
-    thumb_title: 과일 세척
-    subtitle:
-      - 소금 vs 베이킹
-      - 완벽 비교
-    emoji: droplet
-    slug: fruit-washing-method
-    labels:
-      - 과일세척
-      - 식품안전
-      - 베이킹소다
-      - 소금물
-    status: pending
-  - day: 25
-    cluster: storage
-    title: 냉동 과일, 영양소는 그대로일까요
-    thumb_title: 냉동 과일
-    subtitle:
-      - 영양 보존
-      - 진실 확인
-    emoji: ice_cube
-    slug: frozen-fruit-nutrition
-    labels:
-      - 냉동과일
-      - 과일보관
-      - 영양소
-      - 식품과학
-    status: pending
-  - day: 26
-    cluster: price
-    title: 비싼 과일과 싼 과일, 맛 차이 진짜 있을까요
-    thumb_title: 가격 vs 맛
-    subtitle:
-      - 실험 결과
-      - 진실 공개
-    emoji: money_with_wings
-    slug: expensive-vs-cheap-fruit
-    labels:
-      - 과일가격
-      - 가성비
-      - 과일비교
-      - 경제소비
-    status: pending
-  - day: 27
-    cluster: selection
-    title: 가정용 못난이 과일, 어떻게 활용해야 할까요
-    thumb_title: 못난이 과일
-    subtitle:
-      - 스마트 활용
-      - 레시피 5
-    emoji: apple
-    slug: imperfect-fruit-usage
-    labels:
-      - 못난이과일
-      - 흠집과일
-      - 과일활용
-      - 절약팁
-    status: pending
-  - day: 28
-    cluster: health
-    title: 과일 당도 Brix, 높으면 무조건 좋을까요
-    thumb_title: Brix 당도
-    subtitle:
-      - 숫자의 함정
-      - 진짜 기준
-    emoji: test_tube
-    slug: brix-sugar-content-truth
-    labels:
-      - 당도
-      - Brix
-      - 과일선별
-      - 식품과학
-    status: pending
-  - day: 29
-    cluster: selection
-    title: 마트 vs 스마트스토어 과일, 어디가 나을까요
-    thumb_title: 마트 vs 온라인
-    subtitle:
-      - 장단점
-      - 완벽 비교
-    emoji: shopping_cart
-    slug: mart-vs-online-fruit
-    labels:
-      - 과일구매
-      - 스마트스토어
-      - 대형마트
-      - 소비가이드
-    status: pending
+
   - day: 30
     cluster: wrap-up
     title: 30일 과일 가이드 총정리 + 다음 시리즈 예고
@@ -442,7 +488,7 @@ topics:
     subtitle:
       - 총정리 +
       - 다음 예고
-    emoji: trophy
+    emoji: mango
     slug: 30-day-fruit-guide-recap
     labels:
       - 과일가이드
