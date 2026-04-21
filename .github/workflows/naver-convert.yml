@@ -1,0 +1,78 @@
+name: 네이버 블로그 변환
+
+on:
+  workflow_dispatch:
+    inputs:
+      day:
+        description: '특정 Day 번호 (비우면 최근 draft 자동 선택)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 1. 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: 2. Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 3. 의존성 설치
+        run: npm ci
+
+      - name: 4. 네이버용 HTML 변환
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TZ: Asia/Seoul
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.day }}" ]; then
+            ARGS="$ARGS --day ${{ inputs.day }}"
+          fi
+          node auto-publish-naver.js $ARGS
+
+      - name: 5. 변환 결과 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash || true
+          git add naver-blog/drafts/*.html 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "변경사항 없음"
+          else
+            git commit -m "chore: convert to naver blog draft [skip ci]"
+            git push
+          fi
+
+      - name: 6. 실패 알림
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then exit 0; fi
+          node -e "
+            fetch('https://api.telegram.org/bot' + process.env.TELEGRAM_BOT_TOKEN + '/sendMessage', {
+              method: 'POST', headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({
+                chat_id: process.env.TELEGRAM_CHAT_ID,
+                text: '🚨 <b>네이버 변환 실패</b>\n\n로그: ' + process.env.RUN_URL,
+                parse_mode: 'HTML', disable_web_page_preview: true
+              })
+            }).then(r => r.json()).then(j => console.log(JSON.stringify(j)));
+          "

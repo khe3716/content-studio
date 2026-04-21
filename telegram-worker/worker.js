@@ -14,6 +14,7 @@
 //   과일: auto-publish-fruit.yml
 
 const FRUIT_WORKFLOW = 'auto-publish-fruit.yml';
+const NAVER_WORKFLOW = 'naver-convert.yml';
 
 export default {
   async fetch(request, env) {
@@ -57,8 +58,11 @@ async function handleCommand(env, chatId, text) {
       '🤖 <b>블로그 명령어</b>\n\n' +
       '💰 <b>경제블로그</b>\n' +
       '<b>/publish</b> - 다음 주제 발행\n\n' +
-      '🍎 <b>과일블로그</b>\n' +
+      '🍎 <b>과일블로그 (Blogger)</b>\n' +
       '<b>/fruit</b> - 다음 주제 발행\n\n' +
+      '📝 <b>네이버 블로그 변환</b>\n' +
+      '<b>/naver</b> - 최근 과일블로그 글을 네이버용 HTML로 변환\n' +
+      '<b>/naver 3</b> - 특정 Day (예: 3)\n\n' +
       '📊 <b>공통</b>\n' +
       '<b>/status</b> - 경제 최근 실행 3건\n' +
       '<b>/fruitstatus</b> - 과일 최근 실행 3건\n' +
@@ -92,7 +96,17 @@ async function handleCommand(env, chatId, text) {
 
   if (text === '/fruit') {
     await triggerWorkflow(env, FRUIT_WORKFLOW, { dry_run: 'false' });
-    await sendMessage(env, chatId, '🍎 과일블로그 발행 시작!\n3-4분 후 결과 알림 도착합니다.');
+    await sendMessage(env, chatId, '🍎 과일블로그 발행 시작!\n3-4분 후 결과 알림 도착합니다.\n(네이버용 HTML도 함께 자동 생성됩니다)');
+    return;
+  }
+
+  if (text === '/naver' || text.startsWith('/naver ')) {
+    const parts = text.split(/\s+/);
+    const day = parts[1] && /^\d+$/.test(parts[1]) ? parts[1] : '';
+    await triggerWorkflow(env, NAVER_WORKFLOW, { day });
+    await sendMessage(env, chatId,
+      `📝 네이버 블로그 변환 시작${day ? ` (Day ${day})` : ''}!\n1분 후 복사 안내 도착합니다.`
+    );
     return;
   }
 

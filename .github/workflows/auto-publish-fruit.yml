@@ -112,6 +112,34 @@ jobs:
             git push
           fi
 
+      - name: 5-1. 네이버 블로그용 HTML 자동 변환
+        if: steps.date_guard.outputs.skip != 'true' && !inputs.dry_run
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TZ: Asia/Seoul
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.day }}" ]; then
+            ARGS="$ARGS --day ${{ inputs.day }}"
+          fi
+          node auto-publish-naver.js $ARGS
+
+      - name: 5-2. 네이버 변환본 커밋
+        if: steps.date_guard.outputs.skip != 'true' && !inputs.dry_run
+        continue-on-error: true
+        run: |
+          git pull --rebase --autostash || true
+          git add naver-blog/drafts/*.html 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "네이버 변환본 변경사항 없음"
+          else
+            git commit -m "chore: auto-generate naver blog draft [skip ci]"
+            git push
+          fi
+
       - name: 6. 실패 시 텔레그램 알림 (안전망)
         if: failure()
         env:
