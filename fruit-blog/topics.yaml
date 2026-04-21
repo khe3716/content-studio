@@ -1,10 +1,4 @@
-# 과일 연구소 블로그 30일 로드맵 (과일별 2~3편 클러스터)
-# 달콤살랑 스마트스토어 실제 판매 상품 기반
-#
-# 전략: 한 과일당 2~3편 연속 발행 → SEO 클러스터 효과 + 전문성 구축
-# 각 과일마다 보통 "고르는 법 → 보관법 → 효능/활용" 순서
 topics:
-  # ========== 산딸기 (Day 1~3) ==========
   - day: 1
     cluster: strawberry
     title: 산딸기 고르는 법, 이 3가지만 체크하세요
@@ -21,7 +15,6 @@ topics:
       - 봄과일
     status: draft
     generated_at: '2026-04-20T10:22:43.940Z'
-
   - day: 2
     cluster: strawberry
     title: 산딸기 빨리 무르지 않게 하는 3단계 보관법
@@ -36,8 +29,8 @@ topics:
       - 산딸기
       - 신선도
       - 봄과일
-    status: ready
-
+    status: draft
+    generated_at: '2026-04-21T02:14:39.030Z'
   - day: 3
     cluster: strawberry
     title: 산딸기 수제청·잼, 실패 없이 만드는 황금비율
@@ -53,8 +46,6 @@ topics:
       - 수제청
       - 과일잼
     status: pending
-
-  # ========== 블루베리 (Day 4~6) ==========
   - day: 4
     cluster: blueberry
     title: 무농약 블루베리와 일반 블루베리, 진짜 차이는
@@ -70,7 +61,6 @@ topics:
       - 과일선별
       - 건강과일
     status: pending
-
   - day: 5
     cluster: blueberry
     title: 블루베리 오래 싱싱하게 보관하는 5가지 비법
@@ -86,7 +76,6 @@ topics:
       - 신선도
       - 냉동과일
     status: pending
-
   - day: 6
     cluster: blueberry
     title: 블루베리 하루 얼마씩 먹어야 효과 있을까요
@@ -102,8 +91,6 @@ topics:
       - 섭취량
       - 영양소
     status: pending
-
-  # ========== 토마토 (Day 7~9) ==========
   - day: 7
     cluster: tomato
     title: 스테비아 방울토마토가 달콤한 이유, 진짜일까요
@@ -119,7 +106,6 @@ topics:
       - 건강과일
       - 토마토
     status: pending
-
   - day: 8
     cluster: tomato
     title: 대저토마토가 '짭짤한' 이유, 과학적으로 알려드려요
@@ -135,7 +121,6 @@ topics:
       - 토마토종류
       - 제철과일
     status: pending
-
   - day: 9
     cluster: tomato
     title: 방울토마토 고르는 법 + 오래 싱싱한 보관 꿀팁
@@ -151,8 +136,6 @@ topics:
       - 과일보관법
       - 토마토
     status: pending
-
-  # ========== 망고 (Day 10~12) ==========
   - day: 10
     cluster: mango
     title: 애플망고 vs 골드망고, 뭐가 더 달콤할까요
@@ -168,7 +151,6 @@ topics:
       - 망고선별
       - 열대과일
     status: pending
-
   - day: 11
     cluster: mango
     title: 마하차녹 망고, 한국인이 잘 모르는 태국 보물
@@ -184,7 +166,6 @@ topics:
       - 망고종류
       - 열대과일
     status: pending
-
   - day: 12
     cluster: mango
     title: 망고 후숙과 보관, 실패 없는 완벽 가이드
@@ -200,8 +181,6 @@ topics:
       - 과일보관법
       - 열대과일
     status: pending
-
-  # ========== 무화과 (Day 13~14) ==========
   - day: 13
     cluster: fig
     title: 영암 무화과가 특별한 이유, 제철과 선별법
@@ -217,7 +196,6 @@ topics:
       - 제철과일
       - 과일선별
     status: pending
-
   - day: 14
     cluster: fig
     title: 무화과 3일 내로 상하는 이유, 보관 꿀팁
@@ -233,8 +211,6 @@ topics:
       - 신선도
       - 제철과일
     status: pending
-
-  # ========== 포도 (Day 15~16) ==========
   - day: 15
     cluster: grape
     title: 씨없는 포도 4종 비교, 어떤 게 나한테 맞을까요
@@ -250,7 +226,6 @@ topics:
       - 포도비교
       - 과일선별
     status: pending
-
   - day: 16
     cluster: grape
     title: 애플청포도와 샤인머스켓, 무엇을 먹을까요
@@ -266,8 +241,6 @@ topics:
       - 포도선별
       - 고당도
     status: pending
-
-  # ========== 메론 (Day 17~18) ==========
   - day: 17
     cluster: melon
     title: 양구 가야백자 메론이 비싼 이유, 어떻게 고를까요
@@ -283,7 +256,6 @@ topics:
       - 메론선별
       - 고당도
     status: pending
-
   - day: 18
     cluster: melon
     title: 메론 완숙 판정법, 꼭지·냄새·두드리기 3단계
@@ -299,8 +271,6 @@ topics:
       - 과일선별
       - 머스크메론
     status: pending
-
-  # ========== 참외 (Day 19~20) ==========
   - day: 19
     cluster: chamoe
     title: 성주참외가 최고인 이유, 산지의 비밀
@@ -316,7 +286,6 @@ topics:
       - 제철과일
       - 산지
     status: pending
-
   - day: 20
     cluster: chamoe
     title: 파파야멜론·개구리참외, 이름만 다른가요
@@ -332,8 +301,6 @@ topics:
       - 멜론종류
       - 제철과일
     status: pending
-
-  # ========== 배 (Day 21~22) ==========
   - day: 21
     cluster: pear
     title: 나주 신고배가 유명한 이유, 산지와 품종
@@ -349,7 +316,6 @@ topics:
       - 배선별
       - 가을과일
     status: pending
-
   - day: 22
     cluster: pear
     title: 못난이 배, 정말 맛은 똑같을까요
@@ -365,8 +331,6 @@ topics:
       - 경제소비
       - 과일구매
     status: pending
-
-  # ========== 사과 (Day 23~24) ==========
   - day: 23
     cluster: apple
     title: 세척사과 껍질째 먹어도 정말 안전할까요
@@ -382,7 +346,6 @@ topics:
       - 식품안전
       - 사과
     status: pending
-
   - day: 24
     cluster: apple
     title: 한입 사과와 일반 사과, 어떤 게 더 나을까요
@@ -398,8 +361,6 @@ topics:
       - 과일구매
       - 사과
     status: pending
-
-  # ========== 용과 (Day 25~26) ==========
   - day: 25
     cluster: dragonfruit
     title: 백용과는 왜 비쌀까요, 영양소와 제철 가이드
@@ -415,7 +376,6 @@ topics:
       - 열대과일
       - 수입과일
     status: pending
-
   - day: 26
     cluster: dragonfruit
     title: 용과 고르는 법, 색깔별 맛 차이까지
@@ -431,8 +391,6 @@ topics:
       - 과일선별
       - 열대과일
     status: pending
-
-  # ========== 종합 (Day 27~30) ==========
   - day: 27
     cluster: seasonal
     title: 봄 제철 과일 Top 5, 지금 꼭 먹어야 할 이유
@@ -448,7 +406,6 @@ topics:
       - 과일추천
       - 계절별
     status: pending
-
   - day: 28
     cluster: storage
     title: 과일 냉장고 보관 위치, 이렇게 바꾸세요
@@ -464,7 +421,6 @@ topics:
       - 식품보관
       - 신선도
     status: pending
-
   - day: 29
     cluster: health
     title: 임산부가 먹기 좋은 과일 Top 5
@@ -480,7 +436,6 @@ topics:
       - 임신영양
       - 과일추천
     status: pending
-
   - day: 30
     cluster: wrap-up
     title: 30일 과일 가이드 총정리 + 다음 시리즈 예고

@@ -86,6 +86,29 @@ function loadPersona(name) {
   return fs.readFileSync(path.join(__dirname, 'agents', `${name}.md`), 'utf8');
 }
 
+// 사장님 기존 글 3편 랜덤 선택 + 각 2,500자로 잘라 few-shot 샘플로 사용
+function loadWritingSamples(count = 3, maxCharsPerSample = 2500) {
+  const samplesDir = path.join(__dirname, 'fruit-blog', 'samples');
+  const indexPath = path.join(samplesDir, 'index.json');
+  if (!fs.existsSync(indexPath)) return [];
+
+  const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
+  if (index.length === 0) return [];
+
+  // 랜덤 섞어서 앞에서 count개
+  const shuffled = [...index].sort(() => Math.random() - 0.5).slice(0, count);
+
+  return shuffled.map(meta => {
+    const filepath = path.join(samplesDir, meta.file);
+    if (!fs.existsSync(filepath)) return null;
+    let html = fs.readFileSync(filepath, 'utf8');
+    if (html.length > maxCharsPerSample) {
+      html = html.slice(0, maxCharsPerSample) + '\n<!-- ...(뒷부분 생략) -->';
+    }
+    return { title: meta.title, html };
+  }).filter(Boolean);
+}
+
 // ========== Imagen 4 Fast 이미지 생성 (생성 후 리사이즈) ==========
 async function generateImage(prompt, outputPath) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${GEMINI_API_KEY}`;
@@ -196,6 +219,7 @@ function imgTag(url, alt = '', caption = '') {
 async function writeArticle(topic, nextTopic, images) {
   const parkGwail = loadPersona('park-gwail');
   const products = loadProducts();
+  const samples = loadWritingSamples(3, 2500);
 
   const relatedProducts = products
     .filter(p => {
@@ -222,7 +246,23 @@ async function writeArticle(topic, nextTopic, images) {
     ? `다음 글 예고 문구에 반드시 "**${nextTopic.title}**" 언급.`
     : '다음 글 예고는 "다음에도 과일 정보 꾸준히 올릴 예정입니다" 식으로.';
 
-  const systemPrompt = `${parkGwail}${productHint}${imagePlaceholderHint}`;
+  // Few-shot: 사장님 기존 글 스타일 학습
+  const samplesHint = samples.length > 0
+    ? `\n\n# 스타일 레퍼런스 (사장님 기존 글 — 톤·구조·문장 리듬을 반드시 이 스타일로)
+아래는 이 블로그 운영자가 실제로 발행한 글들입니다. 당신은 이 글을 쓴 **같은 사람**으로서 글을 써야 합니다.
+- 말투 어미, 문장 길이, 문단 리듬 그대로
+- 박스·표·h2·h3 스타일 그대로
+- 경고·강조 표현 톤 그대로
+- "저도~" 체험 삽입 방식 그대로
+- 단, 내용·구체적 수치·주제는 오늘 쓸 주제에 맞게 새로 씀 (복붙 금지)
+
+${samples.map((s, i) => `===== 샘플 ${i + 1}: ${s.title} =====\n${s.html}`).join('\n\n')}
+
+===== 샘플 끝 =====
+`
+    : '';
+
+  const systemPrompt = `${parkGwail}${productHint}${samplesHint}${imagePlaceholderHint}`;
 
   const userPrompt = `오늘 쓸 글 정보:
 - Day: ${topic.day}
@@ -401,7 +441,11 @@ async function main() {
   const allProducts = loadProducts();
   const relatedImages = findRelatedProducts(topic, allProducts, 3);
 
-  console.log('📝 [1/4] 박과일 초안 작성 중...');
+  const samplesIdxPath = path.join(__dirname, 'fruit-blog', 'samples', 'index.json');
+  const samplesAvailable = fs.existsSync(samplesIdxPath)
+    ? JSON.parse(fs.readFileSync(samplesIdxPath, 'utf8')).length
+    : 0;
+  console.log(`📝 [1/4] 박과일 초안 작성 중... (기존 글 ${Math.min(3, samplesAvailable)}편 스타일 학습)`);
   let articleHtml = await writeArticle(topic, nextTopic, relatedImages);
   articleHtml = articleHtml.replace(/^```html\s*/gm, '').replace(/^```\s*$/gm, '').trim();
   articleHtml = articleHtml.replace(/^\s*<h2>[^<]*Day\s*\d+[^<]*<\/h2>\s*/i, '');
