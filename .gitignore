@@ -35,3 +35,16 @@ remotion/
 
 # 일회성 인증 스크립트 (refresh_token은 .env에 저장됨)
 get-refresh-token.js
+
+# 쿠팡 관련 스크립트·데이터 (반품지·전화번호 등 PII 포함)
+scripts/coupang-*.js
+scripts/coupang-*.json
+
+# 상세페이지 중간 자산 (output의 최종 PNG만 공개)
+fruit-blog/detail-pages/source-photos/
+fruit-blog/detail-pages/restyled/
+fruit-blog/detail-pages/preview/
+fruit-blog/detail-pages/generate-detail*.js
+fruit-blog/detail-pages/restyle-image.js
+fruit-blog/detail-pages/preview-mockup.js
+fruit-blog/detail-pages/generate-thumbnail.js
