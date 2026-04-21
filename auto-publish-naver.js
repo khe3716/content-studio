@@ -1,17 +1,17 @@
-// 과일 블로그(Blogger) 글 → 네이버 스마트에디터 호환 HTML 변환
-// 네이버는 공식 API 없음 → 반자동. 사장님이 HTML 복사 → 스마트에디터 붙여넣기.
+// 과일 블로그(Blogger) 글 → 네이버 스마트에디터용 HTML
+// - Gemini 리라이팅으로 네이버 톤(이웃 대상, 3,000자+, 체험·구어체)
+// - Imagen 4 Fast로 섹션별 이미지 5~6장 자동 생성
+// - 스마트에디터 복붙 포맷으로 클리닝
 //
 // 사용법:
-//   node auto-publish-naver.js                # fruit-blog/topics.yaml의 최근 draft/ready 주제
+//   node auto-publish-naver.js                # topics.yaml의 최근 draft/ready 주제
 //   node auto-publish-naver.js --day 2        # 특정 Day
-//
-// 출력:
-//   naver-blog/drafts/day-02-<slug>.html
-//   (텔레그램 알림: raw URL + 복사 안내)
+//   node auto-publish-naver.js --skip-rewrite # Gemini 건너뛰고 클리닝만 (디버그용)
 
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
+const sharp = require('sharp');
 
 // ========== env ==========
 function loadEnv() {
@@ -28,9 +28,14 @@ function loadEnv() {
 }
 loadEnv();
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = 'gemini-2.5-pro';
+
 const FRUIT_DRAFTS_DIR = path.join(__dirname, 'fruit-blog', 'drafts');
 const NAVER_DRAFTS_DIR = path.join(__dirname, 'naver-blog', 'drafts');
+const NAVER_IMAGES_DIR = path.join(__dirname, 'naver-blog', 'images');
 const TOPICS_PATH = path.join(__dirname, 'fruit-blog', 'topics.yaml');
+const PERSONA_PATH = path.join(__dirname, 'agents', 'park-gwail-naver.md');
 
 // ========== 텔레그램 ==========
 async function notifyTelegram(text) {
@@ -47,87 +52,201 @@ async function notifyTelegram(text) {
   } catch (e) { console.error('⚠️ 텔레그램 예외:', e.message); }
 }
 
-// ========== HTML 변환 ==========
-// 네이버 스마트에디터가 복붙 시 안정적으로 받아들이는 포맷으로 정리.
-// 유지: <h2> <h3> <p> <img> <table>, <blockquote>, <ul> <ol> <li>, inline style (text-align/color/background-color/font-weight/padding/margin/border)
-// 제거: class, script, iframe, 썸네일 대형 <div>, <style>
+// ========== Gemini ==========
+async function callGemini(userPrompt, systemPrompt, { temperature = 0.7, maxTokens = 16384, model = GEMINI_MODEL } = {}) {
+  if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY 없음');
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+  const body = {
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+    generationConfig: { temperature, maxOutputTokens: maxTokens },
+  };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Gemini API ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Gemini 응답 비어있음');
+  return text;
+}
+
+// ========== Imagen 4 Fast ==========
+async function generateImage(prompt, outputPath) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${GEMINI_API_KEY}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      instances: [{ prompt }],
+      parameters: { sampleCount: 1, aspectRatio: '1:1', personGeneration: 'dont_allow' },
+    }),
+  });
+  if (!res.ok) throw new Error(`Imagen API ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const j = await res.json();
+  const b64 = j.predictions?.[0]?.bytesBase64Encoded;
+  if (!b64) throw new Error('Imagen 응답에 이미지 없음');
+  const resized = await sharp(Buffer.from(b64, 'base64'))
+    .resize(800, 800, { kernel: 'lanczos3' })
+    .jpeg({ quality: 82 })
+    .toBuffer();
+  const jpgPath = outputPath.replace(/\.png$/i, '.jpg');
+  fs.writeFileSync(jpgPath, resized);
+  return jpgPath;
+}
+
+// ========== 샘플 로드 ==========
+function loadWritingSamples(count = 3, maxCharsPerSample = 2500) {
+  const dir = path.join(__dirname, 'fruit-blog', 'samples');
+  const idx = path.join(dir, 'index.json');
+  if (!fs.existsSync(idx)) return [];
+  const items = JSON.parse(fs.readFileSync(idx, 'utf8'));
+  const shuffled = [...items].sort(() => Math.random() - 0.5).slice(0, count);
+  return shuffled.map(m => {
+    const fp = path.join(dir, m.file);
+    if (!fs.existsSync(fp)) return null;
+    let html = fs.readFileSync(fp, 'utf8');
+    if (html.length > maxCharsPerSample) html = html.slice(0, maxCharsPerSample) + '\n<!-- ...(뒷부분 생략) -->';
+    return { title: m.title, html };
+  }).filter(Boolean);
+}
+
+// ========== HTML 클리닝 ==========
 function cleanForNaver(html, { imageBaseUrl } = {}) {
   let out = html;
-
-  // 1. script / style / iframe 제거
   out = out.replace(/<script[\s\S]*?<\/script>/gi, '');
   out = out.replace(/<style[\s\S]*?<\/style>/gi, '');
   out = out.replace(/<iframe[\s\S]*?<\/iframe>/gi, '');
-
-  // 2. Blogger 커버 썸네일 div 제거 (네이버는 별도 대표 이미지 설정)
   out = out.replace(
     /<div[^>]*text-align:center;margin:0 0 (?:24|32)px 0;[^>]*>\s*<img[^>]*\/?>[\s\S]*?<\/div>\s*/gi,
     ''
   );
-
-  // 3. class 속성 제거 (네이버 CSS와 충돌 방지)
   out = out.replace(/\sclass="[^"]*"/gi, '');
-
-  // 4. 이미지 src 치환 — 로컬 상대경로 → GitHub raw URL
   if (imageBaseUrl) {
-    out = out.replace(/src="(?!https?:)([^"]+)"/gi, (m, relPath) => {
+    out = out.replace(/src="(?!https?:|data:)([^"]+)"/gi, (m, relPath) => {
       const clean = relPath.replace(/^\.?\/?/, '');
       return `src="${imageBaseUrl}/${clean}"`;
     });
   }
-
-  // 5. data URL (base64) 이미지는 경고만 (네이버 복붙 시 용량 이슈)
-  const base64Count = (out.match(/src="data:image\/[^"]{100,}"/gi) || []).length;
-  if (base64Count > 0) {
-    console.warn(`  ⚠️ base64 이미지 ${base64Count}개 — 네이버 스마트에디터 복붙 시 느릴 수 있음`);
-  }
-
-  // 6. 빈 p/div 정리
   out = out.replace(/<p>\s*<\/p>/gi, '');
   out = out.replace(/<div>\s*<\/div>/gi, '');
   out = out.replace(/\n{3,}/g, '\n\n');
-
   return out.trim();
 }
 
-// 네이버용 안내 문구를 맨 위에 주석으로 삽입 (복붙 시 HTML 주석은 무시됨)
 function wrapForCopyPaste(cleanedHtml, { title, day }) {
   return `<!--
   네이버 블로그 ${day ? 'Day ' + day + ' — ' : ''}${title}
-  이 HTML 전체를 복사해서 네이버 블로그 스마트에디터 '아래쪽 ⋮ 메뉴 → HTML 모드'에 붙여넣으세요.
+  이 HTML 전체를 복사해서 네이버 블로그 스마트에디터 우하단 '</>' 버튼 눌러 붙여넣으세요.
   이미지는 자동으로 네이버 서버에 재업로드됩니다 (약간 기다리세요).
 -->
 ${cleanedHtml}
 `;
 }
 
-// ========== Day 선택 ==========
-function loadTopics() {
-  return yaml.load(fs.readFileSync(TOPICS_PATH, 'utf8'));
+// ========== Gemini 리라이팅 ==========
+async function rewriteForNaver(topic, originalHtml) {
+  const persona = fs.readFileSync(PERSONA_PATH, 'utf8');
+  const samples = loadWritingSamples(2, 2000); // 네이버는 톤이 달라서 샘플 2개만
+
+  const samplesHint = samples.length > 0
+    ? `\n\n# 스타일 참고 (블로그 운영자 기존 글 — 친근한 말투와 수다체 리듬 참고)\n${samples.map((s, i) => `=== 샘플 ${i + 1}: ${s.title} ===\n${s.html}`).join('\n\n')}\n`
+    : '';
+
+  const systemPrompt = `${persona}${samplesHint}`;
+
+  const userPrompt = `다음 Blogger 글을 **네이버 블로그 톤**으로 리라이팅해주세요.
+
+주제: Day ${topic.day} — ${topic.title}
+
+== 원본 HTML ==
+${originalHtml}
+
+== 요구사항 ==
+1. 3,000~3,500자로 늘려서 수다체·체험 강화
+2. 섹션 5~6개, 각 섹션마다 <!-- [[IMG_N]] --> 플레이스홀더 삽입 (N=1,2,3,4,5[,6])
+3. 도입부 400자, 본문 각 400~600자, 마무리 300자 + 댓글·이웃 유도
+4. 달콤살랑·스토어·상품명 절대 금지
+5. 출력은 지정된 <naver-html>...</naver-html> + <image-prompts>...</image-prompts> 포맷만`;
+
+  const response = await callGemini(userPrompt, systemPrompt, { temperature: 0.8, maxTokens: 16384 });
+  return response;
 }
 
+function parseRewriteResponse(response) {
+  const htmlMatch = response.match(/<naver-html>([\s\S]*?)<\/naver-html>/);
+  const promptsMatch = response.match(/<image-prompts>([\s\S]*?)<\/image-prompts>/);
+  if (!htmlMatch) throw new Error('리라이팅 응답에 <naver-html> 태그 없음');
+  const html = htmlMatch[1].trim();
+  const promptsRaw = promptsMatch ? promptsMatch[1].trim() : '';
+  const prompts = promptsRaw
+    .split('\n')
+    .map(l => l.replace(/^\s*\d+\.\s*/, '').trim())
+    .filter(Boolean);
+  return { html, prompts };
+}
+
+async function generateSectionImages(topic, prompts) {
+  if (!fs.existsSync(NAVER_IMAGES_DIR)) fs.mkdirSync(NAVER_IMAGES_DIR, { recursive: true });
+  const ts = Date.now();
+  const dayId = `day-${String(topic.day).padStart(2, '0')}`;
+  const results = [];
+  for (let i = 0; i < prompts.length; i++) {
+    const prompt = prompts[i];
+    const outPath = path.join(NAVER_IMAGES_DIR, `${dayId}-naver-${ts}-${i + 1}.jpg`);
+    console.log(`   🎨 이미지 ${i + 1}/${prompts.length}: ${prompt.slice(0, 60)}...`);
+    try {
+      const saved = await generateImage(prompt, outPath);
+      const rel = path.relative(__dirname, saved).replace(/\\/g, '/');
+      results.push(rel);
+      console.log(`      ✓ ${path.basename(saved)}`);
+    } catch (e) {
+      console.warn(`      ⚠️ 실패 (스킵): ${e.message}`);
+      results.push(null);
+    }
+  }
+  return results;
+}
+
+function injectImages(html, imageRelPaths, imageBaseUrl) {
+  let out = html;
+  imageRelPaths.forEach((rel, i) => {
+    const n = i + 1;
+    const placeholder = new RegExp(`<!--\\s*\\[\\[IMG_${n}\\]\\]\\s*-->`, 'g');
+    if (!rel) {
+      out = out.replace(placeholder, ''); // 실패한 이미지는 그냥 제거
+      return;
+    }
+    const src = `${imageBaseUrl}/${rel}`;
+    const tag = `<p style="text-align:center;"><img src="${src}" alt="Day image ${n}" style="max-width:100%;height:auto;border-radius:8px;" /></p>`;
+    out = out.replace(placeholder, tag);
+  });
+  // 혹시 남은 플레이스홀더 제거
+  out = out.replace(/<!--\s*\[\[IMG_\d+\]\]\s*-->/g, '');
+  return out;
+}
+
+// ========== Day 선택 ==========
+function loadTopics() { return yaml.load(fs.readFileSync(TOPICS_PATH, 'utf8')); }
 function pickTopic(dayArg) {
   const data = loadTopics();
   if (dayArg) {
     const t = data.topics.find(t => t.day === dayArg);
-    if (!t) throw new Error(`Day ${dayArg} 주제 없음`);
+    if (!t) throw new Error(`Day ${dayArg} 없음`);
     return t;
   }
-  // 우선순위: 가장 최근 draft > ready
   const draft = [...data.topics].reverse().find(t => t.status === 'draft');
   if (draft) return draft;
   const ready = data.topics.find(t => t.status === 'ready');
   if (ready) return ready;
-  throw new Error('변환할 주제 없음 (draft/ready 없음)');
+  throw new Error('변환할 주제 없음');
 }
-
 function findDraftFile(topic) {
-  const slug = topic.slug;
-  const prefix = `day-${String(topic.day).padStart(2, '0')}-${slug}`;
+  const prefix = `day-${String(topic.day).padStart(2, '0')}-${topic.slug}`;
   const candidates = fs.readdirSync(FRUIT_DRAFTS_DIR).filter(f => f.startsWith(prefix) && f.endsWith('.html'));
-  if (candidates.length === 0) {
-    throw new Error(`Blogger 드래프트 없음: ${FRUIT_DRAFTS_DIR}/${prefix}*.html`);
-  }
+  if (candidates.length === 0) throw new Error(`Blogger 드래프트 없음: ${prefix}*.html`);
   return path.join(FRUIT_DRAFTS_DIR, candidates[0]);
 }
 
@@ -136,6 +255,7 @@ function findDraftFile(topic) {
   try {
     const args = process.argv.slice(2);
     const dayArg = args.indexOf('--day') >= 0 ? parseInt(args[args.indexOf('--day') + 1]) : null;
+    const skipRewrite = args.includes('--skip-rewrite');
 
     const topic = pickTopic(dayArg);
     console.log(`\n🍎 네이버 변환: Day ${topic.day} — ${topic.title}`);
@@ -144,35 +264,64 @@ function findDraftFile(topic) {
     const originalHtml = fs.readFileSync(srcPath, 'utf8');
     console.log(`   📄 원본: ${path.relative(__dirname, srcPath)} (${Math.round(originalHtml.length / 1024)}KB)`);
 
-    // GitHub raw URL 계산 (환경변수 또는 기본값)
     const repo = process.env.GITHUB_REPOSITORY || 'khe3716/content-studio';
     const imageBaseUrl = `https://raw.githubusercontent.com/${repo}/main`;
 
-    const cleaned = cleanForNaver(originalHtml, { imageBaseUrl });
-    const wrapped = wrapForCopyPaste(cleaned, { title: topic.title, day: topic.day });
+    let finalHtml;
+    if (skipRewrite) {
+      console.log(`   ⏭️  Gemini 리라이팅 스킵 (--skip-rewrite)`);
+      finalHtml = cleanForNaver(originalHtml, { imageBaseUrl });
+    } else {
+      console.log(`\n✍️ [1/3] Gemini 리라이팅 중... (네이버 톤, 3,000자+)`);
+      const rewriteRaw = await callWithRetry(() => rewriteForNaver(topic, originalHtml), 2);
+      const { html: rewrittenHtml, prompts } = parseRewriteResponse(rewriteRaw);
+      console.log(`   ✓ 리라이팅 완료 (${Math.round(rewrittenHtml.length / 1024)}KB, 이미지 프롬프트 ${prompts.length}개)`);
+
+      console.log(`\n🖼️ [2/3] 섹션별 이미지 ${prompts.length}장 생성 중...`);
+      const imagePaths = await generateSectionImages(topic, prompts);
+
+      console.log(`\n🧹 [3/3] 이미지 삽입 + 클리닝 중...`);
+      let withImages = injectImages(rewrittenHtml, imagePaths, imageBaseUrl);
+      finalHtml = cleanForNaver(withImages, { imageBaseUrl });
+    }
+
+    const wrapped = wrapForCopyPaste(finalHtml, { title: topic.title, day: topic.day });
 
     if (!fs.existsSync(NAVER_DRAFTS_DIR)) fs.mkdirSync(NAVER_DRAFTS_DIR, { recursive: true });
     const outName = path.basename(srcPath);
     const outPath = path.join(NAVER_DRAFTS_DIR, outName);
     fs.writeFileSync(outPath, wrapped, 'utf8');
-    console.log(`   💾 저장: ${path.relative(__dirname, outPath)} (${Math.round(wrapped.length / 1024)}KB)`);
+    console.log(`\n💾 저장: ${path.relative(__dirname, outPath)} (${Math.round(wrapped.length / 1024)}KB)`);
 
     const rawUrl = `${imageBaseUrl}/naver-blog/drafts/${outName}`;
     console.log(`   🔗 ${rawUrl}`);
 
     await notifyTelegram(
       `📝 <b>네이버 블로그 변환 완료</b>\n\n` +
-      `Day ${topic.day} — ${topic.title}\n\n` +
-      `1️⃣ 아래 링크 눌러서 HTML 열기\n` +
-      `<a href="${rawUrl}">${outName}</a>\n\n` +
+      `Day ${topic.day} — ${topic.title}\n` +
+      `💡 Gemini 네이버 톤 리라이팅 + 섹션 이미지 자동 생성\n\n` +
+      `1️⃣ 아래 링크 열기\n<a href="${rawUrl}">${outName}</a>\n\n` +
       `2️⃣ <b>HTML 주석(&lt;!-- --&gt;) 아래</b>부터 전체 복사\n\n` +
       `3️⃣ 네이버 블로그 <b>글쓰기 → 우하단 &lt;/&gt;(HTML) 버튼</b> 누르고 붙여넣기\n\n` +
       `⚠️ 초기 3개월 지수 쌓을 때까지 <b>달콤살랑 링크·언급 금지</b>`
     );
 
-    console.log('\n✅ 완료. 텔레그램에서 복사 안내 확인하세요.');
+    console.log('\n✅ 완료. 텔레그램에서 복사 안내 확인.');
   } catch (err) {
     console.error('❌ 실패:', err.message);
     process.exit(1);
   }
 })();
+
+async function callWithRetry(fn, retries = 2) {
+  let lastErr;
+  for (let i = 0; i <= retries; i++) {
+    try { return await fn(); }
+    catch (e) {
+      lastErr = e;
+      console.warn(`   ⚠️ 시도 ${i + 1} 실패: ${e.message}`);
+      if (i < retries) await new Promise(r => setTimeout(r, 2000));
+    }
+  }
+  throw lastErr;
+}

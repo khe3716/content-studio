@@ -112,10 +112,11 @@ jobs:
             git push
           fi
 
-      - name: 5-1. 네이버 블로그용 HTML 자동 변환
+      - name: 5-1. 네이버 블로그용 HTML 자동 변환 (Gemini 리라이팅 + 이미지 5~6장)
         if: steps.date_guard.outputs.skip != 'true' && !inputs.dry_run
         continue-on-error: true
         env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -132,11 +133,11 @@ jobs:
         continue-on-error: true
         run: |
           git pull --rebase --autostash || true
-          git add naver-blog/drafts/*.html 2>/dev/null || true
+          git add naver-blog/drafts/*.html naver-blog/images/*.jpg 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "네이버 변환본 변경사항 없음"
           else
-            git commit -m "chore: auto-generate naver blog draft [skip ci]"
+            git commit -m "chore: auto-generate naver blog draft + images [skip ci]"
             git push
           fi
 
