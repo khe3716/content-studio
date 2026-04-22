@@ -45,7 +45,8 @@ topics:
       - 산딸기
       - 수제청
       - 과일잼
-    status: ready
+    status: draft
+    generated_at: '2026-04-21T14:10:00.000Z'
   - day: 4
     cluster: blueberry
     title: 무농약 블루베리와 일반 블루베리, 진짜 차이는
@@ -60,7 +61,7 @@ topics:
       - 무농약
       - 과일선별
       - 건강과일
-    status: pending
+    status: ready
   - day: 5
     cluster: blueberry
     title: 블루베리 오래 싱싱하게 보관하는 5가지 비법
