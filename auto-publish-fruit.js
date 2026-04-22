@@ -215,11 +215,35 @@ function imgTag(url, alt = '', caption = '') {
     `</div>`;
 }
 
+// 같은 클러스터에 이미 발행된(draft 상태) 글들의 요약을 가져옴. Gemini가 중복 회피하도록.
+function loadSameClusterPosts(topic, topicsData) {
+  const draftsDir = path.join(__dirname, 'fruit-blog', 'drafts');
+  if (!fs.existsSync(draftsDir)) return [];
+
+  const prior = (topicsData.topics || []).filter(t =>
+    t.cluster === topic.cluster &&
+    t.day !== topic.day &&
+    t.status === 'draft' &&
+    t.day < topic.day
+  );
+
+  return prior.map(t => {
+    const prefix = `day-${String(t.day).padStart(2, '0')}-${t.slug}`;
+    const files = fs.readdirSync(draftsDir).filter(f => f.startsWith(prefix) && f.endsWith('.html'));
+    if (files.length === 0) return null;
+    const html = fs.readFileSync(path.join(draftsDir, files[0]), 'utf8');
+    // 태그 제거하고 앞 1,500자만 (이전 글 핵심 파악용)
+    const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return { day: t.day, title: t.title, summary: text.slice(0, 1500) };
+  }).filter(Boolean);
+}
+
 // ========== 1단계: 박과일 초안 작성 ==========
-async function writeArticle(topic, nextTopic, images) {
+async function writeArticle(topic, nextTopic, images, topicsData) {
   const parkGwail = loadPersona('park-gwail');
   const products = loadProducts();
   const samples = loadWritingSamples(3, 2500);
+  const clusterPosts = topicsData ? loadSameClusterPosts(topic, topicsData) : [];
 
   const relatedProducts = products
     .filter(p => {
@@ -262,7 +286,20 @@ ${samples.map((s, i) => `===== 샘플 ${i + 1}: ${s.title} =====\n${s.html}`).jo
 `
     : '';
 
-  const systemPrompt = `${parkGwail}${productHint}${samplesHint}${imagePlaceholderHint}`;
+  // 같은 클러스터 이전 글 — 중복 회피용
+  const clusterHint = clusterPosts.length > 0
+    ? `\n\n# 같은 클러스터(${topic.cluster}) 이전 글 — 중복 설명 금지 ★★★
+
+이 블로그에 이미 발행한 같은 과일 글이 있어요. **그 글에서 자세히 다룬 팩트는 다시 깊게 설명하지 말고**, 한 줄 언급만 하고 **오늘 주제(${topic.title})의 고유 내용에 집중**하세요.
+
+공통 팩트(수분 함량, 호흡률, 기본 특성 등)를 반복하면 독자가 지루해지고 네이버 DIA가 양산형 블로그로 판정합니다.
+
+${clusterPosts.map(p => `===== Day ${p.day}: ${p.title} =====\n${p.summary}\n===== 끝 =====`).join('\n\n')}
+
+오늘 글은 **반드시 위 글들과 다른 각도·정보 중심**으로 작성하세요.`
+    : '';
+
+  const systemPrompt = `${parkGwail}${productHint}${samplesHint}${clusterHint}${imagePlaceholderHint}`;
 
   const userPrompt = `오늘 쓸 글 정보:
 - Day: ${topic.day}
@@ -445,8 +482,9 @@ async function main() {
   const samplesAvailable = fs.existsSync(samplesIdxPath)
     ? JSON.parse(fs.readFileSync(samplesIdxPath, 'utf8')).length
     : 0;
-  console.log(`📝 [1/4] 박과일 초안 작성 중... (기존 글 ${Math.min(3, samplesAvailable)}편 스타일 학습)`);
-  let articleHtml = await writeArticle(topic, nextTopic, relatedImages);
+  const clusterPosts = loadSameClusterPosts(topic, topicsData);
+  console.log(`📝 [1/4] 박과일 초안 작성 중... (기존 글 ${Math.min(3, samplesAvailable)}편 스타일 학습${clusterPosts.length > 0 ? `, 같은 클러스터 ${clusterPosts.length}편 중복 회피` : ''})`);
+  let articleHtml = await writeArticle(topic, nextTopic, relatedImages, topicsData);
   articleHtml = articleHtml.replace(/^```html\s*/gm, '').replace(/^```\s*$/gm, '').trim();
   articleHtml = articleHtml.replace(/^\s*<h2>[^<]*Day\s*\d+[^<]*<\/h2>\s*/i, '');
 
