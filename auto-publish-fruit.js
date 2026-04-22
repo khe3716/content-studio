@@ -398,10 +398,10 @@ function saveTopics(data) {
 }
 
 // ========== publish-draft-fruit.js 실행 ==========
-function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels }) {
+function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, slug = '', searchDescription = '' }) {
   const r = spawnSync(
     'node',
-    ['publish-draft-fruit.js', dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels],
+    ['publish-draft-fruit.js', dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, slug, searchDescription],
     { cwd: __dirname, stdio: 'inherit' }
   );
   return r.status === 0;
@@ -604,6 +604,8 @@ async function main() {
     sub2: topic.subtitle[1] || '',
     htmlPath: htmlRelPath,
     labels: (topic.labels || []).join(','),
+    slug: topic.slug || '',
+    searchDescription,
   });
   if (!ok) throw new Error(`Blogger 업로드 실패 (Day ${topic.day})`);
 

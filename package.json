@@ -11,8 +11,13 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@google/genai": "^1.50.1",
+    "@napi-rs/canvas": "^0.1.99",
     "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
     "js-yaml": "^4.1.1",
+    "playwright": "^1.59.1",
     "sharp": "^0.34.5"
   }
 }

@@ -36,6 +36,10 @@ remotion/
 # 일회성 인증 스크립트 (refresh_token은 .env에 저장됨)
 get-refresh-token.js
 
+# Playwright 로그인 세션 (구글 계정 쿠키 포함 — 절대 커밋 금지)
+.blogger-session/
+blogger-session-state.json
+
 # 쿠팡 관련 스크립트·데이터 (반품지·전화번호 등 PII 포함)
 scripts/coupang-*.js
 scripts/coupang-*.json

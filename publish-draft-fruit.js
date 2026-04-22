@@ -28,9 +28,9 @@ if (!BLOG_ID || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TO
   process.exit(1);
 }
 
-const [dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labelsStr] = process.argv.slice(2);
+const [dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labelsStr, slugArg, searchDescArg] = process.argv.slice(2);
 if (!dayId || !emoji || !postTitle || !thumbTitle || !htmlPath) {
-  console.error('사용법: node publish-draft-fruit.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>"');
+  console.error('사용법: node publish-draft-fruit.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>" [slug] [searchDescription]');
   process.exit(1);
 }
 
@@ -150,6 +150,29 @@ async function uploadDraft(token, title, labels, content) {
     console.log('제목:', result.title);
     console.log('포스트 ID:', result.id);
     console.log('편집 URL:', `https://www.blogger.com/blog/post/edit/${BLOG_ID}/${result.id}`);
+
+    // Playwright로 퍼머링크 + 검색 설명 자동 세팅 (DRAFT 상태에서만 작동)
+    const sessionExists = fs.existsSync(path.join(__dirname, '.blogger-session', 'state.json'));
+    if (!sessionExists) {
+      console.log('\nℹ️ Blogger 세션 없음 (.blogger-session/state.json) → Playwright 자동화 스킵');
+      console.log('   로컬에서 1회성 로그인: node scripts/blogger-session-setup.js');
+    } else if (!slugArg && !searchDescArg) {
+      console.log('\nℹ️ slug·searchDescription 인자 없음 → Playwright 자동화 스킵');
+    } else {
+      console.log('\n🤖 [보너스] Playwright로 퍼머링크·검색설명 자동 설정 중...');
+      try {
+        const { finalizePost } = require('./scripts/blogger-finalize-post');
+        await finalizePost({
+          blogId: BLOG_ID,
+          postId: result.id,
+          slug: slugArg || '',
+          description: searchDescArg || '',
+          headless: true,
+        });
+      } catch (e) {
+        console.warn(`   ⚠️ Playwright 자동화 실패 (무시하고 진행): ${e.message}`);
+      }
+    }
   } catch (err) {
     console.error('❌ 에러:', err);
     process.exit(1);
