@@ -67,6 +67,27 @@ jobs:
           sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-color-emoji
           fc-cache -f
 
+      - name: 3-1b. Playwright Chromium 설치 (Blogger 자동화용)
+        if: steps.date_guard.outputs.skip != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: 3-1c. Blogger 세션 복원 (Playwright 자동화용)
+        if: steps.date_guard.outputs.skip != 'true'
+        env:
+          BLOGGER_SESSION_STATE: ${{ secrets.BLOGGER_SESSION_STATE }}
+        run: |
+          if [ -n "$BLOGGER_SESSION_STATE" ]; then
+            mkdir -p .blogger-session
+            echo "$BLOGGER_SESSION_STATE" | base64 -d > .blogger-session/state.json
+            if [ -s .blogger-session/state.json ]; then
+              echo "✅ Blogger 세션 복원 ($(wc -c < .blogger-session/state.json) bytes)"
+            else
+              echo "⚠️ state.json 비어있음, Playwright 스킵됨"
+            fi
+          else
+            echo "ℹ️ BLOGGER_SESSION_STATE secret 없음, Playwright 스킵됨"
+          fi
+
       - name: 3-2. 네이버 스마트스토어 상품 목록 갱신 (옵션)
         if: steps.date_guard.outputs.skip != 'true'
         continue-on-error: true
