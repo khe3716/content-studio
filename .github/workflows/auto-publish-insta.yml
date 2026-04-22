@@ -1,0 +1,89 @@
+name: 인스타 카드뉴스 생성
+
+on:
+  workflow_dispatch:
+    inputs:
+      day:
+        description: '특정 Day 번호 (비우면 ready 상태인 다음 card_news)'
+        required: false
+        type: string
+
+  # 자동 스케줄: 월·수·금 오전 10시 KST (UTC 01:00) — Phase 2 활성화
+  # schedule:
+  #   - cron: '0 1 * * 1,3,5'
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 1. 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: 2. Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 3. 의존성 설치
+        run: npm ci
+
+      - name: 3-1. 한국어 폰트 설치
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-color-emoji
+          fc-cache -f
+
+      - name: 4. 카드뉴스 생성
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TZ: Asia/Seoul
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.day }}" ]; then
+            ARGS="$ARGS --day ${{ inputs.day }}"
+          fi
+          node insta/generate-card-news.js $ARGS
+
+      - name: 5. 생성 파일 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash || true
+          git add insta/topics.yaml insta/drafts/ 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "변경사항 없음"
+          else
+            git commit -m "chore: auto-generate insta card news [skip ci]"
+            git push
+          fi
+
+      - name: 6. 실패 알림
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then exit 0; fi
+          node -e "
+            fetch('https://api.telegram.org/bot' + process.env.TELEGRAM_BOT_TOKEN + '/sendMessage', {
+              method: 'POST', headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({
+                chat_id: process.env.TELEGRAM_CHAT_ID,
+                text: '🚨 <b>인스타 카드뉴스 생성 실패</b>\n\n로그: ' + process.env.RUN_URL,
+                parse_mode: 'HTML', disable_web_page_preview: true
+              })
+            }).then(r => r.json()).then(j => console.log(JSON.stringify(j)));
+          "

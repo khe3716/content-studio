@@ -1,0 +1,212 @@
+topics:
+  - day: 1
+    format: card_news
+    cluster: strawberry
+    title: 산딸기 고르는 3가지 체크포인트
+    hook: 이 산딸기는 100% 실패합니다
+    slug: strawberry-pick-3checks
+    status: draft
+    generated_at: '2026-04-22T07:43:07.954Z'
+  - day: 2
+    format: single
+    cluster: strawberry
+    title: 산딸기 빨리 무르지 않게 하는 꿀팁
+    hook: 산딸기 3일만에 버려본 분?
+    slug: strawberry-store-tip
+    status: ready
+  - day: 3
+    format: card_news
+    cluster: strawberry
+    title: 산딸기 수제청 황금비율
+    hook: 실패 없는 산딸기청 비율
+    slug: strawberry-syrup-ratio
+    status: pending
+  - day: 4
+    format: infographic
+    cluster: fruit-chart
+    title: 5월 제철 과일 TOP 7
+    hook: 5월에 꼭 사야 할 과일
+    slug: may-fruit-top7
+    status: pending
+  - day: 5
+    format: card_news
+    cluster: blueberry
+    title: 무농약 vs 일반 블루베리 차이
+    hook: 2배 비싼 무농약 블루베리, 진짜 차이?
+    slug: organic-blueberry-diff
+    status: pending
+  - day: 6
+    format: single
+    cluster: blueberry
+    title: 블루베리 고르는 법
+    hook: 이 색이면 무조건 사세요
+    slug: pick-good-blueberry
+    status: pending
+  - day: 7
+    format: card_news
+    cluster: tomato
+    title: 대저토마토 진짜 짭짤이 구별법
+    hook: 가짜 짭짤이 팔리고 있어요
+    slug: busan-tomato-identify
+    status: pending
+  - day: 8
+    format: infographic
+    cluster: tomato
+    title: 토마토 품종별 당도·용도 비교
+    hook: 방울토마토 vs 대저 vs 단마토
+    slug: tomato-varieties-compare
+    status: pending
+  - day: 9
+    format: single
+    cluster: tomato
+    title: 토마토 보관법 (껍질 안 쪼글)
+    hook: 토마토 하루만에 쪼글쪼글하다면
+    slug: tomato-store
+    status: pending
+  - day: 10
+    format: card_news
+    cluster: mango
+    title: 애플망고 vs 골드망고 찐후기
+    hook: 2배 비싼 애플망고 먹어볼 가치?
+    slug: apple-vs-gold-mango
+    status: pending
+  - day: 11
+    format: single
+    cluster: mango
+    title: 망고 후숙 실패 안 하는 법
+    hook: 망고 언제 먹어야 달까요?
+    slug: mango-ripen-timing
+    status: pending
+  - day: 12
+    format: card_news
+    cluster: mango
+    title: 망고 예쁘게 자르는 3단계
+    hook: 망고 씨 제거 꿀팁
+    slug: mango-cut-technique
+    status: pending
+  - day: 13
+    format: infographic
+    cluster: fig
+    title: 무화과 품종별 차이
+    hook: 마스이도핀 vs 봉래 vs 바나네
+    slug: fig-varieties
+    status: pending
+  - day: 14
+    format: card_news
+    cluster: fig
+    title: 무화과 보관·손질법
+    hook: 무화과 씻으면 안 되는 이유
+    slug: fig-handling
+    status: pending
+  - day: 15
+    format: single
+    cluster: fig
+    title: 무화과 제철은 언제?
+    hook: 8~10월 놓치면 1년 기다려야
+    slug: fig-season
+    status: pending
+  - day: 16
+    format: card_news
+    cluster: grape
+    title: 샤인머스켓 고르는 3가지
+    hook: 이 샤인머스켓은 피하세요
+    slug: shine-muscat-pick
+    status: pending
+  - day: 17
+    format: single
+    cluster: grape
+    title: 포도 과수원 직송의 의미
+    hook: '''산지직송'' 진짜 다를까?'
+    slug: grape-farm-direct
+    status: pending
+  - day: 18
+    format: infographic
+    cluster: grape
+    title: 포도 품종별 당도·씨 유무
+    hook: 씨 없는 포도 TOP 5
+    slug: grape-seedless
+    status: pending
+  - day: 19
+    format: card_news
+    cluster: melon
+    title: 메론 잘 익은 것 고르는 법
+    hook: 이 3가지만 보면 당도 100%
+    slug: melon-ripe-check
+    status: pending
+  - day: 20
+    format: single
+    cluster: melon
+    title: 메론 보관 & 썰기 팁
+    hook: 메론 속 씨는 이렇게 제거
+    slug: melon-prep
+    status: pending
+  - day: 21
+    format: card_news
+    cluster: chamoe
+    title: 성주 참외 제대로 고르기
+    hook: 참외 꼭지 보세요, 골 깊이도
+    slug: chamoe-pick
+    status: pending
+  - day: 22
+    format: infographic
+    cluster: pear
+    title: 나주 신고배 vs 원황배 vs 화산
+    hook: 배도 품종마다 달라요
+    slug: pear-varieties
+    status: pending
+  - day: 23
+    format: single
+    cluster: pear
+    title: 못난이 배도 맛은 똑같을까?
+    hook: 외모만 차이나는 배
+    slug: ugly-pear-quality
+    status: pending
+  - day: 24
+    format: card_news
+    cluster: apple
+    title: 사과 당도 높은 것 고르는 법
+    hook: 색보다 중요한 2가지
+    slug: apple-sweetness-pick
+    status: pending
+  - day: 25
+    format: single
+    cluster: apple
+    title: 사과 껍질 깎지 말아야 하는 이유
+    hook: 껍질에 영양이 70% 집중
+    slug: apple-peel-nutrition
+    status: pending
+  - day: 26
+    format: card_news
+    cluster: dragonfruit
+    title: 용과 색깔별 맛 차이
+    hook: 흰 용과 vs 빨간 용과
+    slug: dragonfruit-color-taste
+    status: pending
+  - day: 27
+    format: infographic
+    cluster: summary
+    title: 여름 제철 과일 보관 온도 비교
+    hook: 과일별 최적 냉장 온도
+    slug: summer-fruit-temp
+    status: pending
+  - day: 28
+    format: card_news
+    cluster: summary
+    title: 과일 실패 안 하는 공통 체크 3가지
+    hook: 모든 과일 공통 체크포인트
+    slug: fruit-common-check
+    status: pending
+  - day: 29
+    format: single
+    cluster: summary
+    title: 과일 궁금증 Q&A 5개
+    hook: 자주 묻는 과일 질문
+    slug: fruit-qa5
+    status: pending
+  - day: 30
+    format: card_news
+    cluster: summary
+    title: 과일 오래 보관하는 공통 법칙
+    hook: 대부분 이거 반대로 하고 있어요
+    slug: fruit-store-common
+    status: pending

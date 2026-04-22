@@ -1,0 +1,84 @@
+{
+  "topic": {
+    "day": 1,
+    "format": "card_news",
+    "cluster": "strawberry",
+    "title": "산딸기 고르는 3가지 체크포인트",
+    "hook": "이 산딸기는 100% 실패합니다",
+    "slug": "strawberry-pick-3checks",
+    "status": "ready"
+  },
+  "content": {
+    "cards": [
+      {
+        "slide": 1,
+        "type": "cover",
+        "title": "이런 산딸기, 100% 실패합니다 🍓",
+        "subtitle": "3초 만에 좋은 과일 고르는 법"
+      },
+      {
+        "slide": 2,
+        "type": "content",
+        "number": "1️⃣",
+        "title": "색이 너무 검붉다면 NG",
+        "body": "검붉은색은 수확한 지 오래됐다는 신호! 선명하고 쨍한 붉은색을 고르세요. 이게 바로 신선함의 증거랍니다."
+      },
+      {
+        "slide": 3,
+        "type": "content",
+        "number": "2️⃣",
+        "title": "과육이 무른 건 피하세요",
+        "body": "손으로 살짝 만졌을 때 단단함이 느껴져야 해요. 물러진 건 금방 곰팡이가 생기거나 맛이 없을 확률이 높아요."
+      },
+      {
+        "slide": 4,
+        "type": "content",
+        "number": "3️⃣",
+        "title": "꼭지 주변을 확인하세요",
+        "body": "꼭지 주변에 진물이 있거나 곰팡이가 보인다면 절대 금물! 뽀송뽀송하고 깨끗한 상태가 가장 좋아요."
+      },
+      {
+        "slide": 5,
+        "type": "closing",
+        "cta": "📌 저장해두고 산딸기 살 때 꼭 확인해보세요!",
+        "brand": "🍎 제철 과일 가이드"
+      }
+    ],
+    "caption": {
+      "hook": "마트에서 산 산딸기, 하루 만에 물러서 속상했던 경험 있으시죠? 😥",
+      "body": "이제 실패는 그만! 오늘 알려드린 3가지만 기억하면 달콤하고 신선한 산딸기를 고를 수 있어요. 특히 꼭지 주변에 물기가 없는지 확인하는 게 정말 중요하답니다. 조금만 신경 쓰면 버리는 것 없이 끝까지 맛있게 즐길 수 있어요. 여러분만의 산딸기 꿀팁이 있다면 댓글로 공유해주세요! ✨",
+      "cta": "💾 저장해두고 실패 없는 과일 쇼핑하세요!"
+    },
+    "hashtags": [
+      "#산딸기",
+      "#산딸기고르는법",
+      "#라즈베리",
+      "#과일고르는법",
+      "#제철과일",
+      "#여름과일",
+      "#과일",
+      "#홈카페",
+      "#주부스타그램",
+      "#살림팁",
+      "#장보기꿀팁",
+      "#요리스타그램",
+      "#아이간식",
+      "#건강간식",
+      "#다이어트식단",
+      "#비타민충전",
+      "#푸드스타그램",
+      "#과일스타그램",
+      "#먹스타그램",
+      "#오늘의과일",
+      "#꿀팁공유",
+      "#살림노하우"
+    ],
+    "image_prompts": [
+      "Photorealistic food photography, a slightly mushy, overripe raspberry next to a perfect, vibrant red raspberry on a rustic wooden board, soft side lighting, macro shot, no people.",
+      "Photorealistic food photography, a close-up shot focusing on the vibrant, rich red color of a fresh raspberry in a white ceramic bowl, shallow depth of field, bright and clean lighting, no people.",
+      "Photorealistic food photography, a top-down view of a punnet of freshly picked raspberries, all looking firm and perfectly shaped, sitting on a marble countertop, no people.",
+      "Photorealistic food photography, an extreme close-up on the top of a raspberry, showing the clean, dry area where the stem was attached, highlighting its freshness, no people.",
+      "Photorealistic food photography, a beautiful flat lay of fresh raspberries scattered on a light-colored linen cloth, with a small bowl of yogurt nearby, creating a fresh and inviting scene, no people."
+    ]
+  }
+}
