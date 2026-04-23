@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="800" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF8F5"/>
+      <stop offset="100%" stop-color="#FFE4E1"/>
+    </linearGradient>
+    <style>
+      .title { font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif; font-weight: 900; letter-spacing: -3px; }
+      .subtitle { font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif; font-weight: 800; letter-spacing: -2px; }
+      .brand { font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif; font-weight: 700; letter-spacing: -1px; }
+    </style>
+  </defs>
+
+  <!-- 배경 (크림 → 연분홍 그라디언트) -->
+  <rect width="800" height="800" fill="url(#bgGrad)"/>
+
+  <!-- 상단 장식 (얇은 빨간 선 + 작은 라벨) -->
+  <rect x="80" y="120" width="80" height="6" fill="#E53935"/>
+  <text x="80" y="108" class="brand" font-size="24" fill="#E53935">FRUIT GUIDE</text>
+
+  <!-- 메인 타이틀 (빨강 볼드) -->
+  <text x="400" y="380" class="title" font-size="170" fill="#C62828" text-anchor="middle" dominant-baseline="middle">스테비아</text>
+
+  <!-- 서브 타이틀 (진한 핑크) -->
+  <text x="400" y="520" class="subtitle" font-size="60" fill="#AD1457" text-anchor="middle" dominant-baseline="middle">달콤한 이유</text>
+  <text x="400" y="592" class="subtitle" font-size="60" fill="#AD1457" text-anchor="middle" dominant-baseline="middle">진실은?</text>
+
+  <!-- 하단 장식 (얇은 빨간 선 + 브랜드) -->
+  <rect x="640" y="674" width="80" height="6" fill="#E53935"/>
+  <text x="720" y="712" class="brand" font-size="26" fill="#37474F" text-anchor="end">📍 과일정보연구소</text>
+</svg>
