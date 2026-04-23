@@ -1,0 +1,118 @@
+name: 과일 블로그 배치 예약 (여러 편 한번에)
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_day:
+        description: '시작 Day 번호 (예: 5)'
+        required: true
+        type: string
+        default: '5'
+      count:
+        description: '생성할 편수 (예: 9)'
+        required: true
+        type: string
+        default: '9'
+      start_offset:
+        description: '시작 오프셋 (1=내일 18:00, 2=모레 18:00)'
+        required: true
+        type: string
+        default: '2'
+
+permissions:
+  contents: write
+
+jobs:
+  batch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: 1. 체크아웃
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: 2. Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 3. 의존성 설치
+        run: npm ci
+
+      - name: 3-1. 한국어 폰트
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-color-emoji
+          fc-cache -f
+
+      - name: 3-2. Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: 3-3. Blogger 세션 복원
+        env:
+          BLOGGER_SESSION_STATE: ${{ secrets.BLOGGER_SESSION_STATE }}
+        run: |
+          if [ -n "$BLOGGER_SESSION_STATE" ]; then
+            mkdir -p .blogger-session
+            echo "$BLOGGER_SESSION_STATE" | base64 -d > .blogger-session/state.json
+            echo "✅ Blogger 세션 복원 ($(wc -c < .blogger-session/state.json) bytes)"
+          else
+            echo "⚠️ BLOGGER_SESSION_STATE 없음 — Playwright 스킵됨"
+          fi
+
+      - name: 4. 배치 실행
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FRUIT_BLOG_ID: ${{ secrets.FRUIT_BLOG_ID }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TZ: Asia/Seoul
+        run: |
+          echo "🍎 Day ${{ inputs.start_day }}부터 ${{ inputs.count }}편 → 오프셋 +${{ inputs.start_offset }}일부터 18:00"
+          node scripts/batch-schedule-fruit.js \
+            --start-day ${{ inputs.start_day }} \
+            --count ${{ inputs.count }} \
+            --start-offset ${{ inputs.start_offset }} \
+            --quiet
+
+      - name: 5. 업데이트 커밋
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash || true
+          git add fruit-blog/topics.yaml fruit-blog/drafts/*.html fruit-blog/thumbnails/*.png fruit-blog/thumbnails/*.svg fruit-blog/images/*.jpg 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "변경사항 없음"
+          else
+            git commit -m "chore: batch-schedule fruit drafts [skip ci]"
+            git push
+          fi
+
+      - name: 6. 실패 알림
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ]; then exit 0; fi
+          node -e "
+            fetch('https://api.telegram.org/bot' + process.env.TELEGRAM_BOT_TOKEN + '/sendMessage', {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({
+                chat_id: process.env.TELEGRAM_CHAT_ID,
+                text: '🚨 <b>과일 배치 워크플로 실패</b>\n\n로그: ' + process.env.RUN_URL,
+                parse_mode: 'HTML',
+                disable_web_page_preview: true
+              })
+            }).then(r => r.json()).then(j => console.log(j));
+          "

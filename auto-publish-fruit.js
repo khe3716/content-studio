@@ -663,7 +663,9 @@ async function main() {
     sub2: topic.subtitle[1] || '',
     htmlPath: htmlRelPath,
     labels: (topic.labels || []).join(','),
-    slug: topic.slug || '',
+    // Blogger가 DRAFT→SCHEDULED 전환 시 UI slug 저장 안 해서 포기 (경제와 일관).
+    // Playwright가 퍼머링크 섹션 건드리지 않도록 빈 문자열 전달.
+    slug: '',
     searchDescription,
     publishDate,
   });
