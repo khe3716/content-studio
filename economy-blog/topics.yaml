@@ -201,7 +201,7 @@ topics:
       - 경제현상
     status: scheduled
     scheduled_for: '2026-04-24T07:30:00+09:00'
-    generated_at: '2026-04-23T07:07:31.892Z'
+    generated_at: '2026-04-23T07:19:19.501Z'
   - day: 13
     cluster: economy-phenomena
     title: 환율이란? 원화·달러 기초 개념
@@ -219,7 +219,7 @@ topics:
       - 경제용어
     status: scheduled
     scheduled_for: '2026-04-24T17:00:00+09:00'
-    generated_at: '2026-04-23T07:08:39.901Z'
+    generated_at: '2026-04-23T07:20:54.056Z'
   - day: 14
     cluster: economy-phenomena
     title: 환율이 오르면 내 지갑은 어떻게 될까?
@@ -235,7 +235,9 @@ topics:
       - 물가
       - 수입
       - 재테크
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-25T07:30:00+09:00'
+    generated_at: '2026-04-23T07:22:26.350Z'
   - day: 15
     cluster: investment-basics
     title: 주식이란? 왜 존재할까 쉽게 설명
