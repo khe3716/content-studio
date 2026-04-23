@@ -1,13 +1,15 @@
-// 새 글을 Blogger에 임시저장으로 업로드 (썸네일 자동 생성·삽입 포함)
+// 새 글을 Blogger에 업로드 (썸네일 자동 생성·삽입 + 선택적 예약 발행)
 //
 // 사용법:
-//   node publish-draft.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>"
+//   node publish-draft.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>" [publishDate]
 //
-// postTitle = Blogger 글 제목 (SEO용, 길어도 OK)
-// thumbTitle = 썸네일 안에 들어갈 짧은 제목 (5자 이내 권장)
+// publishDate (선택):
+//   생략 또는 빈 문자열 → DRAFT 유지 (기존 동작)
+//   "now"                → 즉시 발행
+//   ISO 8601 (예: "2026-04-24T07:30:00+09:00") → 해당 시각 예약 발행
 //
 // 예시:
-//   node publish-draft.js day-04 money-bag "이자란? 이자 종류 기본 정리" "이자란?" "이자 개념과 종류," "한 번에 정리!" economy-blog/drafts/day-04-ija.html "경제기초,이자,재테크입문,경제용어"
+//   node publish-draft.js day-04 money-bag "이자란?" "이자란?" "이자 개념과 종류," "한 번에 정리!" economy-blog/drafts/day-04-ija.html "경제기초,이자" "2026-04-24T07:30:00+09:00"
 
 const fs = require('fs');
 const path = require('path');
@@ -37,10 +39,10 @@ if (!BLOG_ID || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TO
 }
 
 // ========== 인자 파싱 ==========
-const [dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labelsStr] = process.argv.slice(2);
+const [dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labelsStr, publishDateArg] = process.argv.slice(2);
 if (!dayId || !emoji || !postTitle || !thumbTitle || !htmlPath) {
   console.error(
-    '사용법: node publish-draft.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>"'
+    '사용법: node publish-draft.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>" [publishDate]'
   );
   process.exit(1);
 }
@@ -81,6 +83,26 @@ async function uploadDraft(accessToken, title, labels, content) {
     console.error('❌ 업로드 실패:');
     console.error(JSON.stringify(result, null, 2));
     process.exit(1);
+  }
+  return result;
+}
+
+// DRAFT → LIVE/SCHEDULED 전환
+// publishDate 미래면 SCHEDULED, 과거/생략이면 즉시 발행
+async function publishPost(accessToken, postId, publishDate) {
+  const params = new URLSearchParams();
+  if (publishDate) params.set('publishDate', publishDate);
+  const qs = params.toString();
+  const url = `https://www.googleapis.com/blogger/v3/blogs/${BLOG_ID}/posts/${postId}/publish${qs ? '?' + qs : ''}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const result = await res.json();
+  if (res.status !== 200) {
+    console.error('❌ 발행 전환 실패:');
+    console.error(JSON.stringify(result, null, 2));
+    throw new Error(`publish API ${res.status}`);
   }
   return result;
 }
@@ -168,7 +190,27 @@ async function uploadDraft(accessToken, title, labels, content) {
     console.log('포스트 ID:', result.id);
     console.log('상태:', result.status || 'DRAFT');
     console.log('편집 URL:', `https://www.blogger.com/blog/post/edit/${BLOG_ID}/${result.id}`);
-    console.log('\n➡️  Blogger에서 확인 후 퍼머링크 설정 + 예약 발행하세요.');
+
+    // 4. (선택) publishDate 지정되면 발행 전환
+    if (publishDateArg) {
+      const isoDate = publishDateArg === 'now' ? '' : publishDateArg;
+      console.log(`\n☁️  [발행] publishDate=${isoDate || '(즉시)'}`);
+      try {
+        const pubResult = await publishPost(token, result.id, isoDate);
+        const isFuture = isoDate && new Date(isoDate).getTime() > Date.now();
+        console.log(`   ✓ 상태: ${pubResult.status || (isFuture ? 'SCHEDULED' : 'LIVE')}`);
+        if (isFuture) {
+          console.log(`   📅 예약 발행: ${isoDate}`);
+        } else {
+          console.log(`   🚀 즉시 발행됨`);
+          if (pubResult.url) console.log(`   URL: ${pubResult.url}`);
+        }
+      } catch (e) {
+        console.warn(`   ⚠️ 발행 전환 실패 (DRAFT 유지): ${e.message}`);
+      }
+    } else {
+      console.log('\nℹ️ publishDate 미지정 → DRAFT 유지');
+    }
   } catch (err) {
     console.error('❌ 에러:', err);
     process.exit(1);

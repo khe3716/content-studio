@@ -1,20 +1,21 @@
-// 과일 블로그 로봇 두뇌 — 주제 선정 → 글 작성 → 팩트체크 → Blogger 임시저장
+// 과일 블로그 로봇 — 주제 선정 → 글 → 팩트체크 → Blogger 업로드 (+ 선택적 예약 발행)
 //
 // 사용법:
-//   node auto-publish-fruit.js              # fruit-blog/topics.yaml에서 다음 'ready' 주제
-//   node auto-publish-fruit.js --day 5      # 특정 Day
-//   node auto-publish-fruit.js --dry-run    # 글만 생성, 업로드 X
+//   node auto-publish-fruit.js                     # 다음 'ready' → 즉시 발행
+//   node auto-publish-fruit.js --day 5             # 특정 Day
+//   node auto-publish-fruit.js --dry-run           # 글만 생성
+//   node auto-publish-fruit.js --keep-draft        # DRAFT 유지
+//   node auto-publish-fruit.js --offset-days 2     # 모레 18:00 예약
+//   node auto-publish-fruit.js --publish-at "2026-04-24T18:00:00+09:00"
 //
-// 필요 환경변수:
-//   GEMINI_API_KEY, FRUIT_BLOG_ID, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
-//   (선택) TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID — 알림
-//   (선택) NAVER_COMMERCE_CLIENT_ID, NAVER_COMMERCE_CLIENT_SECRET — 상품 데이터 갱신
+// 기본: publishDate = 'now' (즉시 발행). cron이 18:00 KST에 발동되면 = 해당 시각 발행.
 
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 const sharp = require('sharp');
 const { spawnSync } = require('child_process');
+const { SLOTS, slotToISO, formatSlotKorean } = require('./scripts/slot-utils');
 
 // ========== 환경 변수 ==========
 function loadEnv() {
@@ -435,13 +436,32 @@ function saveTopics(data) {
 }
 
 // ========== publish-draft-fruit.js 실행 ==========
-function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, slug = '', searchDescription = '' }) {
+function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, slug = '', searchDescription = '', publishDate = '' }) {
   const r = spawnSync(
     'node',
-    ['publish-draft-fruit.js', dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, slug, searchDescription],
+    ['publish-draft-fruit.js', dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, slug, searchDescription, publishDate],
     { cwd: __dirname, stdio: 'inherit' }
   );
   return r.status === 0;
+}
+
+// 과일 블로그용 publishDate 결정
+// --keep-draft       → '' (DRAFT)
+// --publish-at ISO   → ISO 그대로
+// --offset-days N    → N일 뒤 18:00 KST
+// 기본 → 'now' (즉시 발행)
+function resolvePublishDate(args) {
+  if (args.includes('--keep-draft')) return '';
+  const publishAtIdx = args.indexOf('--publish-at');
+  if (publishAtIdx >= 0 && args[publishAtIdx + 1]) return args[publishAtIdx + 1];
+
+  const offsetIdx = args.indexOf('--offset-days');
+  if (offsetIdx >= 0 && args[offsetIdx + 1]) {
+    const offset = parseInt(args[offsetIdx + 1], 10);
+    return slotToISO(SLOTS.fruit[0], offset);
+  }
+
+  return 'now';
 }
 
 function escapeHtml(s) {
@@ -453,6 +473,7 @@ async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
   const dayArg = args.indexOf('--day') >= 0 ? parseInt(args[args.indexOf('--day') + 1]) : null;
+  const publishDate = resolvePublishDate(args);
 
   const topicsData = loadTopics();
   let topic;
@@ -631,8 +652,8 @@ async function main() {
     return;
   }
 
-  console.log('☁️ [업로드] Blogger에 임시저장 중...');
-  // 썸네일은 디자인 썸네일 (빨강/핑크 텍스트) 사용. 본문 이미지는 이미 HTML에 삽입됨.
+  const publishLabel = !publishDate ? 'DRAFT 유지' : publishDate === 'now' ? '즉시 발행' : `예약: ${formatSlotKorean(publishDate)}`;
+  console.log(`☁️ [업로드] Blogger → ${publishLabel}`);
   const ok = runPublishDraft({
     dayId,
     emoji: topic.emoji,
@@ -644,10 +665,20 @@ async function main() {
     labels: (topic.labels || []).join(','),
     slug: topic.slug || '',
     searchDescription,
+    publishDate,
   });
   if (!ok) throw new Error(`Blogger 업로드 실패 (Day ${topic.day})`);
 
-  topic.status = 'draft';
+  const isFutureSchedule = publishDate && publishDate !== 'now' && new Date(publishDate).getTime() > Date.now();
+  if (!publishDate) {
+    topic.status = 'draft';
+  } else if (isFutureSchedule) {
+    topic.status = 'scheduled';
+    topic.scheduled_for = publishDate;
+  } else {
+    topic.status = 'published';
+    topic.published_at = new Date().toISOString();
+  }
   topic.generated_at = new Date().toISOString();
   let nextPending = null;
   if (!dayArg) {
@@ -665,15 +696,27 @@ async function main() {
     ? `\n\n🔜 <b>다음 예정:</b> Day ${nextPending.day} — ${nextPending.title}`
     : '\n\n🏁 모든 주제 소진';
   const seoBlock = searchDescription
-    ? `\n\n📎 <b>파머링크 (복사용)</b>\n<code>${topic.slug}</code>\n\n📝 <b>검색 설명 (복사용)</b>\n<code>${escapeHtml(searchDescription)}</code>`
-    : `\n\n📎 <b>파머링크 (복사용)</b>\n<code>${topic.slug}</code>`;
+    ? `\n\n📎 <b>파머링크</b>\n<code>${topic.slug}</code>\n\n📝 <b>검색 설명</b>\n<code>${escapeHtml(searchDescription)}</code>`
+    : `\n\n📎 <b>파머링크</b>\n<code>${topic.slug}</code>`;
+
+  let statusHeader, statusNote;
+  if (!publishDate) {
+    statusHeader = '🍎 <b>과일블로그 DRAFT 업로드</b>';
+    statusNote = `\n\n💡 Blogger 확인:\nhttps://www.blogger.com/u/0/blog/posts/${process.env.FRUIT_BLOG_ID || ''}`;
+  } else if (isFutureSchedule) {
+    statusHeader = '🍎 <b>과일블로그 예약 발행</b>';
+    statusNote = `\n\n⏰ 발행 예정: <b>${formatSlotKorean(publishDate)}</b>`;
+  } else {
+    statusHeader = '🍎 <b>과일블로그 즉시 발행</b>';
+    statusNote = '\n\n🌐 LIVE 상태';
+  }
+
   await notifyTelegram(
-    `🍎 <b>과일블로그 발행 성공</b>\n\n` +
+    `${statusHeader}\n\n` +
     `📌 <b>Day ${topic.day}</b> — ${topic.title}\n` +
     `🏷️ ${(topic.labels || []).join(', ')}` +
     seoBlock +
-    `\n\n💡 Blogger 열어서 파머링크·검색 설명 붙여넣고 발행:\n` +
-    `https://www.blogger.com/u/0/blog/posts/${process.env.FRUIT_BLOG_ID || ''}` +
+    statusNote +
     nextInfo
   );
 }

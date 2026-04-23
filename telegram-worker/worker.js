@@ -17,6 +17,7 @@ const FRUIT_WORKFLOW = 'auto-publish-fruit.yml';
 const NAVER_WORKFLOW = 'naver-convert.yml';
 const SEO_WORKFLOW = 'audit-seo.yml';
 const INSTA_WORKFLOW = 'auto-publish-insta.yml';
+const SCHEDULE_WORKFLOW = 'schedule-drafts.yml';
 
 export default {
   async fetch(request, env) {
@@ -70,6 +71,11 @@ async function handleCommand(env, chatId, text) {
       '📸 <b>인스타 카드뉴스</b>\n' +
       '<b>/insta</b> - 다음 주제로 카드뉴스 5장 생성\n' +
       '<b>/insta 3</b> - 특정 Day\n\n' +
+      '📅 <b>예약 발행 배정</b>\n' +
+      '<b>/schedule economy</b> - 경제 DRAFT 전부 오늘부터 07:30+17:00 슬롯에 순차\n' +
+      '<b>/schedule fruit</b> - 과일 DRAFT 전부 오늘부터 18:00 슬롯에 순차\n' +
+      '<b>/schedule fruit 1</b> - 내일(offset=1)부터\n' +
+      '<b>/schedule fruit 0 3</b> - 오늘부터, 최대 3편\n\n' +
       '📊 <b>공통</b>\n' +
       '<b>/status</b> - 경제 최근 실행 3건\n' +
       '<b>/fruitstatus</b> - 과일 최근 실행 3건\n' +
@@ -135,6 +141,28 @@ async function handleCommand(env, chatId, text) {
     return;
   }
 
+  if (text.startsWith('/schedule')) {
+    // /schedule <economy|fruit> [startOffset] [limit]
+    const parts = text.split(/\s+/);
+    const blog = parts[1];
+    const startOffset = parts[2] && /^\d+$/.test(parts[2]) ? parts[2] : '0';
+    const limit = parts[3] && /^\d+$/.test(parts[3]) ? parts[3] : '';
+    if (!['economy', 'fruit'].includes(blog)) {
+      await sendMessage(env, chatId, '❌ 사용법: <code>/schedule economy</code> 또는 <code>/schedule fruit</code>\n선택 예: <code>/schedule fruit 1 3</code> (내일부터, 최대 3편)');
+      return;
+    }
+    const inputs = { blog, start_offset: startOffset, dry_run: 'false' };
+    if (limit) inputs.limit = limit;
+    await triggerWorkflowRaw(env, SCHEDULE_WORKFLOW, inputs);
+    const blogLabel = blog === 'fruit' ? '🍎 과일' : '💰 경제';
+    await sendMessage(env, chatId,
+      `📅 ${blogLabel} DRAFT 예약 배정 시작!\n` +
+      `시작 오프셋: +${startOffset}일${limit ? ` / 최대 ${limit}편` : ''}\n` +
+      `1~2분 후 배정 결과 도착합니다.`
+    );
+    return;
+  }
+
   await sendMessage(env, chatId, '❓ 모르는 명령어. /help 쳐보세요.');
 }
 
@@ -142,7 +170,10 @@ async function triggerWorkflow(env, workflow, { day, dry_run }) {
   const inputs = {};
   if (day) inputs.day = String(day);
   if (dry_run) inputs.dry_run = dry_run;
+  return triggerWorkflowRaw(env, workflow, inputs);
+}
 
+async function triggerWorkflowRaw(env, workflow, inputs) {
   const url = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/actions/workflows/${workflow}/dispatches`;
   const res = await fetch(url, {
     method: 'POST',

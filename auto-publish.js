@@ -1,17 +1,21 @@
-// 로봇 두뇌 — 주제 선정 → 글 작성 → 팩트체크 → Blogger 임시저장
+// 로봇 두뇌 — 주제 선정 → 글 작성 → 팩트체크 → Blogger 업로드 (+ 선택적 예약 발행)
 //
 // 사용법:
-//   node auto-publish.js              # topics.yaml에서 다음 'ready' 주제 자동 선정
-//   node auto-publish.js --day 11     # 특정 Day 지정
-//   node auto-publish.js --dry-run    # 글 생성만 하고 업로드는 안 함
+//   node auto-publish.js                     # 다음 'ready' 주제 → 즉시 발행 (LIVE)
+//   node auto-publish.js --day 11            # 특정 Day
+//   node auto-publish.js --dry-run           # 글만 생성, 업로드 X
+//   node auto-publish.js --keep-draft        # DRAFT 유지 (발행 안 함)
+//   node auto-publish.js --offset-days 2     # 모레 경제 morning 슬롯에 예약
+//   node auto-publish.js --slot evening      # 오늘 17:00 슬롯
+//   node auto-publish.js --publish-at "2026-04-24T07:30:00+09:00"  # 임의 시각
 //
-// 필요 환경변수 (.env 또는 GitHub Secrets):
-//   GEMINI_API_KEY, BLOG_ID, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
+// 기본 동작: publishDate = 현재 KST 기준 다음 가까운 economy 슬롯 (오늘 07:30/17:00 중 미래인 것)
 
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 const { spawnSync } = require('child_process');
+const { SLOTS, slotToISO, nextFutureSlot, slotAtOffset, formatSlotKorean } = require('./scripts/slot-utils');
 
 // ========== 환경 변수 ==========
 function loadEnv() {
@@ -268,13 +272,46 @@ function saveTopics(data) {
 }
 
 // ========== publish-draft.js 실행 ==========
-function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels }) {
+function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, publishDate = '' }) {
   const result = spawnSync(
     'node',
-    ['publish-draft.js', dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels],
+    ['publish-draft.js', dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, publishDate],
     { cwd: __dirname, stdio: 'inherit' }
   );
   return result.status === 0;
+}
+
+// 인자 or 자동으로 publishDate 결정
+// --keep-draft         → '' (DRAFT 유지)
+// --publish-at <ISO>   → ISO 그대로
+// --offset-days N      → N일 뒤 morning 슬롯
+// --slot morning|evening → 오늘 해당 슬롯
+// 기본 (없으면) → now 기준 다음 가까운 economy 슬롯 (오늘 morning → evening → 내일 morning ...)
+function resolvePublishDate(args) {
+  if (args.includes('--keep-draft')) return '';
+  const publishAtIdx = args.indexOf('--publish-at');
+  if (publishAtIdx >= 0 && args[publishAtIdx + 1]) return args[publishAtIdx + 1];
+
+  const offsetIdx = args.indexOf('--offset-days');
+  if (offsetIdx >= 0 && args[offsetIdx + 1]) {
+    const offset = parseInt(args[offsetIdx + 1], 10);
+    // economy 첫 슬롯 = morning
+    const slotIdx = args.indexOf('--slot');
+    const slotName = slotIdx >= 0 ? args[slotIdx + 1] : 'morning';
+    const slot = SLOTS.economy.find(s => s.name === slotName) || SLOTS.economy[0];
+    return slotToISO(slot, offset);
+  }
+
+  const slotIdx = args.indexOf('--slot');
+  if (slotIdx >= 0 && args[slotIdx + 1]) {
+    const slotName = args[slotIdx + 1];
+    const slot = SLOTS.economy.find(s => s.name === slotName);
+    if (slot) return slotToISO(slot, 0);
+  }
+
+  // 기본: 즉시 발행 (publishDate = 현재 시각, Blogger가 LIVE로 전환)
+  // cron이 07:30 KST 슬롯에 발동됐으면 이 시각이 곧 발행 시각
+  return 'now';
 }
 
 // ========== 메인 ==========
@@ -282,6 +319,7 @@ async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
   const dayArg = args.indexOf('--day') >= 0 ? parseInt(args[args.indexOf('--day') + 1]) : null;
+  const publishDate = resolvePublishDate(args);
 
   const topicsData = loadTopics();
   let topic;
@@ -358,8 +396,9 @@ async function main() {
     return;
   }
 
-  // 5. Blogger에 임시저장 업로드
-  console.log('☁️ [업로드] Blogger에 임시저장 중...');
+  // 5. Blogger 업로드 (+ 선택적 예약 발행)
+  const publishLabel = !publishDate ? 'DRAFT 유지' : publishDate === 'now' ? '즉시 발행' : `예약: ${formatSlotKorean(publishDate)}`;
+  console.log(`☁️ [업로드] Blogger → ${publishLabel}`);
   const ok = runPublishDraft({
     dayId,
     emoji: topic.emoji,
@@ -369,14 +408,24 @@ async function main() {
     sub2: topic.subtitle[1] || '',
     htmlPath: htmlRelPath,
     labels: (topic.labels || []).join(','),
+    publishDate,
   });
 
   if (!ok) {
     throw new Error(`Blogger 업로드 실패 (Day ${topic.day})`);
   }
 
-  // 6. topics.yaml 업데이트 (status: ready → draft)
-  topic.status = 'draft';
+  // 6. topics.yaml 업데이트 (status: ready → draft/scheduled/published)
+  const isFutureSchedule = publishDate && publishDate !== 'now' && new Date(publishDate).getTime() > Date.now();
+  if (!publishDate) {
+    topic.status = 'draft';
+  } else if (isFutureSchedule) {
+    topic.status = 'scheduled';
+    topic.scheduled_for = publishDate;
+  } else {
+    topic.status = 'published';
+    topic.published_at = new Date().toISOString();
+  }
   topic.generated_at = new Date().toISOString();
   // 자동 실행일 때만 다음 pending 하나를 ready로 승격 (--day 재업로드 시엔 skip)
   let nextPending = null;
@@ -391,20 +440,32 @@ async function main() {
 
   console.log('\n🎉 로봇 사이클 완료!');
 
-  // 7. 텔레그램 성공 알림 (파머링크 + 검색설명 포함)
+  // 7. 텔레그램 성공 알림
   const nextInfo = nextPending
     ? `\n\n🔜 <b>다음 예정:</b> Day ${nextPending.day} — ${nextPending.title}`
     : '\n\n🏁 모든 주제 소진 (pending 없음)';
   const seoBlock = searchDescription
-    ? `\n\n📎 <b>파머링크 (복사용)</b>\n<code>${topic.slug}</code>\n\n📝 <b>검색 설명 (복사용)</b>\n<code>${escapeHtml(searchDescription)}</code>`
-    : `\n\n📎 <b>파머링크 (복사용)</b>\n<code>${topic.slug}</code>`;
+    ? `\n\n📎 <b>파머링크</b>\n<code>${topic.slug}</code>\n\n📝 <b>검색 설명</b>\n<code>${escapeHtml(searchDescription)}</code>`
+    : `\n\n📎 <b>파머링크</b>\n<code>${topic.slug}</code>`;
+
+  let statusHeader, statusNote;
+  if (!publishDate) {
+    statusHeader = '✅ <b>DRAFT 업로드 성공</b>';
+    statusNote = `\n\n💡 Blogger에서 확인 후 발행:\nhttps://www.blogger.com/u/0/blog/posts/${process.env.BLOG_ID || ''}`;
+  } else if (isFutureSchedule) {
+    statusHeader = '📅 <b>예약 발행 완료</b>';
+    statusNote = `\n\n⏰ 발행 예정: <b>${formatSlotKorean(publishDate)}</b>`;
+  } else {
+    statusHeader = '🚀 <b>즉시 발행 완료</b>';
+    statusNote = '\n\n🌐 LIVE 상태';
+  }
+
   await notifyTelegram(
-    `✅ <b>발행 성공</b>\n\n` +
+    `${statusHeader}\n\n` +
     `📌 <b>Day ${topic.day}</b> — ${topic.title}\n` +
     `🏷️ ${(topic.labels || []).join(', ')}` +
     seoBlock +
-    `\n\n💡 Blogger 임시저장 열어서 파머링크·검색 설명 붙여넣고 발행:\n` +
-    `https://www.blogger.com/u/0/blog/posts/${process.env.BLOG_ID || ''}` +
+    statusNote +
     nextInfo
   );
 }

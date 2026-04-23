@@ -61,7 +61,8 @@ topics:
       - 무농약
       - 과일선별
       - 건강과일
-    status: ready
+    status: draft
+    generated_at: '2026-04-23T04:28:01.521Z'
   - day: 5
     cluster: blueberry
     title: 블루베리 오래 싱싱하게 보관하는 5가지 비법
@@ -76,7 +77,7 @@ topics:
       - 과일보관법
       - 신선도
       - 냉동과일
-    status: pending
+    status: ready
   - day: 6
     cluster: blueberry
     title: 블루베리 하루 얼마씩 먹어야 효과 있을까요

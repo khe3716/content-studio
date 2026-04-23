@@ -1,7 +1,14 @@
-// 과일 블로그 Blogger 임시저장 업로드 (썸네일 생성 + raw URL 반영)
+// 과일 블로그 Blogger 업로드 (썸네일 생성 + Playwright 메타 + 선택적 예약 발행)
 //
 // 사용법:
-//   node publish-draft-fruit.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>"
+//   node publish-draft-fruit.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>" [slug] [searchDescription] [publishDate]
+//
+// publishDate (선택):
+//   생략 또는 ""    → DRAFT 유지
+//   "now"            → 즉시 발행
+//   ISO 8601 (예: "2026-04-24T18:00:00+09:00") → 해당 시각 예약 발행
+//
+// 순서: 업로드(DRAFT) → Playwright 퍼머링크·검색설명 → publishDate 있으면 /publish API
 
 const fs = require('fs');
 const path = require('path');
@@ -28,9 +35,9 @@ if (!BLOG_ID || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TO
   process.exit(1);
 }
 
-const [dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labelsStr, slugArg, searchDescArg] = process.argv.slice(2);
+const [dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labelsStr, slugArg, searchDescArg, publishDateArg] = process.argv.slice(2);
 if (!dayId || !emoji || !postTitle || !thumbTitle || !htmlPath) {
-  console.error('사용법: node publish-draft-fruit.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>" [slug] [searchDescription]');
+  console.error('사용법: node publish-draft-fruit.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>" [slug] [searchDescription] [publishDate]');
   process.exit(1);
 }
 
@@ -64,6 +71,24 @@ async function uploadDraft(token, title, labels, content) {
   if (res.status !== 200) {
     console.error('❌ 업로드 실패:', JSON.stringify(result, null, 2));
     process.exit(1);
+  }
+  return result;
+}
+
+// DRAFT → LIVE/SCHEDULED 전환
+async function publishPost(token, postId, publishDate) {
+  const params = new URLSearchParams();
+  if (publishDate) params.set('publishDate', publishDate);
+  const qs = params.toString();
+  const url = `https://www.googleapis.com/blogger/v3/blogs/${BLOG_ID}/posts/${postId}/publish${qs ? '?' + qs : ''}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const result = await res.json();
+  if (res.status !== 200) {
+    console.error('❌ 발행 전환 실패:', JSON.stringify(result, null, 2));
+    throw new Error(`publish API ${res.status}`);
   }
   return result;
 }
@@ -152,6 +177,7 @@ async function uploadDraft(token, title, labels, content) {
     console.log('편집 URL:', `https://www.blogger.com/blog/post/edit/${BLOG_ID}/${result.id}`);
 
     // Playwright로 퍼머링크 + 검색 설명 자동 세팅 (DRAFT 상태에서만 작동)
+    // 순서 중요: Playwright 먼저 → 그 다음 publishDate 적용
     const sessionExists = fs.existsSync(path.join(__dirname, '.blogger-session', 'state.json'));
     if (!sessionExists) {
       console.log('\nℹ️ Blogger 세션 없음 (.blogger-session/state.json) → Playwright 자동화 스킵');
@@ -172,6 +198,27 @@ async function uploadDraft(token, title, labels, content) {
       } catch (e) {
         console.warn(`   ⚠️ Playwright 자동화 실패 (무시하고 진행): ${e.message}`);
       }
+    }
+
+    // (선택) publishDate 지정되면 발행 전환 — Playwright 이후
+    if (publishDateArg) {
+      const isoDate = publishDateArg === 'now' ? '' : publishDateArg;
+      console.log(`\n☁️  [발행] publishDate=${isoDate || '(즉시)'}`);
+      try {
+        const pubResult = await publishPost(token, result.id, isoDate);
+        const isFuture = isoDate && new Date(isoDate).getTime() > Date.now();
+        console.log(`   ✓ 상태: ${pubResult.status || (isFuture ? 'SCHEDULED' : 'LIVE')}`);
+        if (isFuture) {
+          console.log(`   📅 예약 발행: ${isoDate}`);
+        } else {
+          console.log(`   🚀 즉시 발행됨`);
+          if (pubResult.url) console.log(`   URL: ${pubResult.url}`);
+        }
+      } catch (e) {
+        console.warn(`   ⚠️ 발행 전환 실패 (DRAFT 유지): ${e.message}`);
+      }
+    } else {
+      console.log('\nℹ️ publishDate 미지정 → DRAFT 유지');
     }
   } catch (err) {
     console.error('❌ 에러:', err);

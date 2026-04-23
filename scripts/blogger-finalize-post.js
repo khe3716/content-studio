@@ -103,7 +103,7 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
       }
 
       if (permalinkClicked) {
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(1500);
 
         // "맞춤 퍼머링크" 라디오 버튼 선택
         const customRadioSelectors = [
@@ -118,13 +118,13 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
             if (await el.isVisible({ timeout: 1500 })) {
               await el.click();
               console.log(`   ✓ "맞춤 퍼머링크" 선택`);
-              await page.waitForTimeout(500);
+              await page.waitForTimeout(1500); // 입력란 나타날 시간
               break;
             }
           } catch {}
         }
 
-        // slug 입력란 찾아 입력
+        // slug 입력란 찾아 입력 (셀렉터 다양화)
         const slugInputSelectors = [
           'input[aria-label*="퍼머"]',
           'input[aria-label*="영구"]',
@@ -132,18 +132,33 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
           'input[placeholder*="퍼머"]',
           'input[placeholder*="영구"]',
           'input[placeholder*="permalink"]',
+          'input[name*="permalink"]',
+          'input[name*="url"]',
+          'input[jsname]:visible',
         ];
+        let slugInputFound = false;
         for (const sel of slugInputSelectors) {
           try {
-            const input = page.locator(sel).last();
-            if (await input.isVisible({ timeout: 1500 })) {
-              await input.fill('');
-              await input.fill(slug);
-              console.log(`   ✓ Slug 입력: ${slug}`);
-              break;
+            const inputs = await page.locator(sel).all();
+            for (const input of inputs) {
+              if (await input.isVisible({ timeout: 800 })) {
+                const placeholder = await input.getAttribute('placeholder').catch(() => '');
+                const ariaLabel = await input.getAttribute('aria-label').catch(() => '');
+                // 검색어·날짜 입력 제외
+                if ((placeholder + ariaLabel).match(/검색|날짜|시간|year/i)) continue;
+                await input.click();
+                await input.fill('');
+                await input.fill(slug);
+                await page.keyboard.press('Tab'); // blur → 자동 저장
+                console.log(`   ✓ Slug 입력: ${slug}`);
+                slugInputFound = true;
+                break;
+              }
             }
+            if (slugInputFound) break;
           } catch {}
         }
+        if (!slugInputFound) console.warn(`   ⚠️ Slug 입력란을 못 찾음`);
       } else {
         console.warn(`   ⚠️ "퍼머링크" 섹션을 못 찾음`);
       }
@@ -181,8 +196,10 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
           try {
             const input = page.locator(sel).last();
             if (await input.isVisible({ timeout: 1500 })) {
+              await input.click();
               await input.fill('');
               await input.fill(description);
+              await page.keyboard.press('Tab'); // blur → 자동 저장 트리거
               console.log(`   ✓ 검색 설명 입력 (${description.length}자)`);
               break;
             }
@@ -193,37 +210,17 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
       }
     }
 
-    await page.waitForTimeout(1000);
+    // DRAFT 상태는 자동 저장됨. 별도 저장 버튼 없음.
+    // 입력 후 blur 이벤트가 트리거되면 Blogger가 자동 저장.
+    console.log(`   💾 자동 저장 대기 중... (3초)`);
+    await page.waitForTimeout(3000);
 
-    // 저장 (업데이트) — Blogger는 Material 컴포넌트라 <button> 아닐 수 있음
-    console.log(`   💾 저장 중...`);
-    const saveSelectors = [
-      'div[role="button"]:has-text("업데이트")',
-      'div[role="button"]:has-text("발행")',
-      'div[role="button"]:has-text("저장")',
-      'button:has-text("업데이트")',
-      '[aria-label="업데이트"]',
-      '[aria-label*="Update"]',
-      'text="업데이트"',
-    ];
-    let saved = false;
-    for (const sel of saveSelectors) {
-      try {
-        const btn = page.locator(sel).first();
-        if (await btn.isVisible({ timeout: 1500 })) {
-          await btn.click();
-          saved = true;
-          console.log(`   ✓ 저장 버튼 클릭 (${sel})`);
-          break;
-        }
-      } catch {}
-    }
-    if (!saved) {
-      await page.screenshot({ path: path.join(__dirname, '..', 'debug-blogger-save-fail.png') });
-      throw new Error('저장 버튼을 못 찾음 (debug-blogger-save-fail.png 참고)');
-    }
+    // "저장됨" 표시 확인 (안 보이면 경고만)
+    try {
+      const cloudSaved = await page.locator('[aria-label*="저장됨"], [aria-label*="saved"], [title*="저장"]').first().isVisible({ timeout: 2000 });
+      if (cloudSaved) console.log(`   ✓ 자동 저장 확인됨`);
+    } catch { /* 표시기 못 찾아도 계속 */ }
 
-    await page.waitForTimeout(3000); // 저장 완료 대기
     console.log(`✅ Blogger 메타 자동 설정 완료`);
 
     return true;
