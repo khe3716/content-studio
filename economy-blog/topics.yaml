@@ -237,7 +237,7 @@ topics:
       - 재테크
     status: scheduled
     scheduled_for: '2026-04-25T07:30:00+09:00'
-    generated_at: '2026-04-23T07:22:26.350Z'
+    generated_at: '2026-04-23T09:02:06.088Z'
   - day: 15
     cluster: investment-basics
     title: 주식이란? 왜 존재할까 쉽게 설명
@@ -251,7 +251,9 @@ topics:
       - 투자기초
       - 주식
       - 재테크입문
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-25T17:00:00+09:00'
+    generated_at: '2026-04-23T09:03:40.908Z'
   - day: 16
     cluster: investment-basics
     title: 배당금이란? 주식 투자의 두 번째 수익
@@ -266,7 +268,9 @@ topics:
       - 배당금
       - 주식
       - 재테크
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-26T07:30:00+09:00'
+    generated_at: '2026-04-23T09:05:31.680Z'
   - day: 17
     cluster: investment-basics
     title: 시가총액·PER·PBR — 주식 기본 지표 3가지
@@ -282,7 +286,9 @@ topics:
       - PER
       - PBR
       - 시가총액
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-26T17:00:00+09:00'
+    generated_at: '2026-04-23T09:07:15.385Z'
   - day: 18
     cluster: investment-basics
     title: 펀드란? 종류 한눈에 정리
@@ -296,7 +302,9 @@ topics:
       - 투자기초
       - 펀드
       - 재테크
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-27T07:30:00+09:00'
+    generated_at: '2026-04-23T09:09:19.272Z'
   - day: 19
     cluster: investment-basics
     title: ETF란? 주식과 펀드의 중간
@@ -311,7 +319,9 @@ topics:
       - ETF
       - 주식
       - 펀드
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-27T17:00:00+09:00'
+    generated_at: '2026-04-23T09:10:51.200Z'
   - day: 20
     cluster: investment-basics
     title: 채권이란? 주식과 어떻게 다를까
@@ -326,7 +336,9 @@ topics:
       - 채권
       - 주식
       - 재테크
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-28T07:30:00+09:00'
+    generated_at: '2026-04-23T09:12:10.761Z'
   - day: 21
     cluster: tax-benefits
     title: 연금저축 vs IRP 차이 정리
@@ -341,7 +353,9 @@ topics:
       - 연금저축
       - IRP
       - 재테크
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-28T17:00:00+09:00'
+    generated_at: '2026-04-23T09:14:14.563Z'
   - day: 22
     cluster: tax-benefits
     title: ISA 계좌 기초 — 세금 혜택 총정리
