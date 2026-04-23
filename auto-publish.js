@@ -272,10 +272,10 @@ function saveTopics(data) {
 }
 
 // ========== publish-draft.js 실행 ==========
-function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, publishDate = '' }) {
+function runPublishDraft({ dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, slug = '', searchDescription = '', publishDate = '' }) {
   const result = spawnSync(
     'node',
-    ['publish-draft.js', dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, publishDate],
+    ['publish-draft.js', dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labels, slug, searchDescription, publishDate],
     { cwd: __dirname, stdio: 'inherit' }
   );
   return result.status === 0;
@@ -396,7 +396,7 @@ async function main() {
     return;
   }
 
-  // 5. Blogger 업로드 (+ 선택적 예약 발행)
+  // 5. Blogger 업로드 (+ Playwright 메타 + 선택적 예약 발행)
   const publishLabel = !publishDate ? 'DRAFT 유지' : publishDate === 'now' ? '즉시 발행' : `예약: ${formatSlotKorean(publishDate)}`;
   console.log(`☁️ [업로드] Blogger → ${publishLabel}`);
   const ok = runPublishDraft({
@@ -408,6 +408,8 @@ async function main() {
     sub2: topic.subtitle[1] || '',
     htmlPath: htmlRelPath,
     labels: (topic.labels || []).join(','),
+    slug: topic.slug || '',
+    searchDescription,
     publishDate,
   });
 

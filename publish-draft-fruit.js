@@ -41,6 +41,13 @@ if (!dayId || !emoji || !postTitle || !thumbTitle || !htmlPath) {
   process.exit(1);
 }
 
+// Blogger "위치" 필드 기본값 (서울)
+const DEFAULT_LOCATION = {
+  name: '서울특별시, 대한민국',
+  lat: 37.5665,
+  lng: 126.9780,
+};
+
 async function getAccessToken() {
   const r = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -65,7 +72,7 @@ async function uploadDraft(token, title, labels, content) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ kind: 'blogger#post', title, content, labels }),
+    body: JSON.stringify({ kind: 'blogger#post', title, content, labels, location: DEFAULT_LOCATION }),
   });
   const result = await res.json();
   if (res.status !== 200) {

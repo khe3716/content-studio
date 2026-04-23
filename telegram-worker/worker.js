@@ -18,6 +18,7 @@ const NAVER_WORKFLOW = 'naver-convert.yml';
 const SEO_WORKFLOW = 'audit-seo.yml';
 const INSTA_WORKFLOW = 'auto-publish-insta.yml';
 const SCHEDULE_WORKFLOW = 'schedule-drafts.yml';
+const BATCH_ECONOMY_WORKFLOW = 'batch-economy.yml';
 
 export default {
   async fetch(request, env) {
@@ -76,6 +77,9 @@ async function handleCommand(env, chatId, text) {
       '<b>/schedule fruit</b> - 과일 DRAFT 전부 오늘부터 18:00 슬롯에 순차\n' +
       '<b>/schedule fruit 1</b> - 내일(offset=1)부터\n' +
       '<b>/schedule fruit 0 3</b> - 오늘부터, 최대 3편\n\n' +
+      '🚀 <b>경제 배치 예약 생성</b>\n' +
+      '<b>/batch 12 10</b> - Day 12부터 10편 새로 만들어 04/24부터 10 슬롯 예약\n' +
+      '<b>/batch 12 10 1</b> - 내일(offset=1)부터 시작 (기본)\n\n' +
       '📊 <b>공통</b>\n' +
       '<b>/status</b> - 경제 최근 실행 3건\n' +
       '<b>/fruitstatus</b> - 과일 최근 실행 3건\n' +
@@ -137,6 +141,29 @@ async function handleCommand(env, chatId, text) {
     await triggerWorkflow(env, INSTA_WORKFLOW, { day });
     await sendMessage(env, chatId,
       `📸 인스타 카드뉴스 생성 시작${day ? ` (Day ${day})` : ''}!\n2-3분 후 이미지 5장 + 캡션 도착합니다.`
+    );
+    return;
+  }
+
+  if (text.startsWith('/batch')) {
+    // /batch <startDay> <count> [startOffset]
+    const parts = text.split(/\s+/);
+    const startDay = parts[1];
+    const count = parts[2];
+    const startOffset = parts[3] || '1';
+    if (!startDay || !count || !/^\d+$/.test(startDay) || !/^\d+$/.test(count)) {
+      await sendMessage(env, chatId, '❌ 사용법: <code>/batch 12 10</code> (Day 12부터 10편)\n또는 <code>/batch 12 10 1</code> (내일부터)');
+      return;
+    }
+    await triggerWorkflowRaw(env, BATCH_ECONOMY_WORKFLOW, {
+      start_day: startDay,
+      count,
+      start_offset: startOffset,
+    });
+    await sendMessage(env, chatId,
+      `🚀 💰 경제 배치 예약 시작!\n` +
+      `Day ${startDay}부터 ${count}편, 오프셋 +${startOffset}일\n` +
+      `20~30분 후 완료 알림 도착.`
     );
     return;
   }

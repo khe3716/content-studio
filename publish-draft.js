@@ -1,15 +1,14 @@
-// 새 글을 Blogger에 업로드 (썸네일 자동 생성·삽입 + 선택적 예약 발행)
+// 새 글을 Blogger에 업로드 (썸네일 + Playwright 메타 + 위치 + 선택적 예약 발행)
 //
 // 사용법:
-//   node publish-draft.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>" [publishDate]
+//   node publish-draft.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>" [slug] [searchDescription] [publishDate]
 //
 // publishDate (선택):
-//   생략 또는 빈 문자열 → DRAFT 유지 (기존 동작)
-//   "now"                → 즉시 발행
-//   ISO 8601 (예: "2026-04-24T07:30:00+09:00") → 해당 시각 예약 발행
+//   생략/""    → DRAFT 유지
+//   "now"       → 즉시 발행
+//   ISO 8601   → 예약 발행
 //
-// 예시:
-//   node publish-draft.js day-04 money-bag "이자란?" "이자란?" "이자 개념과 종류," "한 번에 정리!" economy-blog/drafts/day-04-ija.html "경제기초,이자" "2026-04-24T07:30:00+09:00"
+// 순서: 업로드(DRAFT, location=서울) → Playwright 퍼머링크·검색설명 → publishDate 있으면 /publish
 
 const fs = require('fs');
 const path = require('path');
@@ -39,13 +38,20 @@ if (!BLOG_ID || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TO
 }
 
 // ========== 인자 파싱 ==========
-const [dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labelsStr, publishDateArg] = process.argv.slice(2);
+const [dayId, emoji, postTitle, thumbTitle, sub1, sub2, htmlPath, labelsStr, slugArg, searchDescArg, publishDateArg] = process.argv.slice(2);
 if (!dayId || !emoji || !postTitle || !thumbTitle || !htmlPath) {
   console.error(
-    '사용법: node publish-draft.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>" [publishDate]'
+    '사용법: node publish-draft.js <dayId> <emoji> "<postTitle>" "<thumbTitle>" "<sub1>" "<sub2>" <htmlPath> "<labels>" [slug] [searchDescription] [publishDate]'
   );
   process.exit(1);
 }
+
+// Blogger "위치" 필드 기본값 (서울)
+const DEFAULT_LOCATION = {
+  name: '서울특별시, 대한민국',
+  lat: 37.5665,
+  lng: 126.9780,
+};
 
 async function getAccessToken() {
   const res = await fetch('https://oauth2.googleapis.com/token', {
@@ -76,6 +82,7 @@ async function uploadDraft(accessToken, title, labels, content) {
       title,
       content,
       labels,
+      location: DEFAULT_LOCATION,
     }),
   });
   const result = await res.json();
@@ -191,7 +198,30 @@ async function publishPost(accessToken, postId, publishDate) {
     console.log('상태:', result.status || 'DRAFT');
     console.log('편집 URL:', `https://www.blogger.com/blog/post/edit/${BLOG_ID}/${result.id}`);
 
-    // 4. (선택) publishDate 지정되면 발행 전환
+    // 4. Playwright로 퍼머링크·검색설명 자동 세팅 (DRAFT 상태에서만 작동)
+    // 순서 중요: Playwright 먼저 → publishDate 적용
+    const sessionExists = fs.existsSync(path.join(__dirname, '.blogger-session', 'state.json'));
+    if (!sessionExists) {
+      console.log('\nℹ️ Blogger 세션 없음 → Playwright 스킵 (로컬에선 node scripts/blogger-session-setup.js)');
+    } else if (!slugArg && !searchDescArg) {
+      console.log('\nℹ️ slug·searchDescription 인자 없음 → Playwright 스킵');
+    } else {
+      console.log('\n🤖 Playwright로 퍼머링크·검색설명 자동 설정 중...');
+      try {
+        const { finalizePost } = require('./scripts/blogger-finalize-post');
+        await finalizePost({
+          blogId: BLOG_ID,
+          postId: result.id,
+          slug: slugArg || '',
+          description: searchDescArg || '',
+          headless: true,
+        });
+      } catch (e) {
+        console.warn(`   ⚠️ Playwright 자동화 실패 (무시하고 진행): ${e.message}`);
+      }
+    }
+
+    // 5. (선택) publishDate 지정되면 발행 전환
     if (publishDateArg) {
       const isoDate = publishDateArg === 'now' ? '' : publishDateArg;
       console.log(`\n☁️  [발행] publishDate=${isoDate || '(즉시)'}`);
