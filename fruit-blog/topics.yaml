@@ -92,7 +92,9 @@ topics:
       - 건강과일
       - 섭취량
       - 영양소
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-25T18:00:00+09:00'
+    generated_at: '2026-04-23T11:41:50.416Z'
   - day: 7
     cluster: tomato
     title: 스테비아 방울토마토가 달콤한 이유, 진짜일까요
@@ -107,7 +109,9 @@ topics:
       - 스테비아
       - 건강과일
       - 토마토
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-26T18:00:00+09:00'
+    generated_at: '2026-04-23T11:44:12.918Z'
   - day: 8
     cluster: tomato
     title: 대저토마토가 '짭짤한' 이유, 과학적으로 알려드려요
@@ -122,7 +126,9 @@ topics:
       - 짭짤이토마토
       - 토마토종류
       - 제철과일
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-27T18:00:00+09:00'
+    generated_at: '2026-04-23T11:46:08.232Z'
   - day: 9
     cluster: tomato
     title: 방울토마토 고르는 법 + 오래 싱싱한 보관 꿀팁
@@ -137,7 +143,9 @@ topics:
       - 과일선별
       - 과일보관법
       - 토마토
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-28T18:00:00+09:00'
+    generated_at: '2026-04-23T11:48:26.087Z'
   - day: 10
     cluster: mango
     title: 애플망고 vs 골드망고, 뭐가 더 달콤할까요
@@ -152,7 +160,9 @@ topics:
       - 골드망고
       - 망고선별
       - 열대과일
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-29T18:00:00+09:00'
+    generated_at: '2026-04-23T11:50:25.776Z'
   - day: 11
     cluster: mango
     title: 마하차녹 망고, 한국인이 잘 모르는 태국 보물
@@ -167,7 +177,9 @@ topics:
       - 태국망고
       - 망고종류
       - 열대과일
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-04-30T18:00:00+09:00'
+    generated_at: '2026-04-23T11:52:18.134Z'
   - day: 12
     cluster: mango
     title: 망고 후숙과 보관, 실패 없는 완벽 가이드
@@ -182,7 +194,9 @@ topics:
       - 과일후숙
       - 과일보관법
       - 열대과일
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-05-01T18:00:00+09:00'
+    generated_at: '2026-04-23T11:55:03.598Z'
   - day: 13
     cluster: fig
     title: 영암 무화과가 특별한 이유, 제철과 선별법
@@ -197,7 +211,9 @@ topics:
       - 영암무화과
       - 제철과일
       - 과일선별
-    status: pending
+    status: scheduled
+    scheduled_for: '2026-05-02T18:00:00+09:00'
+    generated_at: '2026-04-23T11:56:58.840Z'
   - day: 14
     cluster: fig
     title: 무화과 3일 내로 상하는 이유, 보관 꿀팁
