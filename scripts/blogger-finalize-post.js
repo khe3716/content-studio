@@ -124,7 +124,7 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
           } catch {}
         }
 
-        // slug 입력란 찾아 입력 (셀렉터 다양화)
+        // slug 입력란 찾아 입력 — 퍼머링크 전용 셀렉터만 (제목 오염 방지)
         const slugInputSelectors = [
           'input[aria-label*="퍼머"]',
           'input[aria-label*="영구"]',
@@ -133,8 +133,6 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
           'input[placeholder*="영구"]',
           'input[placeholder*="permalink"]',
           'input[name*="permalink"]',
-          'input[name*="url"]',
-          'input[jsname]:visible',
         ];
         let slugInputFound = false;
         for (const sel of slugInputSelectors) {
@@ -142,10 +140,10 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
             const inputs = await page.locator(sel).all();
             for (const input of inputs) {
               if (await input.isVisible({ timeout: 800 })) {
-                const placeholder = await input.getAttribute('placeholder').catch(() => '');
-                const ariaLabel = await input.getAttribute('aria-label').catch(() => '');
-                // 검색어·날짜 입력 제외
-                if ((placeholder + ariaLabel).match(/검색|날짜|시간|year/i)) continue;
+                const placeholder = await input.getAttribute('placeholder').catch(() => '') || '';
+                const ariaLabel = await input.getAttribute('aria-label').catch(() => '') || '';
+                // 제목·검색·날짜·라벨 등 완전 배제
+                if ((placeholder + ariaLabel).match(/제목|Title|검색|Search|날짜|date|라벨|Label|year/i)) continue;
                 await input.click();
                 await input.fill('');
                 await input.fill(slug);
