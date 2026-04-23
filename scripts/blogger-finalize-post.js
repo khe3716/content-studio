@@ -148,14 +148,22 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
         const isExcludedField = (placeholder, ariaLabel) =>
           (placeholder + ariaLabel).match(/제목|Title|검색|Search|날짜|date|라벨|Label|year/i);
 
-        // 전략 0: aria-label 정확 매칭 (CI DOM dump로 확인한 실제 속성)
+        // 전략 0: aria-label 정확 매칭
+        // Tab 쓰지 않음 — Tab이 "자동 퍼머링크"로 포커스 이동시키면 slug 무효화됨
+        // 대신 type()으로 천천히 타이핑 → Blogger React onChange 확실히 트리거
         try {
           if (await slugLocator.isVisible({ timeout: 1000 })) {
             await slugLocator.click();
-            await slugLocator.fill('');
-            await slugLocator.fill(slug);
-            await page.keyboard.press('Tab');
-            console.log(`   ✓ Slug 입력 (aria-label 매칭): ${slug}`);
+            await slugLocator.fill(''); // 기존값 비움
+            await page.waitForTimeout(300);
+            await slugLocator.type(slug, { delay: 30 });
+            console.log(`   ✓ Slug 입력 (aria-label 매칭, type 방식): ${slug}`);
+            // Tab 대신 input 자체에 blur 이벤트 직접 dispatch (라디오 포커스 안 건드림)
+            await slugLocator.evaluate(el => {
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+              el.blur();
+            });
             slugInputFound = true;
           }
         } catch (e) {
@@ -179,8 +187,12 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
                 if (isExcludedField(placeholder, ariaLabel)) continue;
                 await c.click();
                 await c.fill('');
-                await c.fill(slug);
-                await page.keyboard.press('Tab');
+                await c.type(slug, { delay: 30 });
+                await c.evaluate(el => {
+                  el.dispatchEvent(new Event('input', { bubbles: true }));
+                  el.dispatchEvent(new Event('change', { bubbles: true }));
+                  el.blur();
+                });
                 console.log(`   ✓ Slug 입력 (XPath ancestor): ${slug}`);
                 slugInputFound = true;
                 break;
@@ -233,8 +245,12 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
               if (name.match(/title|label|search|date|year/i)) continue;
               await input.click();
               await input.fill('');
-              await input.fill(slug);
-              await page.keyboard.press('Tab');
+              await input.type(slug, { delay: 30 });
+              await input.evaluate(el => {
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+                el.blur();
+              });
               console.log(`   ✓ Slug 입력 (전체 스캔): ${slug}`);
               slugInputFound = true;
               break;
@@ -316,8 +332,14 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
             if (await input.isVisible({ timeout: 1500 })) {
               await input.click();
               await input.fill('');
-              await input.fill(description);
-              await page.keyboard.press('Tab'); // blur → 자동 저장 트리거
+              await page.waitForTimeout(300);
+              await input.type(description, { delay: 10 });
+              // Tab 쓰지 않음 — blur 이벤트 직접 dispatch
+              await input.evaluate(el => {
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+                el.blur();
+              });
               console.log(`   ✓ 검색 설명 입력 (${description.length}자)`);
               break;
             }
@@ -404,8 +426,8 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
           console.log(`   ✓ 서버에 slug 저장 확인: ${val}`);
         } else {
           console.warn(`   ⚠️ slug 사라짐 (현재값: "${val}") — 재입력 시도`);
-          // "맞춤 퍼머링크" 라디오 다시 선택
-          for (const sel of ['text=맞춤 퍼머링크', 'text=맞춤 영구 링크', 'text=Custom Permalink']) {
+          // "맞춤 퍼머링크" 라디오 다시 선택 (role="radio" 우선)
+          for (const sel of ['[role="radio"][aria-label*="맞춤"]', 'input[type="radio"][aria-label*="맞춤"]', 'text=맞춤 퍼머링크']) {
             try {
               const el = page.locator(sel).first();
               if (await el.isVisible({ timeout: 1500 })) {
@@ -419,9 +441,14 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
           if (slugInput2) {
             await slugInput2.click();
             await slugInput2.fill('');
-            await slugInput2.fill(slug);
-            await page.keyboard.press('Tab');
-            console.log(`   ✓ slug 재입력: ${slug}`);
+            await slugInput2.type(slug, { delay: 30 });
+            // Tab 대신 input blur 직접 dispatch (Blogger 라디오 포커스 이동 방지)
+            await slugInput2.evaluate(el => {
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+              el.blur();
+            });
+            console.log(`   ✓ slug 재입력 (type + dispatch): ${slug}`);
             await page.waitForTimeout(10000);
           } else {
             console.warn(`   ⚠️ slug input 재탐색 실패`);
@@ -478,8 +505,12 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
             await descInput.fill('');
             await descInput.type(description, { delay: 10 });
             await page.waitForTimeout(500);
-            // 명시적 blur: 다른 곳 클릭 대신 키보드 이동
-            await page.keyboard.press('Tab');
+            // Tab 대신 blur 직접 dispatch (라디오 포커스 안 건드림)
+            await descInput.evaluate(el => {
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+              el.blur();
+            });
             console.log(`   ✓ 검색 설명 재입력 (${description.length}자)`);
             await page.waitForTimeout(10000);
           }
