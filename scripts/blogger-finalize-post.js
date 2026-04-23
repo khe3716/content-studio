@@ -124,39 +124,94 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
           } catch {}
         }
 
-        // slug 입력란 찾아 입력 — 퍼머링크 전용 셀렉터만 (제목 오염 방지)
-        const slugInputSelectors = [
-          'input[aria-label*="퍼머"]',
-          'input[aria-label*="영구"]',
-          'input[aria-label*="Permalink"]',
-          'input[placeholder*="퍼머"]',
-          'input[placeholder*="영구"]',
-          'input[placeholder*="permalink"]',
-          'input[name*="permalink"]',
-        ];
+        // slug 입력란 찾기: 다단계 전략
+        // 1) XPath로 "맞춤 퍼머링크" 조상 컨테이너 내 input
+        // 2) Tab 키로 포커스 이동 후 type
+        // 3) 모든 visible text input 스캔 (제목/라벨/검색/날짜 제외)
         let slugInputFound = false;
-        for (const sel of slugInputSelectors) {
-          try {
-            const inputs = await page.locator(sel).all();
-            for (const input of inputs) {
-              if (await input.isVisible({ timeout: 800 })) {
-                const placeholder = await input.getAttribute('placeholder').catch(() => '') || '';
-                const ariaLabel = await input.getAttribute('aria-label').catch(() => '') || '';
-                // 제목·검색·날짜·라벨 등 완전 배제
-                if ((placeholder + ariaLabel).match(/제목|Title|검색|Search|날짜|date|라벨|Label|year/i)) continue;
-                await input.click();
-                await input.fill('');
-                await input.fill(slug);
-                await page.keyboard.press('Tab'); // blur → 자동 저장
-                console.log(`   ✓ Slug 입력: ${slug}`);
-                slugInputFound = true;
-                break;
-              }
+
+        const isExcludedField = (placeholder, ariaLabel) =>
+          (placeholder + ariaLabel).match(/제목|Title|검색|Search|날짜|date|라벨|Label|year/i);
+
+        // 전략 1: XPath ancestor
+        try {
+          const xpathCandidates = [
+            'xpath=//*[contains(text(), "맞춤 퍼머링크")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
+            'xpath=//*[contains(text(), "Custom Permalink")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
+            'xpath=//*[contains(text(), "맞춤 영구 링크")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
+          ];
+          for (const xp of xpathCandidates) {
+            const candidates = await page.locator(xp).all();
+            for (const c of candidates) {
+              if (!(await c.isVisible({ timeout: 500 }))) continue;
+              const placeholder = (await c.getAttribute('placeholder').catch(() => '')) || '';
+              const ariaLabel = (await c.getAttribute('aria-label').catch(() => '')) || '';
+              if (isExcludedField(placeholder, ariaLabel)) continue;
+              await c.click();
+              await c.fill('');
+              await c.fill(slug);
+              await page.keyboard.press('Tab');
+              console.log(`   ✓ Slug 입력 (XPath ancestor): ${slug}`);
+              slugInputFound = true;
+              break;
             }
             if (slugInputFound) break;
+          }
+        } catch {}
+
+        // 전략 2: Tab 포커스 이동
+        if (!slugInputFound) {
+          try {
+            await page.keyboard.press('Tab');
+            await page.waitForTimeout(300);
+            const focusedInfo = await page.evaluate(() => {
+              const a = document.activeElement;
+              if (!a) return null;
+              return {
+                tag: a.tagName,
+                type: a.type || '',
+                aria: a.getAttribute('aria-label') || '',
+                placeholder: a.getAttribute('placeholder') || '',
+              };
+            });
+            if (focusedInfo && focusedInfo.tag === 'INPUT' &&
+                !isExcludedField(focusedInfo.placeholder, focusedInfo.aria)) {
+              await page.keyboard.press('Control+A');
+              await page.keyboard.press('Delete');
+              await page.keyboard.type(slug);
+              await page.keyboard.press('Tab');
+              console.log(`   ✓ Slug 입력 (Tab focus): ${slug}`);
+              slugInputFound = true;
+            }
           } catch {}
         }
-        if (!slugInputFound) console.warn(`   ⚠️ Slug 입력란을 못 찾음`);
+
+        // 전략 3: 전체 visible text input 스캔
+        if (!slugInputFound) {
+          try {
+            const allInputs = await page.locator('input[type="text"]:visible, input:not([type]):visible').all();
+            for (const input of allInputs) {
+              const placeholder = (await input.getAttribute('placeholder').catch(() => '')) || '';
+              const ariaLabel = (await input.getAttribute('aria-label').catch(() => '')) || '';
+              if (isExcludedField(placeholder, ariaLabel)) continue;
+              const val = await input.inputValue().catch(() => '');
+              // 긴 값은 제목일 가능성 → 스킵
+              if (val.length > 50) continue;
+              // 의심스러운 name 속성도 확인
+              const name = (await input.getAttribute('name').catch(() => '')) || '';
+              if (name.match(/title|label|search|date|year/i)) continue;
+              await input.click();
+              await input.fill('');
+              await input.fill(slug);
+              await page.keyboard.press('Tab');
+              console.log(`   ✓ Slug 입력 (전체 스캔): ${slug}`);
+              slugInputFound = true;
+              break;
+            }
+          } catch {}
+        }
+
+        if (!slugInputFound) console.warn(`   ⚠️ Slug 입력란을 못 찾음 (3단계 전략 모두 실패)`);
       } else {
         console.warn(`   ⚠️ "퍼머링크" 섹션을 못 찾음`);
       }
@@ -232,30 +287,41 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
         }
       } catch {}
 
-      // 검증 셀렉터: 퍼머링크 전용만 (제목 필드 건드리지 않도록)
-      const SAFE_PERMALINK_SELECTORS = [
-        'input[aria-label*="퍼머"]',
-        'input[aria-label*="영구"]',
-        'input[aria-label*="Permalink"]',
-        'input[placeholder*="퍼머"]',
-        'input[placeholder*="permalink"]',
-        'input[name*="permalink"]',
-      ];
+      const isExcludedField2 = (ph, aria) =>
+        (ph + aria).match(/제목|Title|검색|Search|날짜|date|라벨|Label|year/i);
 
       async function findSlugInput() {
-        for (const sel of SAFE_PERMALINK_SELECTORS) {
+        // XPath ancestor 우선
+        const xpaths = [
+          'xpath=//*[contains(text(), "맞춤 퍼머링크")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
+          'xpath=//*[contains(text(), "Custom Permalink")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
+        ];
+        for (const xp of xpaths) {
           try {
-            const inputs = await page.locator(sel).all();
-            for (const input of inputs) {
-              if (!(await input.isVisible({ timeout: 500 }))) continue;
-              const placeholder = await input.getAttribute('placeholder').catch(() => '') || '';
-              const ariaLabel = await input.getAttribute('aria-label').catch(() => '') || '';
-              // 제목·검색·날짜·라벨 등 완전 배제
-              if ((placeholder + ariaLabel).match(/제목|Title|검색|Search|날짜|date|라벨|Label|year/i)) continue;
-              return input;
+            const cand = await page.locator(xp).all();
+            for (const c of cand) {
+              if (!(await c.isVisible({ timeout: 500 }))) continue;
+              const ph = (await c.getAttribute('placeholder').catch(() => '')) || '';
+              const aria = (await c.getAttribute('aria-label').catch(() => '')) || '';
+              if (isExcludedField2(ph, aria)) continue;
+              return c;
             }
           } catch {}
         }
+        // 전체 input 스캔 (제목·라벨·검색 제외, 짧은 값만)
+        try {
+          const all = await page.locator('input[type="text"]:visible').all();
+          for (const i of all) {
+            const ph = (await i.getAttribute('placeholder').catch(() => '')) || '';
+            const aria = (await i.getAttribute('aria-label').catch(() => '')) || '';
+            if (isExcludedField2(ph, aria)) continue;
+            const name = (await i.getAttribute('name').catch(() => '')) || '';
+            if (name.match(/title|label|search|date|year/i)) continue;
+            const val = await i.inputValue().catch(() => '');
+            if (val.length > 50) continue;
+            return i;
+          }
+        } catch {}
         return null;
       }
 
