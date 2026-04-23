@@ -18,6 +18,14 @@ on:
         required: true
         type: string
         default: '1'
+      start_slot:
+        description: '시작 슬롯 (morning=07:30, evening=17:00)'
+        required: true
+        type: choice
+        options:
+          - morning
+          - evening
+        default: morning
 
 permissions:
   contents: write
@@ -81,11 +89,12 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TZ: Asia/Seoul
         run: |
-          echo "🎯 Day ${{ inputs.start_day }}부터 ${{ inputs.count }}편 → 오프셋 +${{ inputs.start_offset }}일부터"
+          echo "🎯 Day ${{ inputs.start_day }}부터 ${{ inputs.count }}편 → 오프셋 +${{ inputs.start_offset }}일 ${{ inputs.start_slot }}부터"
           node scripts/batch-schedule-economy.js \
             --start-day ${{ inputs.start_day }} \
             --count ${{ inputs.count }} \
             --start-offset ${{ inputs.start_offset }} \
+            --start-slot ${{ inputs.start_slot }} \
             --quiet
 
       - name: 4-debug. 스크린샷 업로드 (슬러그 실패 시)

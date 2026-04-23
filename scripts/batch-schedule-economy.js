@@ -33,11 +33,12 @@ loadEnv();
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const out = { startDay: 12, count: 10, startOffset: 1, quiet: false };
+  const out = { startDay: 12, count: 10, startOffset: 1, startSlot: 'morning', quiet: false };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--start-day') out.startDay = parseInt(args[++i], 10);
     else if (args[i] === '--count') out.count = parseInt(args[++i], 10);
     else if (args[i] === '--start-offset') out.startOffset = parseInt(args[++i], 10);
+    else if (args[i] === '--start-slot') out.startSlot = args[++i];
     else if (args[i] === '--quiet') out.quiet = true;
   }
   return out;
@@ -58,15 +59,20 @@ async function notifyTelegram(text) {
 
 async function main() {
   const args = parseArgs();
-  const { startDay, count, startOffset, quiet } = args;
+  const { startDay, count, startOffset, startSlot, quiet } = args;
 
   // economy = 2 slots/day (morning, evening)
+  // startSlot='evening'이면 첫 날은 evening부터 (morning 스킵)
   const slots = [];
-  for (let offset = startOffset; slots.length < count; offset++) {
-    for (const s of SLOTS.economy) {
-      if (slots.length < count) {
-        slots.push({ iso: slotToISO(s, offset), slot: s.name, offsetDays: offset });
-      }
+  let offset = startOffset;
+  let slotIdx = startSlot === 'evening' ? 1 : 0;
+  while (slots.length < count) {
+    const s = SLOTS.economy[slotIdx];
+    slots.push({ iso: slotToISO(s, offset), slot: s.name, offsetDays: offset });
+    slotIdx++;
+    if (slotIdx >= SLOTS.economy.length) {
+      slotIdx = 0;
+      offset++;
     }
   }
 
