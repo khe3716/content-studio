@@ -106,58 +106,89 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
         await page.waitForTimeout(1500);
 
         // "맞춤 퍼머링크" 라디오 버튼 선택
+        // 여러 셀렉터 시도 + 라디오 인풋 직접 체크
         const customRadioSelectors = [
+          'input[type="radio"][aria-label*="맞춤"]',
+          '[role="radio"][aria-label*="맞춤"]',
           'text=맞춤 퍼머링크',
           'text=맞춤 영구 링크',
           'text=Custom Permalink',
-          'input[type="radio"][aria-label*="맞춤"]',
         ];
         for (const sel of customRadioSelectors) {
           try {
             const el = page.locator(sel).first();
             if (await el.isVisible({ timeout: 1500 })) {
               await el.click();
-              console.log(`   ✓ "맞춤 퍼머링크" 선택`);
-              await page.waitForTimeout(1500); // 입력란 나타날 시간
+              console.log(`   ✓ "맞춤 퍼머링크" 선택 (${sel})`);
               break;
             }
           } catch {}
         }
 
-        // slug 입력란 찾기: 다단계 전략
-        // 1) XPath로 "맞춤 퍼머링크" 조상 컨테이너 내 input
-        // 2) Tab 키로 포커스 이동 후 type
-        // 3) 모든 visible text input 스캔 (제목/라벨/검색/날짜 제외)
+        // slug input이 visible 될 때까지 명시적 대기 (최대 6초)
+        const slugLocator = page.locator('input[aria-label="맞춤 퍼머링크 입력"], input[aria-label*="맞춤 퍼머"], input[aria-label*="Custom Permalink"]').first();
+        try {
+          await slugLocator.waitFor({ state: 'visible', timeout: 6000 });
+          console.log(`   ✓ slug input 표시됨`);
+        } catch {
+          console.warn(`   ⚠️ slug input 아직 안 뜸 — 라디오 재시도`);
+          // 라디오 다시 클릭 (텍스트 label)
+          try {
+            await page.locator('text=맞춤 퍼머링크').first().click();
+            await slugLocator.waitFor({ state: 'visible', timeout: 5000 });
+            console.log(`   ✓ 재시도 후 slug input 표시됨`);
+          } catch {
+            console.warn(`   ⚠️ 재시도 후에도 slug input 안 뜸`);
+          }
+        }
+
+        // slug 입력: aria-label 직접 매칭 우선
         let slugInputFound = false;
 
         const isExcludedField = (placeholder, ariaLabel) =>
           (placeholder + ariaLabel).match(/제목|Title|검색|Search|날짜|date|라벨|Label|year/i);
 
-        // 전략 1: XPath ancestor
+        // 전략 0: aria-label 정확 매칭 (CI DOM dump로 확인한 실제 속성)
         try {
-          const xpathCandidates = [
-            'xpath=//*[contains(text(), "맞춤 퍼머링크")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
-            'xpath=//*[contains(text(), "Custom Permalink")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
-            'xpath=//*[contains(text(), "맞춤 영구 링크")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
-          ];
-          for (const xp of xpathCandidates) {
-            const candidates = await page.locator(xp).all();
-            for (const c of candidates) {
-              if (!(await c.isVisible({ timeout: 500 }))) continue;
-              const placeholder = (await c.getAttribute('placeholder').catch(() => '')) || '';
-              const ariaLabel = (await c.getAttribute('aria-label').catch(() => '')) || '';
-              if (isExcludedField(placeholder, ariaLabel)) continue;
-              await c.click();
-              await c.fill('');
-              await c.fill(slug);
-              await page.keyboard.press('Tab');
-              console.log(`   ✓ Slug 입력 (XPath ancestor): ${slug}`);
-              slugInputFound = true;
-              break;
-            }
-            if (slugInputFound) break;
+          if (await slugLocator.isVisible({ timeout: 1000 })) {
+            await slugLocator.click();
+            await slugLocator.fill('');
+            await slugLocator.fill(slug);
+            await page.keyboard.press('Tab');
+            console.log(`   ✓ Slug 입력 (aria-label 매칭): ${slug}`);
+            slugInputFound = true;
           }
-        } catch {}
+        } catch (e) {
+          console.warn(`   ⚠️ aria-label 매칭 실패: ${e.message.slice(0, 100)}`);
+        }
+
+        // 전략 1: XPath ancestor (전략 0 실패시만)
+        if (!slugInputFound) {
+          try {
+            const xpathCandidates = [
+              'xpath=//*[contains(text(), "맞춤 퍼머링크")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
+              'xpath=//*[contains(text(), "Custom Permalink")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
+              'xpath=//*[contains(text(), "맞춤 영구 링크")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
+            ];
+            for (const xp of xpathCandidates) {
+              const candidates = await page.locator(xp).all();
+              for (const c of candidates) {
+                if (!(await c.isVisible({ timeout: 500 }))) continue;
+                const placeholder = (await c.getAttribute('placeholder').catch(() => '')) || '';
+                const ariaLabel = (await c.getAttribute('aria-label').catch(() => '')) || '';
+                if (isExcludedField(placeholder, ariaLabel)) continue;
+                await c.click();
+                await c.fill('');
+                await c.fill(slug);
+                await page.keyboard.press('Tab');
+                console.log(`   ✓ Slug 입력 (XPath ancestor): ${slug}`);
+                slugInputFound = true;
+                break;
+              }
+              if (slugInputFound) break;
+            }
+          } catch {}
+        }
 
         // 전략 2: Tab 포커스 이동
         if (!slugInputFound) {
@@ -325,7 +356,14 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
         (ph + aria).match(/제목|Title|검색|Search|날짜|date|라벨|Label|year/i);
 
       async function findSlugInput() {
-        // XPath ancestor 우선
+        // aria-label 정확 매칭 우선 (CI DOM dump로 확인됨)
+        try {
+          const ariaExact = page.locator('input[aria-label="맞춤 퍼머링크 입력"], input[aria-label*="맞춤 퍼머"], input[aria-label*="Custom Permalink"]').first();
+          if (await ariaExact.count() > 0 && await ariaExact.isVisible({ timeout: 1000 })) {
+            return ariaExact;
+          }
+        } catch {}
+        // XPath ancestor
         const xpaths = [
           'xpath=//*[contains(text(), "맞춤 퍼머링크")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
           'xpath=//*[contains(text(), "Custom Permalink")]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]',
