@@ -58,9 +58,9 @@ function generateBaseSvg({ title, subtitle, brand = '경제 꿀팁, 하루 5분'
     )
     .join('\n  ')}
 
-  <!-- 하단 브랜드 바 -->
+  <!-- 하단 브랜드 바 (💰 이모지는 PNG 합성으로 추가됨) -->
   <rect x="0" y="${size - 68}" width="${size}" height="68" fill="url(#accentGrad)"/>
-  <text x="${c}" y="${size - 25}" class="brand" font-size="29" fill="white" text-anchor="middle">💰 ${brand}</text>
+  <text x="${c}" y="${size - 25}" class="brand" font-size="29" fill="white" text-anchor="middle">${brand}</text>
 </svg>`;
 }
 
@@ -76,7 +76,7 @@ async function renderThumbnailPng({ title, subtitle, brand, emoji, outputPath })
     .png({ quality: 100, compressionLevel: 9 })
     .toBuffer();
 
-  // 2. 이모지 2배 크기(310×310)로 리사이즈 후 합성
+  // 2. 상단 메인 이모지 합성 (310×310 → 1200 해상도에서)
   if (emoji) {
     const emojiPath = path.join(__dirname, 'emojis', `${emoji}.png`);
     if (fs.existsSync(emojiPath)) {
@@ -91,6 +91,26 @@ async function renderThumbnailPng({ title, subtitle, brand, emoji, outputPath })
     } else {
       console.warn(`⚠️ 이모지 파일 없음: ${emojiPath}`);
     }
+  }
+
+  // 2-b. 하단 배너의 💰 머니백 이모지 합성 (SVG 텍스트 이모지가 CI에서 흰색 깨짐)
+  // SVG에서는 이모지 제거한 상태. "경제 꿀팁, 하루 5분" 텍스트 왼쪽에 이모지 PNG 덧붙임.
+  const bagPath = path.join(__dirname, 'emojis', 'money-bag.png');
+  if (fs.existsSync(bagPath)) {
+    // 1200×1200 intermediate에서:
+    //   배너 영역: y=1064~1200 (136px 높이)
+    //   이모지 90×90 → y=1087 (배너 중앙)
+    //   텍스트 중앙 정렬인데 이모지를 텍스트 왼쪽에 배치
+    //   텍스트 "경제 꿀팁, 하루 5분" @ 58px ≈ 가로 580px, 중앙 기준 310~890
+    //   이모지 x=340 (텍스트 시작 직전)
+    const bagResized = await sharp(bagPath)
+      .resize(80, 80, { kernel: 'lanczos3' })
+      .png()
+      .toBuffer();
+    pngBuffer = await sharp(pngBuffer)
+      .composite([{ input: bagResized, left: 220, top: 1092 }])
+      .png({ quality: 100, compressionLevel: 9 })
+      .toBuffer();
   }
 
   // 3. 최종 다운스케일 600×600
