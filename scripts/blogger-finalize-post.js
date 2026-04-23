@@ -211,7 +211,41 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
           } catch {}
         }
 
-        if (!slugInputFound) console.warn(`   ⚠️ Slug 입력란을 못 찾음 (3단계 전략 모두 실패)`);
+        if (!slugInputFound) {
+          console.warn(`   ⚠️ Slug 입력란을 못 찾음 (3단계 전략 모두 실패)`);
+          // 디버그: "맞춤 퍼머링크" 주변 DOM 덤프
+          try {
+            const dump = await page.evaluate(() => {
+              const nodes = [...document.querySelectorAll('*')].filter(el =>
+                el.textContent && el.textContent.trim() === '맞춤 퍼머링크'
+              );
+              if (nodes.length === 0) return 'NO_RADIO_TEXT';
+              const radio = nodes[0];
+              // 가장 가까운 3개 ancestor의 HTML 일부 + 내부 input/textarea 목록
+              let parent = radio;
+              for (let i = 0; i < 5; i++) {
+                if (!parent.parentElement) break;
+                parent = parent.parentElement;
+              }
+              const inputs = [...parent.querySelectorAll('input, textarea')].map(el => ({
+                tag: el.tagName,
+                type: el.type,
+                name: el.name,
+                id: el.id,
+                aria: el.getAttribute('aria-label'),
+                placeholder: el.getAttribute('placeholder'),
+                jsname: el.getAttribute('jsname'),
+                value: (el.value || '').slice(0, 40),
+                visible: el.offsetParent !== null,
+              }));
+              return JSON.stringify(inputs, null, 2);
+            });
+            console.warn(`   [DEBUG] 맞춤 퍼머링크 ancestor 내 input/textarea:\n${dump.slice(0, 2000)}`);
+            await page.screenshot({ path: path.join(__dirname, '..', 'debug-slug-not-found.png'), fullPage: false }).catch(() => {});
+          } catch (e) {
+            console.warn(`   [DEBUG] DOM 덤프 실패: ${e.message}`);
+          }
+        }
       } else {
         console.warn(`   ⚠️ "퍼머링크" 섹션을 못 찾음`);
       }

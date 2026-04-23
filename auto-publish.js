@@ -66,13 +66,16 @@ async function notifyTelegram(text) {
 }
 
 // ========== 제미나이 호출 ==========
-async function callGemini(userPrompt, systemPrompt, { temperature = 0.7, maxTokens = 16384 } = {}) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+async function callGemini(userPrompt, systemPrompt, { temperature = 0.7, maxTokens = 16384, model = GEMINI_MODEL, disableThinking = false } = {}) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
     generationConfig: { temperature, maxOutputTokens: maxTokens },
   };
+  if (disableThinking) {
+    body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
 
   const res = await fetch(url, {
     method: 'POST',
@@ -256,7 +259,12 @@ ${articleHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 800)}
 
 **한 줄로, 120~150자, 평문만 출력.**`;
 
-  const raw = await callGemini(userPrompt, systemPrompt, { temperature: 0.5, maxTokens: 2000 });
+  const raw = await callGemini(userPrompt, systemPrompt, {
+    temperature: 0.5,
+    maxTokens: 500,
+    model: 'gemini-2.5-flash',
+    disableThinking: true,
+  });
   return raw.replace(/^["']|["']$/g, '').replace(/\s+/g, ' ').trim();
 }
 
