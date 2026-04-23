@@ -210,19 +210,132 @@ async function finalizePost({ blogId, postId, slug, description, headless = true
       }
     }
 
-    // DRAFT 상태는 자동 저장됨. 별도 저장 버튼 없음.
-    // 입력 후 blur 이벤트가 트리거되면 Blogger가 자동 저장.
-    console.log(`   💾 자동 저장 대기 중... (3초)`);
-    await page.waitForTimeout(3000);
+    // DRAFT 자동 저장 대기 + 검증
+    // 입력 후 blur → Blogger 자동 저장 트리거 → 서버 반영까지 시간 걸림
+    console.log(`   💾 자동 저장 대기 중... (8초)`);
+    await page.waitForTimeout(8000);
 
-    // "저장됨" 표시 확인 (안 보이면 경고만)
+    // "저장됨" 표시 확인
+    let cloudSavedSeen = false;
     try {
-      const cloudSaved = await page.locator('[aria-label*="저장됨"], [aria-label*="saved"], [title*="저장"]').first().isVisible({ timeout: 2000 });
-      if (cloudSaved) console.log(`   ✓ 자동 저장 확인됨`);
-    } catch { /* 표시기 못 찾아도 계속 */ }
+      const cloudSaved = await page.locator('[aria-label*="저장됨"], [aria-label*="saved"], [title*="저장"]').first().isVisible({ timeout: 3000 });
+      if (cloudSaved) {
+        console.log(`   ✓ UI에 "저장됨" 표시 확인`);
+        cloudSavedSeen = true;
+      }
+    } catch {}
+
+    // 서버 저장 실제 검증: 페이지 새로고침 후 slug가 남아있는지 확인
+    if (slug) {
+      console.log(`   🔁 새로고침으로 서버 저장 검증 중...`);
+      await page.goto(editUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(3000);
+
+      // 퍼머링크 섹션 다시 열기
+      try {
+        const permalinkEl = page.locator('text=퍼머링크').first();
+        if (await permalinkEl.isVisible({ timeout: 3000 })) {
+          await permalinkEl.click();
+          await page.waitForTimeout(1500);
+        }
+      } catch {}
+
+      // slug input 검사
+      let slugPersisted = false;
+      const checkSelectors = [
+        'input[aria-label*="퍼머"]',
+        'input[aria-label*="Permalink"]',
+        'input[name*="permalink"]',
+        'input[name*="url"]',
+        'input[jsname]:visible',
+      ];
+      for (const sel of checkSelectors) {
+        try {
+          const inputs = await page.locator(sel).all();
+          for (const input of inputs) {
+            if (await input.isVisible({ timeout: 800 })) {
+              const val = await input.inputValue().catch(() => '');
+              if (val && val.includes(slug)) {
+                slugPersisted = true;
+                console.log(`   ✓ 서버에 slug 저장 확인: ${val}`);
+                break;
+              }
+            }
+          }
+          if (slugPersisted) break;
+        } catch {}
+      }
+
+      if (!slugPersisted) {
+        console.warn(`   ⚠️ 새로고침 후 slug가 사라짐 — 재입력 시도`);
+        // 재입력 (퍼머링크 섹션 이미 열려있음)
+        try {
+          // "맞춤 퍼머링크" 라디오 다시 선택
+          for (const sel of ['text=맞춤 퍼머링크', 'text=맞춤 영구 링크', 'text=Custom Permalink']) {
+            try {
+              const el = page.locator(sel).first();
+              if (await el.isVisible({ timeout: 1500 })) {
+                await el.click();
+                await page.waitForTimeout(1500);
+                break;
+              }
+            } catch {}
+          }
+          for (const sel of checkSelectors) {
+            const inputs = await page.locator(sel).all();
+            let filled = false;
+            for (const input of inputs) {
+              if (await input.isVisible({ timeout: 800 })) {
+                const placeholder = await input.getAttribute('placeholder').catch(() => '');
+                const ariaLabel = await input.getAttribute('aria-label').catch(() => '');
+                if ((placeholder + ariaLabel).match(/검색|날짜|시간|year/i)) continue;
+                await input.click();
+                await input.fill('');
+                await input.fill(slug);
+                await page.keyboard.press('Tab');
+                console.log(`   ✓ slug 재입력: ${slug}`);
+                filled = true;
+                break;
+              }
+            }
+            if (filled) break;
+          }
+          await page.waitForTimeout(8000);
+        } catch (e) {
+          console.warn(`   ⚠️ 재입력 실패: ${e.message}`);
+        }
+      }
+
+      // 검색 설명도 재확인 (선택)
+      if (description) {
+        try {
+          const descToggle = page.locator('text=검색 설명').first();
+          if (await descToggle.isVisible({ timeout: 2000 })) {
+            await descToggle.click();
+            await page.waitForTimeout(1500);
+          }
+          const descInput = page.locator('textarea[aria-label*="검색"], textarea[aria-label*="Search"]').last();
+          if (await descInput.isVisible({ timeout: 2000 })) {
+            const val = await descInput.inputValue().catch(() => '');
+            if (!val || !val.includes(description.slice(0, 20))) {
+              console.warn(`   ⚠️ 검색 설명 사라짐 — 재입력`);
+              await descInput.click();
+              await descInput.fill('');
+              await descInput.fill(description);
+              await page.keyboard.press('Tab');
+              await page.waitForTimeout(8000);
+            } else {
+              console.log(`   ✓ 서버에 검색 설명 저장 확인 (${val.length}자)`);
+            }
+          }
+        } catch (e) {
+          console.warn(`   ⚠️ 검색 설명 검증 실패: ${e.message}`);
+        }
+      }
+    }
 
     console.log(`✅ Blogger 메타 자동 설정 완료`);
-
     return true;
   } catch (err) {
     try {

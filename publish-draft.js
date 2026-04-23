@@ -216,6 +216,9 @@ async function publishPost(accessToken, postId, publishDate) {
           description: searchDescArg || '',
           headless: true,
         });
+        // 서버 저장 반영 위한 안전 대기
+        console.log('   ⏳ publish API 호출 전 추가 3초 대기');
+        await new Promise(r => setTimeout(r, 3000));
       } catch (e) {
         console.warn(`   ⚠️ Playwright 자동화 실패 (무시하고 진행): ${e.message}`);
       }
