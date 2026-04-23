@@ -97,14 +97,22 @@ async function generateImage(prompt, outputPath) {
   return jpgPath;
 }
 
-// ========== 샘플 로드 ==========
-function loadWritingSamples(count = 3, maxCharsPerSample = 2500) {
-  const dir = path.join(__dirname, 'fruit-blog', 'samples');
-  const idx = path.join(dir, 'index.json');
-  if (!fs.existsSync(idx)) return [];
+// ========== 네이버 샘플 로드 (스타일 few-shot) ==========
+function loadWritingSamples(count = 2, maxCharsPerSample = 6000) {
+  // 네이버 블로그 전용 샘플 우선. 없으면 구글 블로거 샘플 fallback.
+  const naverDir = path.join(__dirname, 'naver-blog', 'samples');
+  const naverIdx = path.join(naverDir, 'index.json');
+  let dir = naverDir;
+  let idx = naverIdx;
+  if (!fs.existsSync(idx)) {
+    // fallback
+    dir = path.join(__dirname, 'fruit-blog', 'samples');
+    idx = path.join(dir, 'index.json');
+    if (!fs.existsSync(idx)) return [];
+  }
   const items = JSON.parse(fs.readFileSync(idx, 'utf8'));
-  const shuffled = [...items].sort(() => Math.random() - 0.5).slice(0, count);
-  return shuffled.map(m => {
+  const picked = items.length <= count ? items : [...items].sort(() => Math.random() - 0.5).slice(0, count);
+  return picked.map(m => {
     const fp = path.join(dir, m.file);
     if (!fs.existsSync(fp)) return null;
     let html = fs.readFileSync(fp, 'utf8');
@@ -152,7 +160,7 @@ async function rewriteForNaver(topic, originalHtml) {
   const samples = loadWritingSamples(2, 2000); // 네이버는 톤이 달라서 샘플 2개만
 
   const samplesHint = samples.length > 0
-    ? `\n\n# 스타일 참고 (블로그 운영자 기존 글 — 친근한 말투와 수다체 리듬 참고)\n${samples.map((s, i) => `=== 샘플 ${i + 1}: ${s.title} ===\n${s.html}`).join('\n\n')}\n`
+    ? `\n\n# 스타일 참고 (네이버 블로그 전용 샘플 — 이 톤·구조·어조를 반드시 그대로 따라올 것) ★★★\n\n아래 샘플은 네이버 블로그 특유의 수다체, 드라마틱한 섹션 제목, 의인화 비유, 이모지 밀도, 문단 길이, 마무리 구조의 **모범 답안**입니다. 리라이팅 결과는 이 샘플과 **같은 어조·같은 구조·같은 리듬**으로 만들어 주세요.\n\n${samples.map((s, i) => `===== 샘플 ${i + 1}: ${s.title} =====\n${s.html}\n===== 샘플 ${i + 1} 끝 =====`).join('\n\n')}\n`
     : '';
 
   const systemPrompt = `${persona}${samplesHint}`;
@@ -164,12 +172,19 @@ async function rewriteForNaver(topic, originalHtml) {
 == 원본 HTML ==
 ${originalHtml}
 
-== 요구사항 ==
-1. 3,000~3,500자로 늘려서 수다체·체험 강화
-2. 섹션 5~6개, 각 섹션마다 <!-- [[IMG_N]] --> 플레이스홀더 삽입 (N=1,2,3,4,5[,6])
-3. 도입부 400자, 본문 각 400~600자, 마무리 300자 + 댓글·이웃 유도
-4. 달콤살랑·스토어·상품명 절대 금지
-5. 출력은 지정된 <naver-html>...</naver-html> + <image-prompts>...</image-prompts> 포맷만`;
+== 요구사항 ★ (샘플의 스타일을 그대로 옮길 것) ==
+1. **제목**: 샘플처럼 공감 질문 + 숫자 약속 + 이모지 포함한 긴 제목. 예: "[내돈내산] ... 속상하셨죠? 😭 2배 오래 가는 3단계 ..."
+2. **도입부 400자**: 인사("안녕하세요 이웃님들~!") + 본인 소개("과일 박사, 박과일이에요 😊") + 구체적 개인 스토리 + 공감대 형성 + 오늘의 약속
+3. **섹션 5~6개**, 제목은 반드시 **드라마틱하게** (예: "저의 눈물겨운 실패담 😭", "도대체 왜 이렇게 예민할까요?", "'산딸기 호텔' 만들어주기")
+4. **각 섹션 문단 2~3개, 각 문단 3~5줄**. 긴 문단 금지. 네이버 가독성 핵심은 **여백**.
+5. 각 섹션에 <!-- [[IMG_N]] --> 플레이스홀더 (N=1,2,3,4,5[,6])
+6. **의인화·비유 풍부하게**: "피부 얇은 아기", "뽀송뽀송 침대", "사회적 거리두기", "숨구멍" 같은 표현
+7. **이모지 적극**: 섹션당 2~5개 (😭🙌😊👍😱❤️🫐🍓📌💡)
+8. **핵심 키워드 <strong>**로 볼드
+9. **마무리**: 3줄 요약 <ol> + 댓글 유도 + 이웃 유도 + 다음 글 예고 (샘플 마무리 그대로 따라)
+10. 총 3,000~3,500자
+11. 달콤살랑·스토어·상품명·외부 쇼핑 링크 절대 금지
+12. 출력은 <naver-html>...</naver-html> + <image-prompts>...</image-prompts> 포맷만`;
 
   const response = await callGemini(userPrompt, systemPrompt, { temperature: 0.8, maxTokens: 16384 });
   return response;
