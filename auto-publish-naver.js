@@ -73,23 +73,30 @@ async function callGemini(userPrompt, systemPrompt, { temperature = 0.7, maxToke
   return text;
 }
 
-// ========== Imagen 4 Fast ==========
+// ========== Nano Banana (Gemini 2.5 Flash Image Preview) ==========
+// Imagen 4 Fast (일일 70장) → Nano Banana (일일 2,000장) 전환.
+// API 형식이 다름: generateContent + responseModalities=IMAGE.
 async function generateImage(prompt, outputPath) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${GEMINI_API_KEY}`;
+  const model = 'gemini-2.5-flash-image';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+  // 사람·손 등장은 프롬프트로만 통제 (Nano Banana는 personGeneration 파라미터 없음).
+  const safePrompt = /no people/i.test(prompt) ? prompt : `${prompt}. No people, no hands, no human figures.`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      instances: [{ prompt }],
-      parameters: { sampleCount: 1, aspectRatio: '1:1', personGeneration: 'dont_allow' },
+      contents: [{ parts: [{ text: safePrompt }] }],
+      generationConfig: { responseModalities: ['IMAGE'] },
     }),
   });
-  if (!res.ok) throw new Error(`Imagen API ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  if (!res.ok) throw new Error(`Nano Banana API ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const j = await res.json();
-  const b64 = j.predictions?.[0]?.bytesBase64Encoded;
-  if (!b64) throw new Error('Imagen 응답에 이미지 없음');
+  const parts = j.candidates?.[0]?.content?.parts || [];
+  const imagePart = parts.find(p => p.inlineData?.data);
+  if (!imagePart) throw new Error('Nano Banana 응답에 이미지 없음');
+  const b64 = imagePart.inlineData.data;
   const resized = await sharp(Buffer.from(b64, 'base64'))
-    .resize(800, 800, { kernel: 'lanczos3' })
+    .resize(800, 800, { kernel: 'lanczos3', fit: 'cover' })
     .jpeg({ quality: 82 })
     .toBuffer();
   const jpgPath = outputPath.replace(/\.png$/i, '.jpg');
@@ -219,6 +226,14 @@ ${originalHtml}
 13. 총 3,000~3,500자
 14. 달콤살랑·스토어·상품명·외부 쇼핑 링크 절대 금지
 15. **image-prompts 섹션에 반드시 10~12개** 프롬프트 생성 (사진 유형 다양화 규칙 준수). 사람·손 등장 금지 (no people, no hands).
+   - **★ 스튜디오 vs 홈샷 혼합**: 12장 중 2장만 스튜디오풍("Photorealistic food photography, clean studio lighting, shallow depth of field, ..."), 나머지 8~10장은 아마추어 스마트폰 샷풍 — 아래 패턴 중 하나를 반드시 섞을 것:
+     - "Casual smartphone photo taken in a Korean home kitchen, natural window light, slightly imperfect composition, of ..."
+     - "Amateur iPhone snapshot of ... on a Korean kitchen counter, soft afternoon daylight, realistic unedited look"
+     - "Korean naver blog style food photo, handheld, home kitchen background, authentic everyday feel, of ..."
+     - "Unedited close-up phone photo of ..., natural home lighting, slight motion blur, lived-in feel"
+     - "Everyday home cooking photo, diffused window light, plain dish on wooden table, casual arrangement of ..."
+   - 금지 토큰: "8k", "hyperrealistic", "professional studio", "cinematic", "food magazine cover" — AI 티만 더 납니다.
+   - 권장 토큰: "natural window light", "slightly imperfect", "casual", "home kitchen", "unedited", "authentic", "Korean home cooking", "lived-in"
 16. 출력은 <naver-html>...</naver-html> + <image-prompts>...</image-prompts> 포맷만`;
 
   const response = await callGemini(userPrompt, systemPrompt, { temperature: 0.8, maxTokens: 16384 });
