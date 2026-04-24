@@ -83,29 +83,33 @@ async function callPersona(name, userPrompt, opts = {}) {
 }
 
 // ========== 빈약 아웃풋 판정 ==========
-// 각 페르소나 특성에 맞춘 기본 판정 (isBankrupt 오버라이드 가능)
+// 기본 판정 (isBankrupt 옵션으로 페르소나별 오버라이드 가능)
+// 너무 엄격하면 정상 Gemini 응답도 빈약으로 오판 → 완화 기조
 function defaultIsBankrupt(output) {
   if (!output || typeof output !== 'string') return true;
   const trimmed = output.trim();
-  if (trimmed.length < 80) return true;
-  const bankruptPhrases = [
-    '특이사항 없음',
-    '딱히 없',
-    '정보가 없',
-    '알 수 없',
-    '모르겠',
-    '해당 없음',
-  ];
-  const lower = trimmed.toLowerCase();
-  // 너무 짧은 응답에만 문구 매칭 (긴 응답에서 부분 언급은 OK)
+
+  // bullet 판정 — 일반 bullet + 이모지 prefix + 번호 매기기 모두 인정
+  const bulletRegex = /^(?:[-•*]|🔥|📈|📉|🎯|📊|🗃️|⏳|⚠️|🛒|🚨|📝|🆕|✅|❌|🔍|📌|💡|1\.|2\.|3\.|4\.|5\.)\s*\S/gm;
+  const bulletCount = (trimmed.match(bulletRegex) || []).length;
+
+  // bullet 3개 이상이면 형식 갖춘 응답 → 무조건 통과
+  if (bulletCount >= 3) return false;
+
+  // 극단적으로 짧은 응답은 빈약
+  if (trimmed.length < 60) return true;
+
+  // 명시적 포기 문구 (200자 미만에서만 매칭, 긴 응답은 부분 언급 허용)
+  const bankruptPhrases = ['특이사항 없음', '딱히 없', '정보가 없', '알 수 없', '해당 없음'];
   if (trimmed.length < 200) {
     for (const p of bankruptPhrases) {
       if (trimmed.includes(p)) return true;
     }
   }
-  // 빈 bullet만 있는 경우
-  const bulletCount = (trimmed.match(/^[-•*]\s+\S/gm) || []).length;
-  if (trimmed.length < 300 && bulletCount < 2) return true;
+
+  // 150자 미만 + bullet 0개면 빈약
+  if (trimmed.length < 150 && bulletCount === 0) return true;
+
   return false;
 }
 
