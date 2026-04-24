@@ -201,6 +201,19 @@ function cleanForNaver(html, { imageBaseUrl } = {}) {
     });
   });
 
+  // <ol> 리스트를 <p>로 변환 (번호 텍스트화) — 중앙 정렬 시 번호·본문 붙여 보이게.
+  out = out.replace(/<ol(?:\s[^>]*)?>([\s\S]*?)<\/ol>/gi, (m, inner) => {
+    const items = [];
+    inner.replace(/<li(?:\s[^>]*)?>([\s\S]*?)<\/li>/gi, (_, content) => {
+      items.push(content.trim());
+      return '';
+    });
+    if (items.length === 0) return m;
+    return items.map((c, i) =>
+      `<p style="text-align:center;"><strong>${i + 1}.</strong> ${c}</p>`
+    ).join('\n<p style="text-align:center;">&nbsp;</p>\n');
+  });
+
   // 섹션 경계 강화: 네이버 스마트에디터가 border/padding/radius를 제거하므로,
   // 확실히 살아남는 스타일(text-align, color, background-color, font-size, font-weight)로만 구성.
   // 방식: <h2> 위에 유니코드 수평선 + <h2> 자체를 큰 굵은 글씨 + 배경색 강조.
