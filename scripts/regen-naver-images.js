@@ -1,7 +1,3 @@
-// 특정 Day의 특정 이미지 번호만 재생성 (같은 파일명으로 덮어쓰기).
-// 사용: node scripts/regen-naver-images.js
-// 대상 Day/타임스탬프/번호/프롬프트는 TARGETS에 직접 수정.
-
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
@@ -17,20 +13,25 @@ if (fs.existsSync(envPath)) {
     }
   });
 }
-
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY 없음');
 
 async function generateImage(prompt, outputPath) {
   const model = 'gemini-2.5-flash-image';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-  let safePrompt = prompt;
-  if (!/no people/i.test(safePrompt)) safePrompt += '. No people, no hands, no human figures.';
-  if (!/no text/i.test(safePrompt)) safePrompt += ' No text, no writing, no korean characters, no labels, no captions, no signs, no watermarks, no posters, no notes.';
-  if (/raspberr|blueberr|산딸기|블루베리|berry|berries/i.test(safePrompt) && !/calyx|stem/i.test(safePrompt)) {
-    safePrompt += ' Berries without green calyx or stem attached — clean, hulled fruit only.';
-  }
-  safePrompt += ' Physically accurate, correct proportions, consistent shadows and lighting from a single natural light source, realistic depth of field, authentic unedited smartphone photograph quality, natural color temperature, subtle imperfections and slight grain, no AI artifacts, no floating or levitating objects, no impossible geometry, no melting or distorted shapes, no duplicate or malformed items.';
+  const isBerry = /raspberr|blueberr|산딸기|블루베리|berry|berries/i.test(prompt);
+  const frontRules = [
+    'STRICT REQUIREMENTS:',
+    '- No people, no hands, no human figures.',
+    '- No text, no writing, no korean characters, no labels, no captions, no signs, no watermarks, no posters, no notes.',
+    isBerry ? '- All berries MUST be completely hulled. ABSOLUTELY NO green stems, NO green calyx, NO leaves, NO plant parts attached to any berry. Only the round red/blue berry fruit body, exactly like commercial supermarket berries.' : '',
+    '- ONLY raspberries (red, round, druplet-textured). NO strawberries, NO blueberries, NO mixed berries. Only red raspberries.',
+    '- Physically accurate with correct proportions and realistic gravity. No floating objects, no impossible geometry, no melting or distorted shapes, no duplicate or malformed items, no mold, no frost, no unnatural texture.',
+    '',
+    'SCENE:',
+  ].filter(Boolean).join('\n');
+  const backRules = ' Authentic unedited smartphone photograph quality, natural window light from a single source, consistent shadows, natural color temperature, subtle imperfections and slight grain. No AI artifacts.';
+  const safePrompt = `${frontRules}\n${prompt}${backRules}`;
 
   const res = await fetch(url, {
     method: 'POST',
@@ -54,23 +55,30 @@ async function generateImage(prompt, outputPath) {
   return outputPath;
 }
 
+const STAMP = '1777009374133';
+const BASE = path.join(__dirname, '..', 'naver-blog', 'images');
 const TARGETS = [
   {
-    path: path.join(__dirname, '..', 'naver-blog', 'images', 'day-01-naver-1777007589438-2.jpg'),
-    prompt: 'Moody editorial lifestyle photograph of fresh raspberries piled in a small white ceramic bowl on a warm wooden table, soft golden-hour window light streaming from the side, a crumpled linen napkin beside the bowl, a few raspberries scattered on the wood surface, cozy Korean home kitchen atmosphere, cinematic shallow depth of field, everyday authentic mood, slight film grain'
+    num: 2,
+    prompt: 'A single white ceramic bowl filled with fresh red raspberries on a warm wooden kitchen table, soft side window light, cozy Korean home kitchen mood, shallow depth of field.'
   },
   {
-    path: path.join(__dirname, '..', 'naver-blog', 'images', 'day-01-naver-1777007589438-9.jpg'),
-    prompt: 'Unedited close-up phone photo of perfectly plump glossy fresh raspberries tightly packed together on a plain white ceramic plate, macro focus on the delicate druplet texture and the tiny soft hairs on the surface of each berry, natural diffused window light from above, softly blurred Korean home kitchen background, realistic everyday lifestyle food photography'
+    num: 6,
+    prompt: 'Overhead close-up looking into a clear plastic supermarket raspberry container on a kitchen counter, the plastic bottom showing slight red juice stains and tiny moisture droplets where a few bottom raspberries got crushed, natural kitchen daylight.'
+  },
+  {
+    num: 9,
+    prompt: 'Extreme macro close-up of several plump firm glossy red raspberries arranged on a plain white ceramic plate, sharp focus on the bumpy druplet texture and the tiny soft surface hairs on each berry, natural diffused daylight, home kitchen background softly blurred.'
   },
 ];
 
 (async () => {
   for (const t of TARGETS) {
-    console.log(`🎨 ${path.basename(t.path)}`);
+    const outPath = path.join(BASE, `day-01-naver-${STAMP}-${t.num}.jpg`);
+    console.log(`🎨 ${path.basename(outPath)}`);
     try {
-      await generateImage(t.prompt, t.path);
-      console.log(`   ✓ 덮어씀`);
+      await generateImage(t.prompt, outPath);
+      console.log(`   ✓ 교체 완료`);
     } catch (e) {
       console.error(`   ❌ ${e.message}`);
     }

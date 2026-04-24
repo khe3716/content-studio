@@ -80,18 +80,20 @@ async function generateImage(prompt, outputPath) {
   const model = 'gemini-2.5-flash-image';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
   // 안티-AI티 · 리얼리즘 강제 규칙:
-  // 1) 사람·손 등장 금지
-  // 2) 텍스트·한글 삽입 금지 (AI가 한국어 텍스트를 항상 깨뜨림)
-  // 3) 베리류 꼭지(calyx·green stem) 금지 — 유통 과일은 꼭지 제거된 상태
-  // 4) 물리법칙 준수 + 실제 스마트폰 사진 같은 리얼리즘 (AI 아티팩트 제거)
-  let safePrompt = prompt;
-  if (!/no people/i.test(safePrompt)) safePrompt += '. No people, no hands, no human figures.';
-  if (!/no text/i.test(safePrompt)) safePrompt += ' No text, no writing, no korean characters, no labels, no captions, no signs, no watermarks, no posters, no notes.';
-  if (/raspberr|blueberr|산딸기|블루베리|berry|berries/i.test(safePrompt) && !/calyx|stem/i.test(safePrompt)) {
-    safePrompt += ' Berries without green calyx or stem attached — clean, hulled fruit only.';
-  }
-  // 물리·리얼리즘 강제: 프롬프트 후단에 항상 추가
-  safePrompt += ' Physically accurate, correct proportions, consistent shadows and lighting from a single natural light source, realistic depth of field, authentic unedited smartphone photograph quality, natural color temperature, subtle imperfections and slight grain, no AI artifacts, no floating or levitating objects, no impossible geometry, no melting or distorted shapes, no duplicate or malformed items.';
+  // - Nano Banana는 프롬프트 앞부분의 지시를 더 강하게 따르므로, 핵심 부정 규칙을 맨 앞에 배치.
+  // - 뒷부분에도 리얼리즘·물리 토큰을 한 번 더 강조.
+  const isBerry = /raspberr|blueberr|산딸기|블루베리|berry|berries/i.test(prompt);
+  const frontRules = [
+    'STRICT REQUIREMENTS:',
+    '- No people, no hands, no human figures.',
+    '- No text, no writing, no korean characters, no labels, no captions, no signs, no watermarks, no posters, no notes.',
+    isBerry ? '- All berries MUST be completely hulled. ABSOLUTELY NO green stems, NO green calyx, NO leaves, NO plant parts attached to any berry. Only the round red/blue berry fruit body, exactly like commercial supermarket berries.' : '',
+    '- Physically accurate with correct proportions and realistic gravity. No floating objects, no impossible geometry, no melting or distorted shapes, no duplicate or malformed items.',
+    '',
+    'SCENE:',
+  ].filter(Boolean).join('\n');
+  const backRules = ' Authentic unedited smartphone photograph quality, natural window light from a single source, consistent shadows, natural color temperature, subtle imperfections and slight grain. No AI artifacts.';
+  const safePrompt = `${frontRules}\n${prompt}${backRules}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
