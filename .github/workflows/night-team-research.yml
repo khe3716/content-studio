@@ -1,0 +1,100 @@
+name: 야간 리서치 01:00 실행 (4라운드)
+
+on:
+  # 수동 실행 (/night-research 명령에서 트리거)
+  workflow_dispatch:
+    inputs:
+      rounds:
+        description: '라운드 수 (기본 4, 테스트용 1~2로 줄일 수 있음)'
+        required: false
+        type: string
+        default: '4'
+      mock:
+        description: 'Mock 모드 (Gemini 호출 없이 뼈대 검증)'
+        required: false
+        type: boolean
+        default: false
+      date:
+        description: '리포트 날짜 (비우면 오늘)'
+        required: false
+        type: string
+
+  # 자동 스케줄: 매일 밤 01:00 KST = UTC 16:00 (전날)
+  schedule:
+    - cron: '0 16 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+
+    steps:
+      - name: 1. 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: 2. Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 3. 의존성 설치
+        run: npm ci
+
+      - name: 4. 4라운드 리서치 실행
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TZ: Asia/Seoul
+        run: |
+          ARGS=""
+          if [ "${{ inputs.mock }}" = "true" ]; then
+            ARGS="$ARGS --mock"
+          fi
+          if [ -n "${{ inputs.rounds }}" ]; then
+            ARGS="$ARGS --rounds ${{ inputs.rounds }}"
+          fi
+          if [ -n "${{ inputs.date }}" ]; then
+            ARGS="$ARGS --date ${{ inputs.date }}"
+          fi
+          echo "실행: node scripts/night-crew/night-research.js $ARGS"
+          node scripts/night-crew/night-research.js $ARGS
+
+      - name: 5. 리포트 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash || true
+          git add reports/*.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "변경사항 없음, 커밋 스킵"
+          else
+            git commit -m "chore(night): auto research report [skip ci]"
+            git push
+          fi
+
+      - name: 6. 실패 시 텔레그램 알림
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then exit 0; fi
+          node -e "
+            fetch('https://api.telegram.org/bot' + process.env.TELEGRAM_BOT_TOKEN + '/sendMessage', {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({
+                chat_id: process.env.TELEGRAM_CHAT_ID,
+                text: '🚨 <b>야간 리서치 실패</b>\n\n' + process.env.RUN_URL,
+                parse_mode: 'HTML',
+                disable_web_page_preview: true
+              })
+            }).then(r => r.json()).then(j => console.log(JSON.stringify(j)));
+          "

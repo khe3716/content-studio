@@ -1,0 +1,280 @@
+{
+  "id": "ep_20260421_001",
+  "storyIdx": 1,
+  "createdAt": "2026-04-21T01:56:26.248Z",
+  "source": {
+    "platform": "natepann",
+    "url": "https://m.pann.nate.com/talk/354603640",
+    "originalTitle": "오랜만에 설레는썰 풀자",
+    "popularity": "조회 15만 / 추천 349 / 베플",
+    "originalText": "짝남이랑 같은 아파트 살았는데 걔가 집 간다길래 창문봤더니 밑에서 걸어가고 있어서 전화 했더니 폰 보고 덜컹했다 해야하나? 움찔? 그러더니 막 헛기침하고 그러다가 전화받은거",
+    "adaptedText": "선배가 우리 아파트 단지에 산다는 거 안 지 얼마 안 됐을 때거든. 베란다에서 노을 보다가 우연히 밑을 봤는데 선배가 걸어가는 거야. 장난 반 진심 반으로 전화했더니, 핸드폰 화면 보자마자 어깨가 움찔하더라? 그러더니 헛기침 두 번 하고 받는 거야. \"어... 어 무슨 일이야\" 하면서. 나 그날 잠 못 잤어."
+  },
+  "characters": [
+    {
+      "key": "여주",
+      "role": "narrator",
+      "ref": "references/여주.png"
+    },
+    {
+      "key": "선배",
+      "role": "love_interest",
+      "ref": "references/남주.png"
+    }
+  ],
+  "video": {
+    "title": "아파트 아래에서 짝남 선배한테 전화 걸었더니 생긴 일",
+    "description": "우리 아파트 단지에 사는 짝남 선배를 베란다에서 우연히 발견! 장난으로 전화를 걸었는데, 선배의 반응이 너무 설레서 그날 밤 잠을 설쳤어요. #설렘썰 #짝사랑 #로맨스",
+    "tags": [
+      "설렘썰",
+      "짝사랑썰",
+      "로맨스",
+      "연애썰",
+      "선배"
+    ],
+    "hook": "그날 잠 못 잔 이유"
+  },
+  "episodeStyle": {
+    "season": "봄",
+    "heroineHair": "Shoulder-length dark brown hair, parted in the middle, soft natural waves, full see-through bangs covering forehead. ALWAYS LOOSE AND DOWN — never tied, never half-up, never ponytail, never bun, never clipped. Both sides flow naturally over her shoulders. The exact same hairstyle in every single scene of this episode without exception.",
+    "heroineOutfit": "Light pastel pink cardigan over a white cotton tee, beige A-line midi skirt, white canvas sneakers.",
+    "heroineHomeOutfit": "Soft white short-sleeve cotton tee with light cream lounge shorts, fluffy pastel pink slippers.",
+    "seonbaeHair": "Slightly tousled dark brown hair with soft front bangs, fresh and youthful styling.",
+    "seonbaeOutfit": "Light blue oxford button-down shirt over a white tee, slim cream chinos, white sneakers.",
+    "moodPalette": "Soft spring palette: pale cherry blossom pink, fresh sky blue, warm cream, soft golden afternoon light, occasional petals drifting in the air."
+  },
+  "scenes": [
+    {
+      "n": 1,
+      "subtitle": "그날 밤, 나 잠 못 잔 이유",
+      "narration": "그날 밤, 나 잠 못 잔 이유",
+      "imagePrompt": "Close-up on a young woman's face, her cheeks are flushed and she has a dreamy, slightly flustered smile. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_home",
+      "characters": [
+        "여주"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 2,
+      "subtitle": "모든 건 이 노을에서\n시작됐어",
+      "narration": "모든 건 이 노을에서 시작됐어",
+      "imagePrompt": "A young woman seen from behind, leaning on her apartment balcony railing, looking out at a beautiful, warm-toned sunset over the city. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_home",
+      "characters": [
+        "여주"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 3,
+      "subtitle": "요즘 내가 신경 쓰이는\n사람이 있는데",
+      "narration": "요즘 내가 신경 쓰이는 사람이 있는데",
+      "imagePrompt": "A memory bubble showing a handsome young man smiling kindly at someone off-screen in a university library setting. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_school",
+      "characters": [
+        "선배"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 4,
+      "subtitle": "근데 그 선배가 글쎄...",
+      "narration": "근데 그 선배가 글쎄...",
+      "imagePrompt": "Empty wide establishing shot of a modern Korean apartment complex with several tall buildings, soft spring afternoon light, cherry blossom petals drifting in the air. Absolutely NO people, NO figures, NO silhouettes anywhere in the frame — only buildings, sky, and trees. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "outdoor",
+      "characters": [
+        "none"
+      ],
+      "duration": 3.5
+    },
+    {
+      "n": 5,
+      "subtitle": "우리 아파트에\n산다는 거야!",
+      "narration": "우리 아파트에 산다는 거야!",
+      "imagePrompt": "A diagrammatic shot showing two apartment buildings with a glowing dotted line connecting a window in one to a window in the other. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "object_only",
+      "characters": [
+        "none"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 6,
+      "subtitle": "이거 완전\n운명 아니냐고",
+      "narration": "이거 완전 운명 아니냐고",
+      "imagePrompt": "A cute, slightly chibi-style shot of the heroine with sparkling eyes, hands clasped together in excitement. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_home",
+      "characters": [
+        "여주"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 7,
+      "subtitle": "그날도 노을을 보다가",
+      "narration": "그날도 노을을 보다가",
+      "imagePrompt": "Peaceful side profile of the heroine on her balcony, a gentle breeze blowing through her hair as she looks at the sunset. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_home",
+      "characters": [
+        "여주"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 8,
+      "subtitle": "무심코 아래를 딱 봤는데",
+      "narration": "무심코 아래를 딱 봤는데",
+      "imagePrompt": "First-person point-of-view shot looking down from a high-up balcony onto the apartment complex grounds and sidewalk below. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "outdoor",
+      "characters": [
+        "none"
+      ],
+      "duration": 3.5
+    },
+    {
+      "n": 9,
+      "subtitle": "어? 저기 익숙한 실루엣이...",
+      "narration": "어? 저기 익숙한 실루엣이...",
+      "imagePrompt": "A slightly blurry, zoomed-in shot from above, focusing on a male figure walking along the path below. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "outdoor",
+      "characters": [
+        "선배"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 10,
+      "subtitle": "설마... 선배...?",
+      "narration": "설마... 선배...?",
+      "imagePrompt": "Extreme close-up on the heroine's eyes widening in surprise and recognition. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_home",
+      "characters": [
+        "여주"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 11,
+      "subtitle": "아니 이걸 전화를\n걸어, 말아?",
+      "narration": "아니 이걸 전화를 걸어, 말아?",
+      "imagePrompt": "Side profile shot of the heroine in her home outfit on her apartment balcony, looking down at her smartphone in both hands, biting her lower lip nervously, contemplating whether to call. Her face and hair are clearly visible. Behind her: white balcony railing, blurred warm spring sunset over rooftops. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_home",
+      "characters": [
+        "여주"
+      ],
+      "duration": 4.5
+    },
+    {
+      "n": 12,
+      "subtitle": "에라, 모르겠다!",
+      "narration": "에라, 모르겠다!",
+      "imagePrompt": "Close-up of the heroine's face and upper shoulders, wearing her home outfit, a determined and mischievous grin. Behind her: her apartment balcony with white railing, city rooftops and warm sunset sky blurred in the background. Her hair MUST match the episode style — soft wavy shoulder-length dark brown hair with airy see-through bangs, one side tucked behind her ear. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_home",
+      "characters": [
+        "여주"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 13,
+      "subtitle": "장난 반, 진심 반으로\n전화했지",
+      "narration": "장난 반, 진심 반으로 전화했지",
+      "imagePrompt": "Medium shot of the heroine standing on her apartment balcony in her home outfit, holding her smartphone to her ear with one hand, a playful nervous smile on her lips. Her face is clearly visible in the frame and MUST exactly match the reference character (large purple eyes, soft delicate features, gentle blush). Her hair MUST match the episode style — soft wavy shoulder-length dark brown hair with airy see-through bangs, one side tucked behind her ear. Behind her: white balcony railing, blurred warm spring sunset over rooftops. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_home",
+      "characters": [
+        "여주"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 14,
+      "subtitle": "선배가 폰을 꺼내는데,",
+      "narration": "선배가 폰을 꺼내는데,",
+      "imagePrompt": "Medium shot from afar of the senior stopping in his tracks and pulling his vibrating smartphone out of his hoodie pocket. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "outdoor",
+      "characters": [
+        "선배"
+      ],
+      "duration": 4.5
+    },
+    {
+      "n": 15,
+      "subtitle": "화면 보자마자\n어깨가 움찔하더라?",
+      "narration": "화면 보자마자 어깨가 움찔하더라?",
+      "imagePrompt": "Zoom-in on the senior's upper body. His shoulders are tensed and slightly raised, his eyes wide as he stares at his phone screen. Shock lines radiate from him. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "outdoor",
+      "characters": [
+        "선배"
+      ],
+      "duration": 5
+    },
+    {
+      "n": 16,
+      "subtitle": "갑자기 헛기침을 막 해",
+      "narration": "갑자기 헛기침을 막 해",
+      "imagePrompt": "Close-up on the senior's face from a distance. He's clearing his throat, one hand near his mouth, looking flustered and glancing around. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "outdoor",
+      "characters": [
+        "선배"
+      ],
+      "duration": 4.5
+    },
+    {
+      "n": 17,
+      "subtitle": "\"어... 어? 무슨 일이야?\"",
+      "narration": "\"어... 어? 무슨 일이야?\"",
+      "imagePrompt": "The senior brings the phone to his ear, his expression trying to be casual but still looking a little nervous. A speech bubble appears with '어... 어?'. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "outdoor",
+      "characters": [
+        "선배"
+      ],
+      "duration": 4.5
+    },
+    {
+      "n": 18,
+      "subtitle": "그 목소리가 얼마나 떨리던지",
+      "narration": "그 목소리가 얼마나 떨리던지",
+      "imagePrompt": "Split-screen composition. TOP HALF: heroine standing on her apartment balcony at sunset, holding her phone to her ear in her home outfit, blushing. BOTTOM HALF: the senior standing on the sidewalk below, holding his phone to his ear in his outdoor outfit, looking flustered. The heroine is clearly indoors at home, the senior is clearly outdoors. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_home",
+      "characters": [
+        "여주",
+        "선배"
+      ],
+      "duration": 4.5
+    },
+    {
+      "n": 19,
+      "subtitle": "아 진짜 미쳤나 봐",
+      "narration": "아 진짜 미쳤나 봐",
+      "imagePrompt": "The heroine is now in her room, flopped onto her bed and kicking her feet in the air, phone clutched to her chest. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_home",
+      "characters": [
+        "여주"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 20,
+      "subtitle": "그 반응이 너무 설레서",
+      "narration": "그 반응이 너무 설레서",
+      "imagePrompt": "Close-up on the heroine's face buried in her pillow, her ears are red and she's smiling uncontrollably. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_home",
+      "characters": [
+        "여주"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 21,
+      "subtitle": "나 그날 진짜\n잠 한숨도 못 잤어",
+      "narration": "나 그날 진짜 잠 한숨도 못 잤어",
+      "imagePrompt": "Final shot of the heroine looking out her bedroom window at the night sky, a soft, happy smile on her face as she reflects on the moment. Korean webtoon anime style, soft cel shading, vertical 9:16.",
+      "setting": "indoor_home",
+      "characters": [
+        "여주"
+      ],
+      "duration": 4.5
+    }
+  ]
+}

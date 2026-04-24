@@ -1,0 +1,10 @@
+{
+  "model": "gemini-2.5-flash-preview-tts",
+  "voice": "Leda",
+  "speed": 1.3,
+  "stylePrompt": "다음 대본을 한국 20대 초반 여성이 친구한테 썰 푸는 것처럼 자연스럽게, 약간 들뜬 듯 설레는 톤으로 읽어줘. 너무 단조롭지 않게 감정 실어서:",
+  "audioFormat": "wav",
+  "sampleRate": 24000,
+  "lockedAt": "2026-04-21",
+  "note": "User-confirmed final voice. Locked for channel consistency."
+}

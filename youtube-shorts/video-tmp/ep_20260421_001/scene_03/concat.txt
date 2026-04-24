@@ -1,0 +1,7 @@
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_03/state_000.png'
+duration 0.423
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_03/state_001.png'
+duration 0.634
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_03/state_002.png'
+duration 0.846
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_03/state_002.png'

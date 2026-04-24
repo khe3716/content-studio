@@ -1,0 +1,15 @@
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_01/state_000.png'
+duration 0.484
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_01/state_001.png'
+duration 0.242
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_01/state_002.png'
+duration 0.242
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_01/state_003.png'
+duration 0.242
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_01/state_004.png'
+duration 0.242
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_01/state_005.png'
+duration 0.242
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_01/state_006.png'
+duration 0.484
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_01/state_006.png'

@@ -1,0 +1,158 @@
+{
+  "id": "ep_20260420_001",
+  "createdAt": "2026-04-20T11:00:25.011Z",
+  "source": {
+    "platform": "reddit",
+    "subreddit": "love",
+    "url": "https://www.reddit.com/r/love/comments/1s1ls5b/when_your_boyfriend_shows_up_like_a_romcom_hero/",
+    "author": "daily__angst",
+    "originalTitle": "When your boyfriend shows up like a rom-com hero in real life",
+    "score": 450,
+    "fetchedAt": "2026-04-20T11:00:25.019Z"
+  },
+  "pickReason": "이 이야기는 남자친구가 로맨틱 코미디 주인공처럼 나타나 저를 도와주는 설레는 순간을 담고 있어, 시청자들에게 강렬한 설렘을 전달할 수 있습니다. 역동적인 장면과 달콤한 감정선이 애니메이션 영상에 아주 잘 어울립니다.",
+  "runnerUps": [
+    "1s7v6zp",
+    "1sdg962",
+    "1sp1my1"
+  ],
+  "characters": [
+    {
+      "key": "여주",
+      "role": "narrator",
+      "ref": "references/여주.png"
+    },
+    {
+      "key": "선배",
+      "role": "love_interest",
+      "ref": "references/남주.png"
+    }
+  ],
+  "video": {
+    "title": "넘어져서 다쳤는데 남친 반응이..;;❤️",
+    "description": "아니.. 이렇게 다정한 사람이 실존한다고? 완전 로코 남주 아니냐구ㅠㅠ #커플 #연애썰 #설렘썰 #다정한남친 #로코",
+    "tags": [
+      "연애썰",
+      "커플썰",
+      "설렘썰",
+      "다정한남친",
+      "로맨스코미디"
+    ],
+    "hook": "어제 진짜 역대급으로 설렜잖아..."
+  },
+  "scenes": [
+    {
+      "n": 1,
+      "subtitle": "어제 진짜 역대급으로\n설렌 일이 있었거든",
+      "narration": "어제 진짜 역대급으로 설렌 일이 있었거든.",
+      "imagePrompt": "A close-up shot of a young Korean woman with long straight black hair and bangs, purple eyes, smiling shyly at the camera. She's outdoors on a sunny day, university campus in the background. Anime/Korean webtoon style, soft cel shading, vertical 9:16.",
+      "characters": [
+        "여주"
+      ],
+      "duration": 3
+    },
+    {
+      "n": 2,
+      "subtitle": "선배랑 캠퍼스에서\n보드를 타는데",
+      "narration": "선배랑 같이 캠퍼스에서 롱보드를 타는데, 날씨도 너무 좋고 완전 신나는 거야.",
+      "imagePrompt": "A dynamic shot of a young Korean woman with long straight black hair and purple eyes, and a young Korean man with short brown messy hair and golden amber eyes, happily longboarding side-by-side on a tree-lined path on a university campus. They are laughing. Anime/Korean webtoon style, soft cel shading, vertical 9:16.",
+      "characters": [
+        "여주",
+        "선배"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 3,
+      "subtitle": "갑자기 저기 가보쟤\n(엄청 가파른 내리막길)",
+      "narration": "근데 선배가 갑자기 저쪽 가파른 내리막길을 가리키면서 타보자는 거야.",
+      "imagePrompt": "A young Korean man with short brown messy hair and golden amber eyes, standing with his longboard, confidently pointing down a steep hill on a university campus. He has a playful smile. The young Korean woman is seen from behind, looking hesitant. Anime/Korean webtoon style, soft cel shading, vertical 9:16.",
+      "characters": [
+        "여주",
+        "선배"
+      ],
+      "duration": 3.5
+    },
+    {
+      "n": 4,
+      "subtitle": "아... 이건 좀...\n싶었지만 일단 출발!",
+      "narration": "속으로 '아 이건 좀 아닌데' 싶었지만, 선배가 응원해주니까 용기 내서 일단 출발했지.",
+      "imagePrompt": "A close-up on the face of a young Korean woman with long straight black hair and purple eyes, biting her lip nervously but with a determined expression as she stands on her longboard at the top of a hill. Anime/Korean webtoon style, soft cel shading, vertical 9:16.",
+      "characters": [
+        "여주"
+      ],
+      "duration": 3
+    },
+    {
+      "n": 5,
+      "subtitle": "어어어...?\n콰당!!!",
+      "narration": "근데 속도가 너무 붙어서 보드가 막 흔들리는 거야! 어어어 하다가 결국...",
+      "imagePrompt": "Action shot of a young Korean woman losing her balance on a speeding longboard going down a hill. Her body is tilted, arms flailing, capturing the moment right before she falls. A sense of motion blur in the background. Anime/Korean webtoon style, soft cel shading, vertical 9:16.",
+      "characters": [
+        "여주"
+      ],
+      "duration": 3
+    },
+    {
+      "n": 6,
+      "subtitle": "결국 제대로 넘어져서\n무릎이랑 팔 다 까짐ㅠㅠ",
+      "narration": "제대로 넘어져서 무릎이랑 팔꿈치가 다 까졌어. 피까지 나더라니까?",
+      "imagePrompt": "A low-angle shot focusing on a young Korean woman sitting on the pavement, looking down at her scraped knee with a pained expression. There's a little bit of blood. Her longboard is lying nearby. Anime/Korean webtoon style, soft cel shading, vertical 9:16.",
+      "characters": [
+        "여주"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 7,
+      "subtitle": "당황한 선배가\n막 화낼 줄 알았는데,",
+      "narration": "솔직히 선배가 피 보고 놀라서 막 화내거나 당황할 줄 알았거든?",
+      "imagePrompt": "A shot from the woman's POV, looking up at the young Korean man. He is kneeling in front of her, his face filled with calm concern, not panic. His golden amber eyes are soft and worried. Anime/Korean webtoon style, soft cel shading, vertical 9:16.",
+      "characters": [
+        "선배"
+      ],
+      "duration": 4
+    },
+    {
+      "n": 8,
+      "subtitle": "너무 침착하고 다정하게\n상처를 치료해주는 거",
+      "narration": "근데 진짜 너무 침착하고 다정하게 괜찮냐고 물어보면서 상처를 치료해주는 거야.",
+      "imagePrompt": "A gentle scene inside a cozy room. The young Korean man with short brown messy hair and golden amber eyes is carefully applying a bandage to the young Korean woman's knee. He is focused and gentle. She is sitting, looking at him with a surprised and touched expression. Anime/Korean webtoon style, soft cel shading, vertical 9:16.",
+      "characters": [
+        "여주",
+        "선배"
+      ],
+      "duration": 5
+    },
+    {
+      "n": 9,
+      "subtitle": "다음 날 아침,\n몸 쑤셔서 끙끙대는데",
+      "narration": "그리고 다음 날 아침에 온몸이 쑤셔서 끙끙대고 있었는데...",
+      "imagePrompt": "A young Korean woman is lying in her bed, looking tired and sore in the morning sunlight. She is holding her phone, a worried expression on her face. Anime/Korean webtoon style, soft cel shading, vertical 9:16.",
+      "characters": [
+        "여주"
+      ],
+      "duration": 3.5
+    },
+    {
+      "n": 10,
+      "subtitle": "선배한테서 온 카톡\n아침밥 시켜놨다고..❤️",
+      "narration": "선배한테서 카톡이 온 거야. 아프니까 나오지 말고 있으라고, 아침밥을 집으로 시켜놨대.",
+      "imagePrompt": "A close-up on a smartphone screen showing a food delivery app confirmation for a warm porridge and sweet french toast. A chat bubble from '선배❤️' says '도착하면 연락 갈 거야. 맛있게 먹어' (You'll get a call when it arrives. Enjoy). Anime/Korean webtoon style, soft cel shading, vertical 9:16.",
+      "characters": [
+        "기타"
+      ],
+      "duration": 4.5
+    },
+    {
+      "n": 11,
+      "subtitle": "진짜... 이 사람이랑은\n평생 가야겠다 싶더라",
+      "narration": "그걸 보는데 진짜... 이 사람이랑은 평생 함께해야겠다 싶더라니까.",
+      "imagePrompt": "A beautiful final shot. The young Korean woman with long straight black hair and purple eyes is looking at her phone with tears of joy in her eyes and a deeply touched, happy smile on her face. A warm, glowing light envelops her. Anime/Korean webtoon style, soft cel shading, vertical 9:16.",
+      "characters": [
+        "여주"
+      ],
+      "duration": 5
+    }
+  ]
+}

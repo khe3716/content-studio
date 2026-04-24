@@ -1,0 +1,77 @@
+name: 야간 리서치 08:00 브리핑 푸시
+
+on:
+  # 핸드폰 수동 실행 (샘플 테스트 가능)
+  workflow_dispatch:
+    inputs:
+      sample:
+        description: 'SAMPLE 리포트 사용 (reports/SAMPLE.md)'
+        required: false
+        type: boolean
+        default: false
+      date:
+        description: '특정 날짜 리포트 (예: 2026-04-25)'
+        required: false
+        type: string
+
+  # 자동 스케줄: 매일 아침 08:00 KST = UTC 23:00
+  schedule:
+    - cron: '0 23 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 1. 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 2. Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 3. 의존성 설치
+        run: npm ci
+
+      - name: 4. 텔레그램 브리핑 푸시
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TZ: Asia/Seoul
+        run: |
+          ARGS=""
+          if [ "${{ inputs.sample }}" = "true" ]; then
+            ARGS="$ARGS --sample"
+          fi
+          if [ -n "${{ inputs.date }}" ]; then
+            ARGS="$ARGS --date ${{ inputs.date }}"
+          fi
+          echo "실행: node scripts/night-crew/push-morning.js $ARGS"
+          node scripts/night-crew/push-morning.js $ARGS
+
+      - name: 5. 실패 시 텔레그램 알림
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then exit 0; fi
+          node -e "
+            fetch('https://api.telegram.org/bot' + process.env.TELEGRAM_BOT_TOKEN + '/sendMessage', {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({
+                chat_id: process.env.TELEGRAM_CHAT_ID,
+                text: '🚨 <b>야간 브리핑 푸시 실패</b>\n\n' + process.env.RUN_URL,
+                parse_mode: 'HTML',
+                disable_web_page_preview: true
+              })
+            }).then(r => r.json()).then(j => console.log(JSON.stringify(j)));
+          "

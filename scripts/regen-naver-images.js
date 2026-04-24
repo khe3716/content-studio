@@ -18,18 +18,17 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 async function generateImage(prompt, outputPath) {
   const model = 'gemini-2.5-flash-image';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-  const isBerry = /raspberr|blueberr|산딸기|블루베리|berry|berries/i.test(prompt);
   const frontRules = [
     'STRICT REQUIREMENTS:',
-    '- No people, no hands, no human figures ANYWHERE including blurred background silhouettes.',
+    '- No people, no hands.',
     '- No text, no writing, no korean characters, no labels, no captions, no signs, no watermarks.',
-    isBerry ? '- All berries MUST be completely hulled. ABSOLUTELY NO green stems, NO green calyx, NO leaves, NO plant parts attached.' : '',
-    '- ONLY raspberries (red, round, druplet-textured). NO strawberries, NO blueberries, NO mixed berries.',
-    '- Physically accurate. No floating objects, no impossible geometry, no melting shapes.',
+    '- All berries hulled. NO green stems, NO calyx, NO leaves.',
+    '- BERRY TYPE: ONLY raspberries (Rubus idaeus, small round red with hollow center and bumpy druplets). NOT strawberries, NOT blackberries, NOT blueberries, NO mixed berries.',
+    '- Physically accurate, realistic gravity, no AI artifacts.',
     '',
     'SCENE:',
-  ].filter(Boolean).join('\n');
-  const backRules = ' Authentic unedited smartphone photograph quality, natural window light, consistent shadows, subtle grain. No AI artifacts.';
+  ].join('\n');
+  const backRules = ' Authentic unedited smartphone photograph quality, natural window light, subtle grain.';
   const safePrompt = `${frontRules}\n${prompt}${backRules}`;
 
   const res = await fetch(url, {
@@ -54,16 +53,16 @@ async function generateImage(prompt, outputPath) {
   return outputPath;
 }
 
-const STAMP = '1777027680444';
+const STAMP = '1777033929701';
 const BASE = path.join(__dirname, '..', 'naver-blog', 'images');
 const TARGETS = [
   {
     num: 3,
-    prompt: 'Extreme macro close-up of a single fresh red raspberry sliced cleanly in half on a white marble countertop, revealing the delicate translucent juicy interior flesh and the fragile thin outer skin with tiny druplets, soft diffused daylight highlighting the vulnerable texture, moody dark background.'
+    prompt: 'Overhead flat lay photo of a single fresh red raspberry placed on a light blue patterned ceramic plate next to a small stainless steel spoon, minimal styling, soft natural light from a single window, clean white linen tablecloth background.'
   },
   {
     num: 12,
-    prompt: 'Styled lifestyle photo of a clear glass mason jar filled to the top with well-preserved fresh red raspberries on a rustic wooden tray, a soft folded linen napkin next to the jar, a few loose raspberries scattered beside, warm morning window light, mood of successful long-term storage, cozy home feel.'
+    prompt: 'Flat lay top-down photo of fresh red raspberries scattered around a vintage glass cloche dome on a white marble kitchen counter, a small bundle of dried lavender tied with twine beside the cloche, soft morning light, cozy styled mood, mood of well-preserved fruit.'
   },
 ];
 
@@ -73,10 +72,9 @@ const TARGETS = [
     console.log(`🎨 ${path.basename(outPath)}`);
     try {
       await generateImage(t.prompt, outPath);
-      console.log(`   ✓ 교체 완료`);
+      console.log(`   ✓`);
     } catch (e) {
       console.error(`   ❌ ${e.message}`);
     }
   }
-  console.log('\n✅ 완료');
 })();

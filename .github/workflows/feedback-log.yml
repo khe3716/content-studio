@@ -1,0 +1,85 @@
+name: 야간 브리핑 피드백 로그
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: '액션 (done / ignore)'
+        required: true
+        type: string
+      index:
+        description: '사업 후보 번호 (1~5)'
+        required: true
+        type: string
+      date:
+        description: '리포트 날짜 (비우면 오늘)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: 1. 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 2. 피드백 jsonl append
+        env:
+          TZ: Asia/Seoul
+          ACTION: ${{ inputs.action }}
+          INDEX: ${{ inputs.index }}
+          INPUT_DATE: ${{ inputs.date }}
+        run: |
+          mkdir -p reports
+          TODAY=$(date +%Y-%m-%d)
+          DATE="${INPUT_DATE:-$TODAY}"
+          TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          LINE=$(node -e "console.log(JSON.stringify({timestamp: process.env.TS, date: process.env.DATE, action: process.env.ACTION, index: process.env.INDEX}))" TS="$TS" DATE="$DATE")
+          echo "$LINE" >> reports/feedback.jsonl
+          echo "기록: $LINE"
+
+      - name: 3. 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash || true
+          git add reports/feedback.jsonl
+          if git diff --cached --quiet; then
+            echo "변경사항 없음"
+          else
+            git commit -m "chore(feedback): ${{ inputs.action }} ${{ inputs.index }} [skip ci]"
+            git push
+          fi
+
+      - name: 4. 텔레그램 확인 알림
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then exit 0; fi
+          ACTION="${{ inputs.action }}"
+          INDEX="${{ inputs.index }}"
+          ICON="✅"
+          LABEL="실행 예정"
+          if [ "$ACTION" = "ignore" ]; then ICON="⏭️"; LABEL="넘김"; fi
+          node -e "
+            const icon='${ICON}';
+            const label='${LABEL}';
+            const idx='${INDEX}';
+            fetch('https://api.telegram.org/bot' + process.env.TELEGRAM_BOT_TOKEN + '/sendMessage', {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({
+                chat_id: process.env.TELEGRAM_CHAT_ID,
+                text: icon + ' 후보 ' + idx + ' 기록됨 (' + label + ')',
+                parse_mode: 'HTML'
+              })
+            }).then(r => r.json()).then(j => console.log(JSON.stringify(j)));
+          "

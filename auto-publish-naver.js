@@ -87,7 +87,8 @@ async function generateImage(prompt, outputPath) {
     'STRICT REQUIREMENTS:',
     '- No people, no hands, no human figures.',
     '- No text, no writing, no korean characters, no labels, no captions, no signs, no watermarks, no posters, no notes.',
-    isBerry ? '- All berries MUST be completely hulled. ABSOLUTELY NO green stems, NO green calyx, NO leaves, NO plant parts attached to any berry. Only the round red/blue berry fruit body, exactly like commercial supermarket berries.' : '',
+    isBerry ? '- All berries MUST be completely hulled. ABSOLUTELY NO green stems, NO green calyx, NO leaves, NO plant parts attached to any berry.' : '',
+    /raspberr|산딸기/i.test(prompt) ? '- BERRY TYPE: ONLY raspberries (Rubus idaeus). Raspberries are SMALL (2-3cm), ROUND, HOLLOW-CENTERED when picked, bright RED, with a BUMPY surface made of tiny round druplets. ABSOLUTELY NOT strawberries (no heart-shape, no seeds-on-outside, no green leafy top). ABSOLUTELY NOT blackberries (not dark purple/black). ABSOLUTELY NOT blueberries (not blue). NO mixed berry bowls. Every single berry must be a red raspberry.' : '',
     '- Physically accurate with correct proportions and realistic gravity. No floating objects, no impossible geometry, no melting or distorted shapes, no duplicate or malformed items.',
     '',
     'SCENE:',
@@ -261,12 +262,28 @@ ${cleanedHtml}
 `;
 }
 
+// 이전 Day의 네이버 HTML을 텍스트로 로드 (중복 회피용).
+function loadPreviousNaverDays(currentDay) {
+  if (!fs.existsSync(NAVER_DRAFTS_DIR)) return [];
+  const prev = [];
+  for (let d = 1; d < currentDay; d++) {
+    const prefix = `day-${String(d).padStart(2, '0')}-`;
+    const files = fs.readdirSync(NAVER_DRAFTS_DIR).filter(f => f.startsWith(prefix) && f.endsWith('.html'));
+    if (files.length === 0) continue;
+    const raw = fs.readFileSync(path.join(NAVER_DRAFTS_DIR, files[0]), 'utf8');
+    const text = raw.replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+    prev.push({ day: d, text: text.slice(0, 2500) });
+  }
+  return prev;
+}
+
 // ========== Gemini 네이버 전용 새 작성 ==========
 // 구글 Blogger 원본은 '사실 확인용 참고 자료'로만 사용하고,
 // 네이버 블로그 글은 처음부터 새로 씀 (섹션 구성·사진 배치·흐름 모두 네이버 관습).
 async function rewriteForNaver(topic, originalHtml) {
   const persona = fs.readFileSync(PERSONA_PATH, 'utf8');
   const samples = loadWritingSamples(2, 2000);
+  const prevDays = loadPreviousNaverDays(topic.day);
 
   const samplesHint = samples.length > 0
     ? `\n\n# 스타일 참고 (네이버 블로그 전용 샘플 — 이 톤·구조·어조를 반드시 그대로 따라올 것) ★★★\n\n아래 샘플은 네이버 블로그 특유의 수다체, 드라마틱한 섹션 제목, 의인화 비유, 이모지 밀도, 문단 길이, 마무리 구조의 **모범 답안**입니다. 새 글은 이 샘플과 **같은 어조·같은 구조·같은 리듬**으로 만들어 주세요. 단, 사진 수는 샘플보다 **훨씬 많게(10~12장)** 배치하세요.\n\n${samples.map((s, i) => `===== 샘플 ${i + 1}: ${s.title} =====\n${s.html}\n===== 샘플 ${i + 1} 끝 =====`).join('\n\n')}\n`
@@ -286,8 +303,26 @@ ${topicLabels ? `핵심 키워드: ${topicLabels}` : ''}
 == 참고 자료 (사실 확인용만 — 표현·구조는 옮기지 말 것) ==
 ${originalHtml}
 
+${prevDays.length > 0 ? `== ⚠️⚠️⚠️ 이미 발행된 이전 Day 네이버 글 (절대 중복 금지) ==
+아래는 이미 발행된 같은 클러스터의 이전 Day 글이야. 여기 나온 모든 요소는 **절대로 반복하지 마**:
+
+${prevDays.map(p => `--- Day ${p.day} ---\n${p.text}\n`).join('\n')}
+
+위 이전 글과 반복 금지 항목:
+- "안녕하세요 이웃님들~! 과일 박사, 박과일이에요 😊" 같은 **도입부 인사 패턴** → 완전히 다른 첫 문장으로 시작 (예: "금요일 저녁, 냉장고 문 열고 한숨 쉬어보신 적 있나요?", "이웃님, 혹시 이런 경험 있으세요?")
+- "산알못", "산딸기 수프 장인", "산딸기 호갱" 같은 **자기 묘사** → 다른 표현
+- "산딸기는 피부가 얇다", "껍질이 거의 없다", "속이 비어있다", "농촌진흥청 저장성" → 절대 재언급 금지
+- "물주머니", "공주님", "유리몸", "아기 피부" 같은 **의인화 비유** → 전혀 다른 비유 사용
+- "저도 주말에 장 보러 갔다가...", "맨 위만 보고 샀다가..." → 완전히 다른 체험담
+- 섹션 1 "실패담"의 구체 상황(냉장고 열었더니 물러있고 곰팡이) → 이번 Day 주제 특화 실패만
+- 이전 글의 3줄 요약·마무리 문구
+
+이전 글에서 다룬 배경·과학 근거는 **1~2 문장으로만** 패스하고 ("이미 산딸기가 왜 예민한지는 저번 글에서 다뤘으니 생략하고~" 같은 톤) 본 주제에 집중.
+` : ''}
+
 == 작성 지침 ★★★ ==
 1. **원본을 그대로 옮기지 말 것**: 원본은 정보체 2000~2500자 구글 글이고, 네이버는 수다체 3000~3500자 + 사진 10장+ 글이야. 완전히 다른 매체라서 **섹션 구성·예시·비유·흐름을 샘플 스타일로 처음부터 짜야** 해.
+1-1. **★ 이전 Day 중복 회피**: 같은 클러스터(산딸기/블루베리 등)의 이전 Day 글에서 이미 나온 "산딸기가 피부 얇고 예민하다", "산알못 시절", "농촌진흥청 저장성" 같은 배경 설명·자기 소개를 **다시 길게 쓰지 말 것**. 본 주제에 맞는 각도로 완전히 다른 섹션 구성. 실패담도 이번 Day 주제에 맞는 상황으로만 (Day 2 보관법이면 "보관 실패", Day 3 레시피면 "조리 실패"). 의인화 비유도 Day마다 새로 만들기.
 2. **제목**: 20~25자 내외 짧고 깔끔하게 + 이모지 1개. 예: "산딸기 2배 오래 가는 3단계 보관법 🍓", "무농약 vs 일반 블루베리 솔직 비교 🫐". 공감 질문·"알려드릴게요" 같은 채움어는 제목에서 빼고 본문 도입부에 넣기.
 3. **도입부 400자**: 인사("안녕하세요 이웃님들~!") + 본인 소개("과일 박사, 박과일이에요 😊") + 구체적 개인 스토리 + 공감대 형성 + 오늘의 약속
 4. **섹션 5~6개**, 제목은 반드시 **드라마틱하게** (예: "저의 눈물겨운 실패담 😭", "도대체 왜 이렇게 예민할까요?", "'산딸기 호텔' 만들어주기")

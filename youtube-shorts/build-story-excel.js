@@ -1,0 +1,195 @@
+// Build Excel file from collected & adapted Nate Pann stories
+const ExcelJS = require('exceljs');
+const path = require('path');
+
+const stories = [
+  {
+    n: 1,
+    sourceUrl: 'https://m.pann.nate.com/talk/354603640',
+    sourceTitle: '오랜만에 설레는썰 풀자',
+    popularity: '조회 15만 / 추천 349 / 베플',
+    original:
+      '짝남이랑 같은 아파트 살았는데 걔가 집 간다길래 창문봤더니 밑에서 걸어가고 있어서 전화 했더니 폰 보고 덜컹했다 해야하나? 움찔? 그러더니 막 헛기침하고 그러다가 전화받은거',
+    adaptedTitle: '창문 너머로 본 그 사람의 반응이…',
+    adapted:
+      '선배가 우리 아파트 단지에 산다는 거 안 지 얼마 안 됐을 때거든. 베란다에서 노을 보다가 우연히 밑을 봤는데 선배가 걸어가는 거야. 장난 반 진심 반으로 전화했더니, 핸드폰 화면 보자마자 어깨가 움찔하더라? 그러더니 헛기침 두 번 하고 받는 거야. "어... 어 무슨 일이야" 하면서. 나 그날 잠 못 잤어.',
+    fitScore: 3,
+  },
+  {
+    n: 2,
+    sourceUrl: 'https://m.pann.nate.com/talk/354603640',
+    sourceTitle: '오랜만에 설레는썰 풀자',
+    popularity: '조회 15만 / 베플',
+    original:
+      '코로나 터지기 전에 덴마크로 여행 간적이 있는데 갈색 머리에 아직도 기억남 ㅈㄴ 잘생긴 사람이 식당에서 나랑 눈 마주쳤는데 웃으면서 하이 이럼 그냥 잘생겨서 설렘 이유는 없음',
+    adaptedTitle: '여행지에서 마주친 그 미소',
+    adapted:
+      '대학 1학년 끝나고 친구랑 유럽 갔거든. 코펜하겐 작은 식당에서 혼자 밥 먹는데 옆 테이블 사람이랑 눈이 마주친 거야. 갈색 머리에 진짜 영화 주인공 같은 사람이었는데 픽 웃으면서 "Hi" 하더라. 그게 다였는데 5년이 지난 지금도 그 미소가 가끔 떠올라.',
+    fitScore: 2,
+  },
+  {
+    n: 3,
+    sourceUrl: 'https://m.pann.nate.com/talk/354603640',
+    sourceTitle: '오랜만에 설레는썰 풀자',
+    popularity: '조회 15만 / 베플',
+    original:
+      '내가 짝남한테 장난 반 진심 반으로 맨날 좋아한다고 하면서 티내고 다녔는데 걔가 어느날은 내 양손 붙잡고... 너 나 좋아해? 좋아한다고 말해봐 이러는거야',
+    adaptedTitle: '장난인 척 했던 고백이...',
+    adapted:
+      '선배한테 맨날 "선배 좋아해요~" 하면서 장난쳤거든. 진심 90 농담 10이었는데. 어느 날 동아리방에서 또 그러는데 선배가 갑자기 내 양손을 잡는 거야. 정색하고 눈 똑바로 보면서 "야, 너 진짜 나 좋아해? 한 번만 진지하게 말해봐" 하는데 머리 하얘져서 아무 말도 못 했어.',
+    fitScore: 4,
+  },
+  {
+    n: 4,
+    sourceUrl: 'https://m.pann.nate.com/talk/354603640',
+    sourceTitle: '오랜만에 설레는썰 풀자',
+    popularity: '조회 15만 / 베플',
+    original:
+      '학교 근처에 벚꽃나무 피었길래 짝남 보여주고 싶어서 사진 찍어가지고 보내줬거든? 답장 무미건조 하게 오길래 머쓱했는데 몇시간 뒤에 걔 프로필 보니까 배사 내가 찍어준 벚꽃나무로 해놨더라고',
+    adaptedTitle: '무뚝뚝한 답장의 진짜 의미',
+    adapted:
+      '학교 가는 길에 벚꽃이 너무 예뻐서 선배 생각이 났거든. 사진 찍어서 "선배 이거 봐요 예쁘죠?" 보냈는데 답장이 "ㅇㅇ 예쁘네." 단 두 글자야. 아 괜히 보냈나 싶어서 시무룩했지. 근데 저녁에 카톡 들어갔는데... 선배 배경사진이 내가 보낸 그 사진이더라.',
+    fitScore: 5,
+  },
+  {
+    n: 5,
+    sourceUrl: 'https://pann.nate.com/talk/356469320',
+    sourceTitle: '짝사랑 성공한썰 풀어주라',
+    popularity: '추천 270 / 반대 5 / 베플',
+    original:
+      '초3부터 고2까지 8년간 짝사랑. 처음엔 관심 없는 척했지만 고등학교 때 같은 반이 되면서 다시 연락. 언니의 조언으로 고백을 결심했고, 생일 초에 불을 붙이며 "너가 나 좋아해주면 좋겠다"고 고백. 상대방이 "나도 너 진짜 오래 좋아했어"라고 응답하며 성공.',
+    adaptedTitle: '8년 짝사랑, 생일 초에 빈 소원',
+    adapted:
+      '초3 때 처음 본 애를 8년 동안 못 잊었어. 고2 때 같은 반이 됐는데 어떻게 다시 친해질 줄 몰라서 한 학기를 그냥 보냈거든. 내 생일날 친구들이랑 케이크 자르는데 "소원 빌어!" 하길래... 폰 카메라 켜고 그 애한테 영상통화 걸었어. 초에 불 켜진 채로 "내 소원, 너가 나 좋아해주는 거야"하니까 걔가 한참 가만히 있다가 "...나도 진짜 오래 좋아했어" 하더라.',
+    fitScore: 4,
+  },
+  {
+    n: 6,
+    sourceUrl: 'https://pann.nate.com/talk/356469320',
+    sourceTitle: '짝사랑 성공한썰 풀어주라',
+    popularity: '추천 91 / 베플',
+    original:
+      '1년간 호감을 드러냈으나 상대는 관심 없었음. 고백 후 차였으나, 군 전역 후 자신의 가정사가 알려지면서 상대가 신경쓰기 시작. SOS 신호에 도움을 주며 지속적인 연락. 10년 후 결국 사귀게 됨. 현재 결혼 4년차, 7개월 된 아들 있음.',
+    adaptedTitle: '10년 걸려서 닿은 마음',
+    adapted:
+      '대학 동기를 1년 짝사랑했어. 용기 내서 고백했다가 그 자리에서 차였지. 졸업하고 연락도 끊겼어. 근데 8년쯤 지났을 때 동창회에서 다시 만났거든. "그때 왜 거절했어?" 물었더니 "사실은 나도 너 좋았는데, 내가 뭐가 돼서 너한테 말할 수 있겠냐 싶었어" 하는 거야. 우리 작년에 결혼했어.',
+    fitScore: 3,
+  },
+  {
+    n: 7,
+    sourceUrl: 'https://pann.nate.com/talk/356469320',
+    sourceTitle: '짝사랑 성공한썰 풀어주라',
+    popularity: '추천 73 / 베플',
+    original:
+      '초등학교 졸업 후 인맥이 없던 찐따였음. 수학학원 겨울 특강에서 남고애와 같은 반이 되면서 시작. 처음 옆자리에 앉게 되어 긴장했으나 문제 풀이를 도와주며 호감 형성. 이후 의도적으로 지각하며 같은 반이 되려 시도.',
+    adaptedTitle: '문제집을 사이에 둔 두 사람',
+    adapted:
+      '고1 겨울 특강 때 옆자리에 한 살 위 오빠가 앉았거든. 처음엔 그냥 어색했는데, 내가 풀다 막힌 문제를 슬쩍 보더니 자기 노트를 살짝 밀어주는 거야. "이거 보고 풀어봐" 한 마디 하고 다시 자기 거 푸는데, 글씨가 너무 정성스러운 거. 다음 날부터 일부러 그 자리 옆에 앉으려고 학원 일찍 갔어.',
+    fitScore: 4,
+  },
+  {
+    n: 8,
+    sourceUrl: 'https://pann.nate.com/talk/356469320',
+    sourceTitle: '짝사랑 성공한썰 풀어주라',
+    popularity: '베플',
+    original:
+      '엄마들끼리 대학 동창이라 태어날 때부터 친구 관계. 초·중학교도 같은 곳. 중3부터 좋아하기 시작. 고2 때 첫 고백 실패 후 1년간 미친 듯이 공부. 정시 합격자 발표 날 고백해 성공. 현재 3년째 잘 사귀 중.',
+    adaptedTitle: '발표일 새벽, 같이 새로고침하던 그 사람',
+    adapted:
+      '엄마들끼리 친구라 태어날 때부터 본 사이거든. 중3 때부터 좋아했는데 망칠까봐 말 못 했어. 정시 발표 날 새벽에 떨려서 잠 안 와서 같이 통화로 새로고침했거든. 둘 다 합격했고, 새벽 4시에 막 소리 지르고 웃다가 갑자기 조용해졌어. "...우리 사귈래?" 하길래 "어떻게 알았어 내가 너 좋아하는 거" 했더니 "9년 전부터 알았어" 하더라.',
+    fitScore: 5,
+  },
+  {
+    n: 9,
+    sourceUrl: 'https://pann.nate.com/talk/356469320',
+    sourceTitle: '짝사랑 성공한썰 풀어주라',
+    popularity: '댓글',
+    original:
+      '운동부 상대가 경기에서 이기면 좋아하는 사람을 알려주겠다는 친구 말에 응원. 상대가 경기에서 이기자 친구가 자신이 상대를 좋아한다고 말해줌. 이후 상대가 고백함.',
+    adaptedTitle: '경기 이기면 알려준다던 그 사람',
+    adapted:
+      '학교 농구부 선배 좋아했는데, 그 선배 친구가 "야, 우리가 이번 경기 이기면 형이 좋아하는 사람 알려준대" 하는 거야. 진짜 미친 듯이 응원했지. 경기 끝나고 친구가 와서 귀에 대고 "그 사람, 너야" 하는데 다리가 풀렸어. 그날 저녁에 선배한테 카톡 와서 "너 진짜 응원 잘하더라" 하고는 다음 날 만나서 고백받았어.',
+    fitScore: 4,
+  },
+];
+
+async function main() {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'youtube-shorts-pipeline';
+  wb.created = new Date();
+
+  const ws = wb.addWorksheet('썰 모음', {
+    views: [{ state: 'frozen', ySplit: 1 }],
+  });
+
+  ws.columns = [
+    { header: '#', key: 'n', width: 4 },
+    { header: '각색 제목', key: 'adaptedTitle', width: 30 },
+    { header: '쇼츠 적합도', key: 'fitScore', width: 10 },
+    { header: '원본 (네이트판)', key: 'original', width: 50 },
+    { header: '각색 (달콤설렘썰 톤)', key: 'adapted', width: 60 },
+    { header: '인기도', key: 'popularity', width: 22 },
+    { header: '원글 제목', key: 'sourceTitle', width: 25 },
+    { header: '출처 URL', key: 'sourceUrl', width: 45 },
+  ];
+
+  // header style
+  const header = ws.getRow(1);
+  header.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+  header.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFE91E63' },
+  };
+  header.alignment = { vertical: 'middle', horizontal: 'center' };
+  header.height = 22;
+
+  for (const s of stories) {
+    const stars = '⭐'.repeat(s.fitScore);
+    const row = ws.addRow({
+      n: s.n,
+      adaptedTitle: s.adaptedTitle,
+      fitScore: stars,
+      original: s.original,
+      adapted: s.adapted,
+      popularity: s.popularity,
+      sourceTitle: s.sourceTitle,
+      sourceUrl: { text: s.sourceUrl, hyperlink: s.sourceUrl },
+    });
+    row.alignment = { vertical: 'top', wrapText: true };
+    row.height = 110;
+
+    // highlight high-fit rows
+    if (s.fitScore >= 5) {
+      row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF3E0' } };
+      row.getCell('adaptedTitle').font = { bold: true, color: { argb: 'FFE65100' } };
+    } else if (s.fitScore >= 4) {
+      row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF8E1' } };
+    }
+
+    // hyperlink color
+    row.getCell('sourceUrl').font = { color: { argb: 'FF1976D2' }, underline: true };
+  }
+
+  // borders
+  ws.eachRow((row) => {
+    row.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+        left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+        right: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+      };
+    });
+  });
+
+  const outPath = path.join(__dirname, '썰_모음_v1.xlsx');
+  await wb.xlsx.writeFile(outPath);
+  console.log(`✓ Saved: ${outPath}`);
+  return outPath;
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

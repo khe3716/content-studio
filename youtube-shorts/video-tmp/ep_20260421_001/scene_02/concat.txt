@@ -1,0 +1,11 @@
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_02/state_000.png'
+duration 0.383
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_02/state_001.png'
+duration 0.192
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_02/state_002.png'
+duration 0.192
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_02/state_003.png'
+duration 0.767
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_02/state_004.png'
+duration 0.767
+file 'C:/antigravity/claude code/youtube-shorts/video-tmp/ep_20260421_001/scene_02/state_004.png'
