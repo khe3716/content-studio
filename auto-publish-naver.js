@@ -201,6 +201,13 @@ function cleanForNaver(html, { imageBaseUrl } = {}) {
     });
   });
 
+  // <blockquote> 강조 문구는 글자 크기 19pt로 키움.
+  out = out.replace(/<blockquote(\s+style="([^"]*)")?/gi, (m, full = '', style = '') => {
+    if (/font-size/i.test(style)) return m;
+    const newStyle = style ? `font-size:19pt; ${style}` : 'font-size:19pt;';
+    return `<blockquote style="${newStyle}"`;
+  });
+
   // <ol> 리스트를 <p>로 변환 (번호 텍스트화) — 중앙 정렬 시 번호·본문 붙여 보이게.
   out = out.replace(/<ol(?:\s[^>]*)?>([\s\S]*?)<\/ol>/gi, (m, inner) => {
     const items = [];
@@ -225,13 +232,28 @@ function cleanForNaver(html, { imageBaseUrl } = {}) {
     return `<p style="text-align:center;">&nbsp;</p>\n${divider}\n${h2New}`;
   });
 
+  // 네이버 블로그는 "제목" 입력란이 별도로 있으므로 본문의 <h1>은 제거.
+  // 대신 제목 텍스트는 wrapForCopyPaste에서 주석으로 보관.
+  out = out.replace(/<h1[^>]*>[\s\S]*?<\/h1>\s*/gi, '');
+
   out = out.replace(/\n{3,}/g, '\n\n');
   return out.trim();
 }
 
-function wrapForCopyPaste(cleanedHtml, { title, day }) {
+// HTML에서 h1 텍스트 추출 (텔레그램·주석용)
+function extractH1Text(html) {
+  const m = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  if (!m) return '';
+  return m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function wrapForCopyPaste(cleanedHtml, { title, day, naverTitle }) {
+  const titleBlock = naverTitle
+    ? `\n  ▼ 네이버 글쓰기 '제목' 입력란에 붙여넣을 제목:\n  ${naverTitle}\n`
+    : '';
   return `<!--
   네이버 블로그 ${day ? 'Day ' + day + ' — ' : ''}${title}
+${titleBlock}
   이 HTML 전체를 복사해서 네이버 블로그 스마트에디터 우하단 '</>' 버튼 눌러 붙여넣으세요.
   이미지는 자동으로 네이버 서버에 재업로드됩니다 (약간 기다리세요).
 -->
@@ -401,10 +423,12 @@ function findDraftFile(topic) {
 
       console.log(`\n🧹 [3/3] 이미지 삽입 + 클리닝 중...`);
       let withImages = injectImages(rewrittenHtml, imagePaths, imageBaseUrl);
+      // 네이버 제목 입력란에 쓸 제목 추출 (cleanForNaver가 <h1> 제거하기 전에)
+      var naverTitle = extractH1Text(withImages);
       finalHtml = cleanForNaver(withImages, { imageBaseUrl });
     }
 
-    const wrapped = wrapForCopyPaste(finalHtml, { title: topic.title, day: topic.day });
+    const wrapped = wrapForCopyPaste(finalHtml, { title: topic.title, day: topic.day, naverTitle: typeof naverTitle === 'string' ? naverTitle : '' });
 
     if (!fs.existsSync(NAVER_DRAFTS_DIR)) fs.mkdirSync(NAVER_DRAFTS_DIR, { recursive: true });
     const outName = path.basename(srcPath);
@@ -415,13 +439,18 @@ function findDraftFile(topic) {
     const rawUrl = `${imageBaseUrl}/naver-blog/drafts/${outName}`;
     console.log(`   🔗 ${rawUrl}`);
 
+    const titleLine = (typeof naverTitle === 'string' && naverTitle)
+      ? `\n📌 <b>네이버 제목</b>:\n<code>${naverTitle.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>\n`
+      : '';
     await notifyTelegram(
       `📝 <b>네이버 블로그 변환 완료</b>\n\n` +
       `Day ${topic.day} — ${topic.title}\n` +
-      `💡 Gemini 네이버 톤 리라이팅 + 섹션 이미지 자동 생성\n\n` +
-      `1️⃣ 아래 링크 열기\n<a href="${rawUrl}">${outName}</a>\n\n` +
-      `2️⃣ <b>HTML 주석(&lt;!-- --&gt;) 아래</b>부터 전체 복사\n\n` +
-      `3️⃣ 네이버 블로그 <b>글쓰기 → 우하단 &lt;/&gt;(HTML) 버튼</b> 누르고 붙여넣기\n\n` +
+      `💡 Gemini 네이버 톤 리라이팅 + 섹션 이미지 자동 생성\n` +
+      titleLine + `\n` +
+      `1️⃣ 위 '네이버 제목'을 글쓰기 <b>제목 입력란</b>에 붙여넣기\n\n` +
+      `2️⃣ 아래 링크 열기\n<a href="${rawUrl}">${outName}</a>\n\n` +
+      `3️⃣ <b>HTML 주석(&lt;!-- --&gt;) 아래</b>부터 전체 복사\n\n` +
+      `4️⃣ 네이버 블로그 <b>글쓰기 → 우하단 &lt;/&gt;(HTML) 버튼</b> 누르고 붙여넣기\n\n` +
       `⚠️ 초기 3개월 지수 쌓을 때까지 <b>달콤살랑 링크·언급 금지</b>`
     );
 

@@ -22,11 +22,11 @@ async function generateImage(prompt, outputPath) {
   const isBerry = /raspberr|blueberr|산딸기|블루베리|berry|berries/i.test(prompt);
   const frontRules = [
     'STRICT REQUIREMENTS:',
-    '- No people, no hands, no human figures.',
+    '- No people, no hands, no human figures ANYWHERE including blurred background silhouettes.',
     '- No text, no writing, no korean characters, no labels, no captions, no signs, no watermarks, no posters, no notes.',
     isBerry ? '- All berries MUST be completely hulled. ABSOLUTELY NO green stems, NO green calyx, NO leaves, NO plant parts attached to any berry. Only the round red/blue berry fruit body, exactly like commercial supermarket berries.' : '',
-    '- ONLY raspberries (red, round, druplet-textured). NO strawberries, NO blueberries, NO mixed berries. Only red raspberries.',
-    '- Physically accurate with correct proportions and realistic gravity. No floating objects, no impossible geometry, no melting or distorted shapes, no duplicate or malformed items, no mold, no frost, no unnatural texture.',
+    '- ONLY raspberries (red, round, druplet-textured). NO strawberries, NO blueberries, NO mixed berries, NO other fruits or foods. Only red raspberries.',
+    '- Physically accurate with correct proportions and realistic gravity. No floating objects, no impossible geometry, no melting or distorted shapes, no duplicate or malformed items, no mold (unless specifically requested), no frost, no unnatural texture.',
     '',
     'SCENE:',
   ].filter(Boolean).join('\n');
@@ -55,26 +55,26 @@ async function generateImage(prompt, outputPath) {
   return outputPath;
 }
 
-const STAMP = '1777009374133';
+const STAMP = '1777027680444';
 const BASE = path.join(__dirname, '..', 'naver-blog', 'images');
 const TARGETS = [
   {
     num: 2,
-    prompt: 'A single white ceramic bowl filled with fresh red raspberries on a warm wooden kitchen table, soft side window light, cozy Korean home kitchen mood, shallow depth of field.'
-  },
-  {
-    num: 6,
-    prompt: 'Overhead close-up looking into a clear plastic supermarket raspberry container on a kitchen counter, the plastic bottom showing slight red juice stains and tiny moisture droplets where a few bottom raspberries got crushed, natural kitchen daylight.'
+    prompt: 'Beautiful rustic wooden basket filled with fresh red raspberries on a warm wooden kitchen table, soft morning window light, blurred cozy home kitchen in the background, completely empty of any human figures or silhouettes.'
   },
   {
     num: 9,
-    prompt: 'Extreme macro close-up of several plump firm glossy red raspberries arranged on a plain white ceramic plate, sharp focus on the bumpy druplet texture and the tiny soft surface hairs on each berry, natural diffused daylight, home kitchen background softly blurred.'
+    prompt: 'Close-up photo of a clear glass food storage container filled with a single layer of fresh red raspberries on paper towel, the container lid resting slightly ajar at one corner to allow ventilation, on a bright kitchen counter, natural daylight.'
+  },
+  {
+    num: 10,
+    prompt: 'Photo of a clear glass food storage container filled with fresh red raspberries placed neatly on a refrigerator shelf, container lid slightly ajar for air flow, clean white fridge interior with soft lighting, no other food items mixed inside the container.'
   },
 ];
 
 (async () => {
   for (const t of TARGETS) {
-    const outPath = path.join(BASE, `day-01-naver-${STAMP}-${t.num}.jpg`);
+    const outPath = path.join(BASE, `day-02-naver-${STAMP}-${t.num}.jpg`);
     console.log(`🎨 ${path.basename(outPath)}`);
     try {
       await generateImage(t.prompt, outPath);
