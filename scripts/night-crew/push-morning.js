@@ -99,12 +99,15 @@ async function sendTelegram(text, { dryRun = false } = {}) {
     console.log('--- END ---');
     return { ok: true, dry_run: true };
   }
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  // 야간 전용 봇 우선, 없으면 기존 봇 fallback
+  const token = process.env.TELEGRAM_BOT_TOKEN_NIGHT || process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID_NIGHT || process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) {
-    console.error('❌ TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID 환경변수 없음');
+    console.error('❌ TELEGRAM_BOT_TOKEN(_NIGHT) / TELEGRAM_CHAT_ID(_NIGHT) 환경변수 없음');
     process.exit(1);
   }
+  const usingNight = !!process.env.TELEGRAM_BOT_TOKEN_NIGHT;
+  console.log(`📤 발송 봇: ${usingNight ? '야간 전용 (night)' : '기존 공용'}`);
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

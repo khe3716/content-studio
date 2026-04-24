@@ -19,6 +19,10 @@ const SEO_WORKFLOW = 'audit-seo.yml';
 const INSTA_WORKFLOW = 'auto-publish-insta.yml';
 const SCHEDULE_WORKFLOW = 'schedule-drafts.yml';
 const BATCH_ECONOMY_WORKFLOW = 'batch-economy.yml';
+const NIGHT_RESEARCH_WORKFLOW = 'night-team-research.yml';
+const NIGHT_PUSH_WORKFLOW = 'night-team-push.yml';
+const FEEDBACK_WORKFLOW = 'feedback-log.yml';
+const REPORTS_DIR_NAME = 'reports';
 
 export default {
   async fetch(request, env) {
@@ -80,6 +84,11 @@ async function handleCommand(env, chatId, text) {
       '🚀 <b>경제 배치 예약 생성</b>\n' +
       '<b>/batch 12 10</b> - Day 12부터 10편 새로 만들어 04/24부터 10 슬롯 예약\n' +
       '<b>/batch 12 10 1</b> - 내일(offset=1)부터 시작 (기본)\n\n' +
+      '🌙 <b>야간 리서치 팀</b>\n' +
+      '<b>/morning</b> - 오늘 브리핑 다시 보기\n' +
+      '<b>/night-research</b> - 야간 팀 즉시 실행 (4라운드)\n' +
+      '<b>/done 2</b> - 후보 2번 실행 예정으로 기록\n' +
+      '<b>/ignore 3</b> - 후보 3번 넘김으로 기록\n\n' +
       '📊 <b>공통</b>\n' +
       '<b>/status</b> - 경제 최근 실행 3건\n' +
       '<b>/fruitstatus</b> - 과일 최근 실행 3건\n' +
@@ -190,7 +199,95 @@ async function handleCommand(env, chatId, text) {
     return;
   }
 
+  if (text === '/morning') {
+    const todayStr = todayKST();
+    const report = await tryFetchReport(env, todayStr);
+    if (!report) {
+      await sendMessage(env, chatId,
+        `📭 오늘(${todayStr}) 브리핑 없음.\n` +
+        `야간 팀이 아직 돌지 않았거나 실패했을 수 있어요.\n\n` +
+        `즉시 실행: /night-research`
+      );
+      return;
+    }
+    await sendMessage(env, chatId, clampTelegram(mdToTelegramLite(report)));
+    return;
+  }
+
+  if (text === '/night-research') {
+    await triggerWorkflowRaw(env, NIGHT_RESEARCH_WORKFLOW, {});
+    await sendMessage(env, chatId,
+      '🌙 야간 리서치 즉시 실행!\n' +
+      '10~30분 후 리포트 생성 + 텔레그램 알림.\n' +
+      '(이호기심 → 서사업 → 구현실 × 4라운드 → 박결재)'
+    );
+    return;
+  }
+
+  if (text.startsWith('/done') || text.startsWith('/ignore')) {
+    const parts = text.split(/\s+/);
+    const cmd = parts[0];
+    const index = parts[1];
+    const action = cmd === '/done' ? 'done' : 'ignore';
+    if (!index || !/^\d+$/.test(index)) {
+      await sendMessage(env, chatId,
+        `❌ 사용법: <code>${cmd} 2</code> (후보 번호)\n` +
+        `예: /done 1 · /ignore 3`
+      );
+      return;
+    }
+    await triggerWorkflowRaw(env, FEEDBACK_WORKFLOW, { action, index, date: '' });
+    const icon = action === 'done' ? '✅' : '⏭️';
+    await sendMessage(env, chatId,
+      `${icon} 후보 ${index}번 ${action === 'done' ? '실행 예정' : '넘김'}으로 기록 중...`
+    );
+    return;
+  }
+
   await sendMessage(env, chatId, '❓ 모르는 명령어. /help 쳐보세요.');
+}
+
+// ========== 오늘 날짜 (KST) ==========
+function todayKST() {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const y = kst.getUTCFullYear();
+  const m = String(kst.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(kst.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// ========== Reports 파일 가져오기 ==========
+async function tryFetchReport(env, dateStr) {
+  const url = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/contents/${REPORTS_DIR_NAME}/${dateStr}.md`;
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'telegram-blog-bot',
+    },
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data || !data.content) return null;
+  try {
+    const bin = atob(data.content.replace(/\n/g, ''));
+    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  } catch { return null; }
+}
+
+function mdToTelegramLite(md) {
+  let out = String(md || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  out = out.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  out = out.replace(/^#{1,3}\s+(.+)$/gm, '<b>$1</b>');
+  out = out.replace(/^[-*]\s+/gm, '• ');
+  return out;
+}
+
+function clampTelegram(text) {
+  return text.length > 4000 ? text.slice(0, 3950) + '\n...(생략)' : text;
 }
 
 async function triggerWorkflow(env, workflow, { day, dry_run }) {

@@ -6,6 +6,7 @@
 
 - **경제 블로그**: 매일 07:30 + 17:00 KST 자동 발행 (Blogspot)
 - **과일 블로그**: 매일 18:00 KST 자동 발행 (Blogspot, fruitinfoguide.blogspot.com)
+- **야간 리서치 팀**: 매일 01:00 KST 4라운드 자동 실행 → 08:00 텔레그램 브리핑
 - **텔레그램 봇**: `@Economyblog_bot` (/publish, /fruit, /status, /fruitstatus, /help)
 - **운영자**: 1인 스마트스토어 (달콤살랑) 과일 판매자, 비개발자
 
@@ -33,13 +34,40 @@
 
 ## 주요 폴더
 
-- `agents/` — 작가 페르소나 (김하나, 박과일, 박팩트 등)
+- `agents/` — 낮 작가 페르소나 8명 (김하나, 박과일, 박팩트 등)
+- `agents/night/` — 야간 리서치 팀 4명 (이호기심·서사업·구현실·박결재)
+- `agents/_paused/` — 보류 야간 페르소나 5명 (크롤링·API 연동 후 복귀 대기)
 - `economy-blog/` — 경제 블로그 원고·썸네일·주제 로드맵
 - `fruit-blog/` — 과일 블로그 원고·썸네일·AI 이미지·주제 로드맵
+- `scripts/night-crew/` — 야간 리서치 팀 오케스트레이션 (crew-runner, data-collect, night-research, push-morning)
+- `reports/` — 야간 일일 리포트 (`YYYY-MM-DD.md` 박결재 브리핑 · `-raw.md` 4라운드 원본 · `feedback.jsonl` 사용자 실행/무시 기록)
 - `telegram-worker/` — Cloudflare Worker 코드 (텔레그램 → GitHub Actions 중계)
 - `youtube-shorts/` — (예정) 유튜브 쇼츠 자동화
 - `backup/` — 프로젝트 상태 스냅샷 (날짜순)
 - `.github/workflows/` — GitHub Actions 자동 스케줄
+
+## 🌙 야간 리서치 팀 (Night Research Crew)
+
+야간 전용 페르소나 4명이 **낮 업무와 완전 분리**된 새 사업 기회 탐색. 낮 작가 8명·자동 발행은 건들지 않음.
+
+**구성**
+- **이호기심** — 요즘 뜨는 것 조사 + 정리
+- **서사업** — 이호기심 결과 → 1인 사업화 구체화 (자본 0~10만원, 주 10~20h, 비개발자)
+- **구현실** — 서사업 안 반론·현실 체크 (5대 기준: 자본·시간·시장 포화·기술 난도·수익화 속도)
+- **박결재** — 4라운드 전체 종합 + 사장용 3분 브리핑
+
+**스케줄 (GitHub Actions cron)**
+- **01:00 KST** — `night-team-research.yml`: 4라운드 리서치 실행 → `reports/YYYY-MM-DD.md` + `-raw.md` 저장 + git 커밋
+- **08:00 KST** — `night-team-push.yml`: 박결재 브리핑을 텔레그램으로 발송
+
+**핵심 제약 (기획자·검수자에 하드코딩)**
+- 자본 **0원 베스트 / 최대 10만원** (Apple $99/년 자동 한도 초과)
+- 주 **10~20시간** 운영
+- 비개발자 스킬 — 노코드·로우코드·튜토리얼 수준 (간단 앱/게임 OK, 학습 8주 초과 반려)
+- 3주 내 첫 수익 또는 첫 고객 피드백 가능성
+
+**재시도 로직**
+각 페르소나 빈약 아웃풋 시 최대 3회 재호출 (페르소나별 retryHints 3개 순차 주입). 전 라운드 수확 없으면 박결재가 "오늘 수확 없음" 한 줄 브리핑.
 
 ## 사용자 특성
 

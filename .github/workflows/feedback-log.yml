@@ -58,26 +58,30 @@ jobs:
             git push
           fi
 
-      - name: 4. 텔레그램 확인 알림
+      - name: 4. 텔레그램 확인 알림 (야간 봇 우선)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN_NIGHT: ${{ secrets.TELEGRAM_BOT_TOKEN_NIGHT }}
+          TELEGRAM_CHAT_ID_NIGHT: ${{ secrets.TELEGRAM_CHAT_ID_NIGHT }}
         run: |
-          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then exit 0; fi
           ACTION="${{ inputs.action }}"
           INDEX="${{ inputs.index }}"
           ICON="✅"
           LABEL="실행 예정"
           if [ "$ACTION" = "ignore" ]; then ICON="⏭️"; LABEL="넘김"; fi
           node -e "
+            const token = process.env.TELEGRAM_BOT_TOKEN_NIGHT || process.env.TELEGRAM_BOT_TOKEN;
+            const chatId = process.env.TELEGRAM_CHAT_ID_NIGHT || process.env.TELEGRAM_CHAT_ID;
+            if (!token || !chatId) { console.log('텔레그램 시크릿 없음'); process.exit(0); }
             const icon='${ICON}';
             const label='${LABEL}';
             const idx='${INDEX}';
-            fetch('https://api.telegram.org/bot' + process.env.TELEGRAM_BOT_TOKEN + '/sendMessage', {
+            fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
               method: 'POST',
               headers: {'Content-Type':'application/json'},
               body: JSON.stringify({
-                chat_id: process.env.TELEGRAM_CHAT_ID,
+                chat_id: chatId,
                 text: icon + ' 후보 ' + idx + ' 기록됨 (' + label + ')',
                 parse_mode: 'HTML'
               })

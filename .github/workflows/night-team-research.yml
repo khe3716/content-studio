@@ -78,20 +78,24 @@ jobs:
             git push
           fi
 
-      - name: 6. 실패 시 텔레그램 알림
+      - name: 6. 실패 시 텔레그램 알림 (야간 봇 우선)
         if: failure()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN_NIGHT: ${{ secrets.TELEGRAM_BOT_TOKEN_NIGHT }}
+          TELEGRAM_CHAT_ID_NIGHT: ${{ secrets.TELEGRAM_CHAT_ID_NIGHT }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then exit 0; fi
           node -e "
-            fetch('https://api.telegram.org/bot' + process.env.TELEGRAM_BOT_TOKEN + '/sendMessage', {
+            const token = process.env.TELEGRAM_BOT_TOKEN_NIGHT || process.env.TELEGRAM_BOT_TOKEN;
+            const chatId = process.env.TELEGRAM_CHAT_ID_NIGHT || process.env.TELEGRAM_CHAT_ID;
+            if (!token || !chatId) { console.log('텔레그램 시크릿 없음'); process.exit(0); }
+            fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
               method: 'POST',
               headers: {'Content-Type':'application/json'},
               body: JSON.stringify({
-                chat_id: process.env.TELEGRAM_CHAT_ID,
+                chat_id: chatId,
                 text: '🚨 <b>야간 리서치 실패</b>\n\n' + process.env.RUN_URL,
                 parse_mode: 'HTML',
                 disable_web_page_preview: true
