@@ -80,7 +80,14 @@ async function generateImage(prompt, outputPath) {
   const model = 'gemini-2.5-flash-image';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
   // 사람·손 등장은 프롬프트로만 통제 (Nano Banana는 personGeneration 파라미터 없음).
-  const safePrompt = /no people/i.test(prompt) ? prompt : `${prompt}. No people, no hands, no human figures.`;
+  // 텍스트·한글 삽입 금지 (AI가 한국어 텍스트를 거의 항상 깨뜨림).
+  // 베리류 꼭지(calyx·green stem) 금지 — 유통 과일은 꼭지 제거된 상태.
+  let safePrompt = prompt;
+  if (!/no people/i.test(safePrompt)) safePrompt += '. No people, no hands, no human figures.';
+  if (!/no text/i.test(safePrompt)) safePrompt += ' No text, no writing, no korean characters, no labels, no captions, no signs, no watermarks, no posters, no notes.';
+  if (/raspberr|blueberr|산딸기|블루베리|berry|berries/i.test(safePrompt) && !/calyx|stem/i.test(safePrompt)) {
+    safePrompt += ' Berries without green calyx or stem attached — clean, hulled fruit only.';
+  }
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
