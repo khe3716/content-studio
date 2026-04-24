@@ -184,14 +184,15 @@ function cleanForNaver(html, { imageBaseUrl } = {}) {
     });
   });
 
-  // 섹션 경계 강화: <h2> 내용을 박스형 라벨로 감싸 시각적으로 뚜렷한 섹션 헤더 만들기.
-  // 네이버 레시피 블로그 전형 — "── 산딸기 포장 ──" 같은 박스 라벨 효과.
+  // 섹션 경계 강화: 네이버 스마트에디터가 border/padding/radius를 제거하므로,
+  // 확실히 살아남는 스타일(text-align, color, background-color, font-size, font-weight)로만 구성.
+  // 방식: <h2> 위에 유니코드 수평선 + <h2> 자체를 큰 굵은 글씨 + 배경색 강조.
   out = out.replace(/<h2(\s[^>]*)?>([\s\S]*?)<\/h2>/gi, (m, attrs = '', content) => {
-    // 이미 박스 처리된 경우 스킵
-    if (/class="naver-section-box"|border:1\.?5?px/i.test(content)) return m;
-    const inner = content.trim();
-    const boxSpan = `<span style="display:inline-block; padding:10px 32px; border:1.5px solid #d0d0d0; border-radius:28px; background:#fff; font-weight:700; color:#333;">${inner}</span>`;
-    return `<h2 style="text-align:center; margin:56px 0 28px;">${boxSpan}</h2>`;
+    // 내부 span·기존 장식 제거 후 순수 텍스트만 추출
+    const inner = content.replace(/<\/?span[^>]*>/gi, '').replace(/<\/?strong>/gi, '').trim();
+    const divider = `<p style="text-align:center;"><span style="color:#cccccc; font-size:14pt;">━━━━━━━━━━━━━━</span></p>\n<p style="text-align:center;">&nbsp;</p>`;
+    const h2New = `<h2 style="text-align:center; background-color:#fdf6e3; padding:14px; font-size:17pt; color:#2a2a2a;"><strong>${inner}</strong></h2>`;
+    return `<p style="text-align:center;">&nbsp;</p>\n${divider}\n${h2New}`;
   });
 
   out = out.replace(/\n{3,}/g, '\n\n');
