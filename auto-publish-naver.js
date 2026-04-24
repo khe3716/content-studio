@@ -79,15 +79,19 @@ async function callGemini(userPrompt, systemPrompt, { temperature = 0.7, maxToke
 async function generateImage(prompt, outputPath) {
   const model = 'gemini-2.5-flash-image';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-  // 사람·손 등장은 프롬프트로만 통제 (Nano Banana는 personGeneration 파라미터 없음).
-  // 텍스트·한글 삽입 금지 (AI가 한국어 텍스트를 거의 항상 깨뜨림).
-  // 베리류 꼭지(calyx·green stem) 금지 — 유통 과일은 꼭지 제거된 상태.
+  // 안티-AI티 · 리얼리즘 강제 규칙:
+  // 1) 사람·손 등장 금지
+  // 2) 텍스트·한글 삽입 금지 (AI가 한국어 텍스트를 항상 깨뜨림)
+  // 3) 베리류 꼭지(calyx·green stem) 금지 — 유통 과일은 꼭지 제거된 상태
+  // 4) 물리법칙 준수 + 실제 스마트폰 사진 같은 리얼리즘 (AI 아티팩트 제거)
   let safePrompt = prompt;
   if (!/no people/i.test(safePrompt)) safePrompt += '. No people, no hands, no human figures.';
   if (!/no text/i.test(safePrompt)) safePrompt += ' No text, no writing, no korean characters, no labels, no captions, no signs, no watermarks, no posters, no notes.';
   if (/raspberr|blueberr|산딸기|블루베리|berry|berries/i.test(safePrompt) && !/calyx|stem/i.test(safePrompt)) {
     safePrompt += ' Berries without green calyx or stem attached — clean, hulled fruit only.';
   }
+  // 물리·리얼리즘 강제: 프롬프트 후단에 항상 추가
+  safePrompt += ' Physically accurate, correct proportions, consistent shadows and lighting from a single natural light source, realistic depth of field, authentic unedited smartphone photograph quality, natural color temperature, subtle imperfections and slight grain, no AI artifacts, no floating or levitating objects, no impossible geometry, no melting or distorted shapes, no duplicate or malformed items.';
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
