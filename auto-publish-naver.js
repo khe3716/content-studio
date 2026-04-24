@@ -184,6 +184,16 @@ function cleanForNaver(html, { imageBaseUrl } = {}) {
     });
   });
 
+  // 섹션 경계 강화: <h2> 내용을 박스형 라벨로 감싸 시각적으로 뚜렷한 섹션 헤더 만들기.
+  // 네이버 레시피 블로그 전형 — "── 산딸기 포장 ──" 같은 박스 라벨 효과.
+  out = out.replace(/<h2(\s[^>]*)?>([\s\S]*?)<\/h2>/gi, (m, attrs = '', content) => {
+    // 이미 박스 처리된 경우 스킵
+    if (/class="naver-section-box"|border:1\.?5?px/i.test(content)) return m;
+    const inner = content.trim();
+    const boxSpan = `<span style="display:inline-block; padding:10px 32px; border:1.5px solid #d0d0d0; border-radius:28px; background:#fff; font-weight:700; color:#333;">${inner}</span>`;
+    return `<h2 style="text-align:center; margin:56px 0 28px;">${boxSpan}</h2>`;
+  });
+
   out = out.replace(/\n{3,}/g, '\n\n');
   return out.trim();
 }
