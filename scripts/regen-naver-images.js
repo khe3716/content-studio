@@ -14,7 +14,6 @@ if (fs.existsSync(envPath)) {
   });
 }
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY 없음');
 
 async function generateImage(prompt, outputPath) {
   const model = 'gemini-2.5-flash-image';
@@ -23,14 +22,14 @@ async function generateImage(prompt, outputPath) {
   const frontRules = [
     'STRICT REQUIREMENTS:',
     '- No people, no hands, no human figures ANYWHERE including blurred background silhouettes.',
-    '- No text, no writing, no korean characters, no labels, no captions, no signs, no watermarks, no posters, no notes.',
-    isBerry ? '- All berries MUST be completely hulled. ABSOLUTELY NO green stems, NO green calyx, NO leaves, NO plant parts attached to any berry. Only the round red/blue berry fruit body, exactly like commercial supermarket berries.' : '',
-    '- ONLY raspberries (red, round, druplet-textured). NO strawberries, NO blueberries, NO mixed berries, NO other fruits or foods. Only red raspberries.',
-    '- Physically accurate with correct proportions and realistic gravity. No floating objects, no impossible geometry, no melting or distorted shapes, no duplicate or malformed items, no mold (unless specifically requested), no frost, no unnatural texture.',
+    '- No text, no writing, no korean characters, no labels, no captions, no signs, no watermarks.',
+    isBerry ? '- All berries MUST be completely hulled. ABSOLUTELY NO green stems, NO green calyx, NO leaves, NO plant parts attached.' : '',
+    '- ONLY raspberries (red, round, druplet-textured). NO strawberries, NO blueberries, NO mixed berries.',
+    '- Physically accurate. No floating objects, no impossible geometry, no melting shapes.',
     '',
     'SCENE:',
   ].filter(Boolean).join('\n');
-  const backRules = ' Authentic unedited smartphone photograph quality, natural window light from a single source, consistent shadows, natural color temperature, subtle imperfections and slight grain. No AI artifacts.';
+  const backRules = ' Authentic unedited smartphone photograph quality, natural window light, consistent shadows, subtle grain. No AI artifacts.';
   const safePrompt = `${frontRules}\n${prompt}${backRules}`;
 
   const res = await fetch(url, {
@@ -59,16 +58,12 @@ const STAMP = '1777027680444';
 const BASE = path.join(__dirname, '..', 'naver-blog', 'images');
 const TARGETS = [
   {
-    num: 2,
-    prompt: 'Beautiful rustic wooden basket filled with fresh red raspberries on a warm wooden kitchen table, soft morning window light, blurred cozy home kitchen in the background, completely empty of any human figures or silhouettes.'
+    num: 3,
+    prompt: 'Extreme macro close-up of a single fresh red raspberry sliced cleanly in half on a white marble countertop, revealing the delicate translucent juicy interior flesh and the fragile thin outer skin with tiny druplets, soft diffused daylight highlighting the vulnerable texture, moody dark background.'
   },
   {
-    num: 9,
-    prompt: 'Close-up photo of a clear glass food storage container filled with a single layer of fresh red raspberries on paper towel, the container lid resting slightly ajar at one corner to allow ventilation, on a bright kitchen counter, natural daylight.'
-  },
-  {
-    num: 10,
-    prompt: 'Photo of a clear glass food storage container filled with fresh red raspberries placed neatly on a refrigerator shelf, container lid slightly ajar for air flow, clean white fridge interior with soft lighting, no other food items mixed inside the container.'
+    num: 12,
+    prompt: 'Styled lifestyle photo of a clear glass mason jar filled to the top with well-preserved fresh red raspberries on a rustic wooden tray, a soft folded linen napkin next to the jar, a few loose raspberries scattered beside, warm morning window light, mood of successful long-term storage, cozy home feel.'
   },
 ];
 
