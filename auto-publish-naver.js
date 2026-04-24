@@ -149,21 +149,19 @@ function cleanForNaver(html, { imageBaseUrl } = {}) {
   out = out.replace(/(<\/h[1-6]>)\s*(<p[^>]*>)/gi, '$1\n<p>&nbsp;</p>\n$2');
   out = out.replace(/(<\/ol>|<\/ul>)\s*(<p[^>]*>|<h[1-6])/gi, '$1\n<p>&nbsp;</p>\n$2');
 
-  // 네이버 관습: <h1> 메인 제목과 <blockquote> 강조 문구는 가운데 정렬.
+  // 네이버 관습 + 사용자 요청: 전체 블록 요소 가운데 정렬.
+  // <h1>, <h2>, <h3>, <p>, <blockquote>, <li> 모두에 text-align:center 추가.
   // 이미 style이 있으면 text-align만 앞에 붙이고, 없으면 style 통째로 추가.
-  out = out.replace(/<h1(\s[^>]*)?>/gi, (m, attrs = '') => {
-    if (/style=/i.test(attrs)) {
-      if (/text-align/i.test(attrs)) return m;
-      return m.replace(/style="([^"]*)"/i, 'style="text-align:center;$1"');
-    }
-    return `<h1${attrs || ''} style="text-align:center;">`;
-  });
-  out = out.replace(/<blockquote(\s[^>]*)?>/gi, (m, attrs = '') => {
-    if (/style=/i.test(attrs)) {
-      if (/text-align/i.test(attrs)) return m;
-      return m.replace(/style="([^"]*)"/i, 'style="text-align:center;$1"');
-    }
-    return `<blockquote${attrs || ''} style="text-align:center;">`;
+  const centerTags = ['h1', 'h2', 'h3', 'p', 'blockquote', 'li'];
+  centerTags.forEach(tag => {
+    const re = new RegExp(`<${tag}(\\s[^>]*)?>`, 'gi');
+    out = out.replace(re, (m, attrs = '') => {
+      if (/style=/i.test(attrs)) {
+        if (/text-align/i.test(attrs)) return m;
+        return m.replace(/style="([^"]*)"/i, 'style="text-align:center;$1"');
+      }
+      return `<${tag}${attrs || ''} style="text-align:center;">`;
+    });
   });
 
   out = out.replace(/\n{3,}/g, '\n\n');
