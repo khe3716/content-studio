@@ -21,9 +21,9 @@ async function generateImage(prompt, outputPath) {
   const frontRules = [
     'STRICT REQUIREMENTS:',
     '- No people, no hands.',
-    '- No text, no writing, no korean characters, no labels, no captions, no signs, no watermarks.',
+    '- No text, no writing, no korean characters, no labels, no captions, no watermarks.',
     '- All berries hulled. NO green stems, NO calyx, NO leaves.',
-    '- BERRY TYPE: ONLY raspberries (Rubus idaeus, small round red with hollow center and bumpy druplets). NOT strawberries, NOT blackberries, NOT blueberries, NO mixed berries.',
+    '- BERRY TYPE: ONLY raspberries (Rubus idaeus, small round red with hollow center and bumpy druplets). NOT strawberries, NOT blackberries, NOT blueberries.',
     '- Physically accurate, realistic gravity, no AI artifacts.',
     '',
     'SCENE:',
@@ -57,12 +57,8 @@ const STAMP = '1777033929701';
 const BASE = path.join(__dirname, '..', 'naver-blog', 'images');
 const TARGETS = [
   {
-    num: 3,
-    prompt: 'Overhead flat lay photo of a single fresh red raspberry placed on a light blue patterned ceramic plate next to a small stainless steel spoon, minimal styling, soft natural light from a single window, clean white linen tablecloth background.'
-  },
-  {
-    num: 12,
-    prompt: 'Flat lay top-down photo of fresh red raspberries scattered around a vintage glass cloche dome on a white marble kitchen counter, a small bundle of dried lavender tied with twine beside the cloche, soft morning light, cozy styled mood, mood of well-preserved fruit.'
+    num: 9,
+    prompt: 'Photo of a clean RECTANGULAR clear glass food storage container (NOT round, NOT cylindrical — square/rectangular shape) with fresh red raspberries arranged in a single neat layer on white paper towels inside, the clear rectangular glass lid placed slightly ajar on one side to allow air flow (숨구멍), on a bright kitchen counter with soft natural daylight. The container must be the SAME rectangular glass style used for berry storage.'
   },
 ];
 
