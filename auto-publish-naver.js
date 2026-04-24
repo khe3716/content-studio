@@ -161,6 +161,23 @@ function cleanForNaver(html, { imageBaseUrl } = {}) {
   out = out.replace(/<p>\s*<\/p>/gi, '');
   out = out.replace(/<div>\s*<\/div>/gi, '');
 
+  // 네이버 감성 블로그 스타일: 긴 <p> 단락을 문장 단위로 쪼개서 한 줄씩 보이게.
+  // 한 <p> 안에 여러 문장(. ! ? ~)이 있으면 각 문장을 별도 <p>로 분리.
+  out = out.replace(/<p(\s[^>]*)?>([\s\S]*?)<\/p>/gi, (m, attrs = '', content) => {
+    // 예외: 빈 단락, 이미지 담긴 단락, 아주 짧은 단락은 그대로
+    if (content.trim() === '&nbsp;' || content.trim() === '') return m;
+    if (/<img\b/i.test(content)) return m;
+    if (content.length < 60) return m;
+    // 문장 종결 부호(. ! ? ~ 。) 뒤에 공백이 있으면 분리
+    const sentences = content
+      .replace(/([.!?~。])\s+/g, '$1|__SPLIT__|')
+      .split('|__SPLIT__|')
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (sentences.length <= 1) return m;
+    return sentences.map(s => `<p${attrs || ''}>${s}</p>`).join('\n');
+  });
+
   // 네이버 스마트에디터 줄바꿈 강화:
   // 네이버는 <p> 간 margin이 기본 0이라 문단이 한 덩어리로 보임.
   // 각 <p> / <h> 앞에 빈 <p><br></p> 삽입해 강제 공백.
