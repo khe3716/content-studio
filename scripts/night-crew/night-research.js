@@ -62,7 +62,7 @@ function buildHogigsimPrompt(ctx, roundNum, totalRounds, previousTopics, retryHi
   const base = [
     `## 현재 라운드: ${roundNum}/${totalRounds}`,
     '',
-    '## 사용자 사업 컨텍스트 (이 목록과 겹치는 주제 금지)',
+    '## 사용자 사업 컨텍스트 (이 도메인과 거의 같은 케이스 금지 — 메커니즘만 다른 영역에서 빌려옴)',
     '```json',
     JSON.stringify({
       active_channels: ctx.active_channels.map(c => c.name),
@@ -72,17 +72,21 @@ function buildHogigsimPrompt(ctx, roundNum, totalRounds, previousTopics, retryHi
     '```',
     '',
     previousTopics.length > 0
-      ? `## 이전 라운드들이 이미 다룬 주제 (반드시 제외)\n- ${previousTopics.join('\n- ')}`
+      ? `## 이전 라운드들이 이미 다룬 케이스 영역 (반드시 제외)\n- ${previousTopics.join('\n- ')}`
       : '## 이전 라운드 주제: 없음 (첫 라운드)',
     '',
-    '## 라운드 가이드 (라운드별 다른 영역 탐색)',
-    '- Round 1: 라이프스타일·소비·취미 (인스타·커뮤니티 중심)',
-    '- Round 2: 돈·재테크·부업 (쓰레드·뉴스레터 중심)',
-    '- Round 3: 테크·디지털 제품·AI 활용 (레딧·디스코드 중심)',
-    '- Round 4: 관계·건강·자기계발 (팟캐스트·블로그 중심)',
+    '## 라운드 가이드 (라운드별 다른 영역의 1인 사업 케이스 분석)',
+    '- Round 1: 디지털 콘텐츠 1인 사업 (Gumroad·Stibee·메일리·페이북 — 전자책·뉴스레터·구독·템플릿·프롬프트팩)',
+    '- Round 2: 노코드 앱·웹앱 1인 사업 (Glide·Softr·Bubble·Framer·Webflow — SaaS·도구·디렉토리)',
+    '- Round 3: 강의·코칭·커뮤니티 1인 사업 (인프런·클래스101·디스코드 유료·1:1 코칭·줌 워크숍)',
+    '- Round 4: 크리에이터·니치 IP 1인 사업 (유튜브 광고+제휴·인스타 큐레이션·팟캐스트·니치 블로그)',
     '',
     '## 요청',
-    '이번 라운드에 해당하는 영역에서 요즘 뜨는 주제 3~5개를 조사하고, 각 주제가 1인 사업으로 이어질 수 있는 힌트 한 줄씩 붙여주세요.',
+    '이번 라운드 영역에서 **잘 된 1인 사업 케이스 3~5건**을 발굴·분석하세요.',
+    '각 케이스: 사업명 / 운영자(본명·닉네임·핸들) / 플랫폼 / 매출·규모 추정 / 무엇을 팔았나 / 왜 잘됐나(핵심 메커니즘) / 출처 단서.',
+    '환각 금지 — 사업명·운영자·플랫폼 셋 중 하나라도 모호하면 그 케이스 빼고 다른 케이스로.',
+    '확실치 않으면 "추정" 또는 "확실치 않음 — 추가 검증 필요" 명시.',
+    '마지막에 **공통 성공 패턴** 2~3개 + **사용자 자산(달콤살랑·과일·경제블로그·1년차 1인 사장) 매핑 힌트** 한 줄.',
     '페르소나 프로필의 출력 형식을 엄수하세요.',
   ].join('\n');
   if (retryHint) return base + '\n\n## 재시도 힌트\n' + retryHint;
@@ -90,8 +94,8 @@ function buildHogigsimPrompt(ctx, roundNum, totalRounds, previousTopics, retryHi
 }
 
 const HOGIGSIM_RETRY_HINTS = [
-  '지난 응답이 빈약했습니다. 다른 플랫폼(예: 쓰레드 대신 디스코드·레딧·팟캐스트)에서 찾아보세요. 주제 3개 이상 필수.',
-  '지난 응답도 빈약했습니다. 이번엔 다른 연령·성별(예: 20대 남성·40대 여성)·해외 트렌드·로컬 커뮤니티 쪽으로 시야를 바꿔보세요.',
+  '지난 응답이 빈약했거나 환각 의심. 사업명·운영자(닉네임)·플랫폼·매출 추정 모두 명시된 케이스 3건 이상. Gumroad·인프런·메일리·X·IndieHackers에서 찾으세요.',
+  '지난 응답도 빈약했습니다. 한국 외 케이스(IndieHackers·X "I built X" 영상·Reddit r/Entrepreneur)도 OK. 단 1인·3개월+·매출 인증 4조건 충족해야 함.',
 ];
 
 // ========== 서사업 prompt builder ==========
@@ -99,7 +103,7 @@ function buildSaeopPrompt(ctx, roundNum, hogigsimOutput, previousSaeopBusinesses
   const base = [
     `## 현재 라운드: ${roundNum}`,
     '',
-    '## 이호기심의 트렌드 조사 결과',
+    '## 이호기심의 성공 케이스 분석',
     hogigsimOutput,
     '',
     '## 사용자 기존 자산 (활용 가능하면 우선)',
@@ -115,23 +119,32 @@ function buildSaeopPrompt(ctx, roundNum, hogigsimOutput, previousSaeopBusinesses
       ? `## 이전 라운드 사업 후보 (중복 제안 금지)\n- ${previousSaeopBusinesses.join('\n- ')}`
       : '## 이전 라운드 후보 없음 (첫 라운드)',
     '',
+    '## 매핑 절차 (반드시 따를 것)',
+    '1. 이호기심이 분석한 케이스 중 **참고할 만한 1~2개 선택**',
+    '2. 그 케이스의 **핵심 성공 메커니즘 추출** (왜 잘됐나 1~2줄)',
+    '3. **사용자 자산 중 매핑 가능한 것 식별** (스마트스토어 운영 경험·과일 도메인·고객 DB·블로그 트래픽·1년차 사장 시야 등)',
+    '4. **메커니즘 + 자산 = 사용자 버전 사업** 도출',
+    '5. 3주 실행 계획으로 쪼개기',
+    '',
     '## 엄격한 제약 (재확인)',
     '- 추가 자본 0원 베스트, **최대 10만원** (Apple $99 = 13만원 → 한도 초과)',
     '- 주 10~20시간 운영',
     '- 비개발자, 노코드/튜토리얼 수준',
     '- 학습 곡선 8주 초과 금지',
     '- 3주 내 첫 수익 또는 첫 고객 피드백 가능성',
+    '- **참고 케이스 명시 필수** — 후보마다 이호기심 케이스 # 번호 + 빌려온 메커니즘 명시',
+    '- 참고 케이스 없는 즉흥 아이디어는 자동 반려 대상',
     '',
     '## 요청',
-    '이호기심이 제시한 주제 중 1인 사업화 가능한 2~3개를 실행 계획으로 구체화하세요. 페르소나 프로필의 출력 형식을 엄수하세요.',
+    '이호기심이 분석한 케이스의 메커니즘을 사용자 자산에 이식한 사업 후보 2~3개를 실행 계획으로 구체화하세요. 페르소나 프로필의 출력 형식을 엄수하세요.',
   ].join('\n');
   if (retryHint) return base + '\n\n## 재시도 힌트\n' + retryHint;
   return base;
 }
 
 const SAEOP_RETRY_HINTS = [
-  '지난 응답이 빈약했습니다. 각 후보마다 주간 단위 실행 단계 3개를 툴 이름과 함께 명시하세요 (예: "월요일 Glide로 MVP, 수요일 트위터에 10개 맞팔").',
-  '지난 응답도 빈약했습니다. 수익 모델과 첫 고객 확보 경로를 구체 숫자·채널로 명시하세요.',
+  '지난 응답에 참고 케이스가 빠졌거나 모호했습니다. 후보 첫 줄에 "참고 케이스: 이호기심 #N — [사업명/운영자/플랫폼]" + "빌려온 메커니즘: [1~2줄]" 명시 필수.',
+  '지난 응답도 미흡했습니다. 사용자 자산 매핑이 모호 — 어떤 자산(고객 DB·블로그 트래픽·도메인 지식·운영 경험)을 정확히 어떻게 활용하는지 1줄로 명시.',
 ];
 
 // ========== 구현실 prompt builder ==========
@@ -139,7 +152,7 @@ function buildHyeonsilPrompt(ctx, roundNum, hogigsimOutput, saeopOutput, retryHi
   const base = [
     `## 현재 라운드: ${roundNum}`,
     '',
-    '## 이호기심 원본 (근거 추적용)',
+    '## 이호기심 케이스 분석 (참고 케이스 환각 검증용)',
     hogigsimOutput,
     '',
     '## 서사업 사업화 리포트 (검수 대상)',
@@ -150,23 +163,24 @@ function buildHyeonsilPrompt(ctx, roundNum, hogigsimOutput, saeopOutput, retryHi
     JSON.stringify(ctx.user_profile, null, 2),
     '```',
     '',
-    '## 5대 검수 기준',
+    '## 6대 검수 기준',
     '1. 자본 한계 (10만원 이하, 숨은 비용 포함)',
     '2. 시간 현실성 (주 20시간, 학습 곡선 포함)',
     '3. 시장 포화·경쟁',
     '4. 기술 난도 (비개발자 기준, 4주 초과=조건부, 8주 초과=반려)',
     '5. 수익화 속도 (3주 내 첫 수익 플랫폼 제약 포함)',
+    '6. **참고 케이스 검증 (신규)**: 케이스 실재성·메커니즘 일치·환경 차이·시장 포화 재발·참고 케이스 누락 여부. 케이스 누락·환각·메커니즘 미일치 시 무조건 반려.',
     '',
     '## 요청',
-    '서사업의 후보 각각에 대해 ✅승인 / ⚠️조건부 / ❌반려 판정과 위험 2~4개를 제시하세요. 페르소나 프로필 출력 형식 엄수.',
+    '서사업의 후보 각각에 대해 ✅승인 / ⚠️조건부 / ❌반려 판정 + 6번(참고 케이스 검증) 결과 + 위험 2~4개를 제시하세요. 페르소나 프로필 출력 형식 엄수.',
   ].join('\n');
   if (retryHint) return base + '\n\n## 재시도 힌트\n' + retryHint;
   return base;
 }
 
 const HYEONSIL_RETRY_HINTS = [
-  '지난 응답이 빈약했습니다. 반드시 후보마다 위험 요소 2개 이상을 구체 근거로 제시하세요.',
-  '지난 응답도 빈약했습니다. 5대 기준(자본·시간·시장 포화·기술 난도·수익화 속도) 중 3개 이상을 반드시 체크하세요.',
+  '지난 응답이 빈약했습니다. 반드시 후보마다 위험 요소 2개 이상 + 6번(참고 케이스 검증) 결과를 명시하세요.',
+  '지난 응답도 빈약했습니다. 6대 기준(자본·시간·시장 포화·기술 난도·수익화 속도·참고 케이스) 중 4개 이상 체크하세요.',
 ];
 
 // ========== 서사업 후보 이름 추출 (중복 회피용) ==========
@@ -233,8 +247,9 @@ function buildGyeoljaePrompt(date, allRounds, ctx) {
     '5. 오늘 한 건 지정 (★★★ 중 자본 0원·실행 가장 쉬운 것)',
     '6. 핸드폰 3분 브리핑 작성 (프로필 출력 형식 엄수, 4000자 이내)',
     '',
-    '## 후보 디테일 (필수 7필드)',
-    '각 사업화 후보는 반드시 아래 7필드를 모두 채워주세요. raw 응답(서사업·구현실)에서 정보를 길어 올리고, 그래도 부족하면 "(미확정)"으로 표기 — 빈 필드 금지.',
+    '## 후보 디테일 (필수 8필드)',
+    '각 사업화 후보는 반드시 아래 8필드를 모두 채워주세요. raw 응답(이호기심 케이스·서사업·구현실)에서 정보를 길어 올리고, 그래도 부족하면 "(미확정)"으로 표기 — 빈 필드 금지.',
+    '- **참고 성공 사례**: 이호기심 케이스에서 빌려온 사업명 / 운영자(닉네임) / 플랫폼 — 왜 잘됐는지 1줄 (필수)',
     '- **형태**: 디지털 가이드 / 노코드 웹앱 / 컨설팅 / 구독 뉴스레터 등 (1줄)',
     '- **누구에게**: 구체 타겟·연령·상황 (1줄)',
     '- **수익 모델**: 건당 N원 × 월 N건 / 구독 N원 등 — 숫자 포함 (1줄)',
@@ -242,6 +257,9 @@ function buildGyeoljaePrompt(date, allRounds, ctx) {
     '- **첫 수익 시점**: N주차 예상, N원 수준',
     '- **활용 자산**: 기존 스토어·블로그·고객 DB·인스타 등 어떻게 (1줄)',
     '- **구현실 위험**: 반론 핵심 1줄',
+    '',
+    '## 참고 사례 누락 시',
+    '서사업이 참고 케이스 명시 안 했거나 구현실이 6번(참고 케이스 검증)에서 반려한 후보는 ★ 이하로 강등하거나 보류로 분류.',
     '',
     skippedCount === allRounds.length
       ? '**전 라운드 수확 없음 → "수확 없음 에스컬레이션" 형식으로 작성**'
@@ -273,7 +291,7 @@ function buildGyeoljaePrompt(date, allRounds, ctx) {
       buildHogigsimPrompt(ctx, r, opts.rounds, memory.snapshot(), hint), {
         retryHints: HOGIGSIM_RETRY_HINTS,
         mock,
-        mockOutput: `### 이호기심 — 요즘 뜨는 것 (Round ${r})\n\n## 관찰한 주제 3~5개\n- 🔥 MOCK 주제 ${r}-A: 샘플 설명\n- 🔥 MOCK 주제 ${r}-B: 샘플 설명\n- 🔥 MOCK 주제 ${r}-C: 샘플 설명\n\n## 공통 흐름\nMOCK 공통점\n\n## 사업화 힌트\n- 주제 A → 1인 사업 힌트\n- 주제 B → 1인 사업 힌트\n- 주제 C → 1인 사업 힌트`,
+        mockOutput: `### 이호기심 — 잘 된 1인 사업 케이스 (Round ${r})\n\n## 케이스 1: MOCK 사업 ${r}-A\n- 운영자: @mockuser_${r}a\n- 플랫폼: Gumroad\n- 매출/규모: 월 300만원 추정\n- 무엇을 팔았나: MOCK 디지털 상품\n- 왜 잘됐나: 좁은 타겟 + 즉시 사용성\n- 출처/단서: X 자랑글\n\n## 케이스 2: MOCK 사업 ${r}-B\n- 운영자: @mockuser_${r}b\n- 플랫폼: 인프런\n- 매출/규모: 누적 수강생 500명\n- 무엇을 팔았나: MOCK 강의\n- 왜 잘됐나: 본인 경험 기반\n- 출처/단서: 인터뷰\n\n## 케이스 3: MOCK 사업 ${r}-C\n- 운영자: @mockuser_${r}c\n- 플랫폼: 메일리\n- 매출/규모: 유료 구독 200명\n- 무엇을 팔았나: MOCK 뉴스레터\n- 왜 잘됐나: 니치 + 매주 발송\n- 출처/단서: 추정\n\n## 공통 패턴\n- 좁은 타겟 + 즉시 사용성 + 본인 경험 기반\n\n## 사용자 자산 매핑 힌트\n- 1년차 스마트스토어 사장 경험을 즉시 사용 가능한 형태로 묶기`,
         geminiOpts: { temperature: 0.6, maxTokens: 8192 },
       });
     round.hogigsim = hogigsimRes.output;
@@ -293,7 +311,7 @@ function buildGyeoljaePrompt(date, allRounds, ctx) {
       buildSaeopPrompt(ctx, r, round.hogigsim, allSaeopBusinesses, hint), {
         retryHints: SAEOP_RETRY_HINTS,
         mock,
-        mockOutput: `### 서사업 — 1인 사업화 기획 (Round ${r})\n\n## 후보 1: MOCK 사업 R${r}-1\n- 자본: 0원\n- 주간: 5시간\n- 실행 단계: 1주 MVP · 2주 피드백 · 3주 첫 수익 시도\n\n## 후보 2: MOCK 사업 R${r}-2\n- 자본: 3만원\n- 주간: 10시간`,
+        mockOutput: `### 서사업 — 케이스 메커니즘 → 사용자 자산 적용 (Round ${r})\n\n## 후보 1: MOCK 사업 R${r}-1\n- 참고 케이스: 이호기심 #1 (MOCK ${r}-A / @mockuser_${r}a / Gumroad)\n- 빌려온 메커니즘: 좁은 타겟 + 즉시 사용성\n- 사용자 자산 매핑: 1년차 스마트스토어 사장 경험\n- 자본: 0원\n- 주간: 5시간\n- 실행 단계: 1주 MVP · 2주 피드백 · 3주 첫 수익 시도\n\n## 후보 2: MOCK 사업 R${r}-2\n- 참고 케이스: 이호기심 #2 (MOCK ${r}-B / @mockuser_${r}b / 인프런)\n- 빌려온 메커니즘: 본인 경험 기반\n- 사용자 자산 매핑: 과일 도메인 지식\n- 자본: 3만원\n- 주간: 10시간`,
         geminiOpts: { temperature: 0.5, maxTokens: 8192 },
       });
     round.saeop = saeopRes.output;
@@ -313,7 +331,7 @@ function buildGyeoljaePrompt(date, allRounds, ctx) {
       buildHyeonsilPrompt(ctx, r, round.hogigsim, round.saeop, hint), {
         retryHints: HYEONSIL_RETRY_HINTS,
         mock,
-        mockOutput: `### 구현실 — 사업화안 반론 (Round ${r})\n\n## 후보 1: MOCK 사업 R${r}-1\n- 판정: ✅ 승인\n- 위험 1: MOCK 시장 포화 가능성\n- 위험 2: MOCK 초기 홍보 부담\n\n## 후보 2: MOCK 사업 R${r}-2\n- 판정: ⚠️ 조건부`,
+        mockOutput: `### 구현실 — 사업화안 반론 (Round ${r})\n\n## 후보 1: MOCK 사업 R${r}-1\n- 판정: ✅ 승인\n- 참고 케이스 검증: 케이스 실재성 OK / 메커니즘 일치 OK / 환경 차이 없음\n- 위험 1: MOCK 시장 포화 가능성\n- 위험 2: MOCK 초기 홍보 부담\n\n## 후보 2: MOCK 사업 R${r}-2\n- 판정: ⚠️ 조건부\n- 참고 케이스 검증: 케이스 실재성 OK / 환경 차이 있음`,
         geminiOpts: { temperature: 0.4, maxTokens: 8192 },
       });
     round.hyeonsil = hyeonsilRes.output;
@@ -394,6 +412,7 @@ function buildMockGyeoljae(date, allRounds) {
     '',
     ...completeRounds.flatMap((r, i) => [
       `${i + 1}. **MOCK Round ${r.number} 후보** (★★★)`,
+      '   ├ 참고 성공 사례: MOCK 사업 (@mockuser / Gumroad) — 좁은 타겟 + 즉시 사용성으로 월 300만원',
       '   ├ 형태: MOCK 디지털 가이드',
       '   ├ 누구에게: MOCK 30~40대 초보',
       '   ├ 수익 모델: 건당 9,900원 × 월 30건',
