@@ -189,7 +189,7 @@ async function sendTelegramDocument(filePath, caption, { dryRun = false } = {}) 
 
   // 텔레그램 4096자 한도
   if (html.length > 4000) {
-    html = html.slice(0, 3950) + '\n...(생략, /morning 상세)';
+    html = html.slice(0, 3850) + '\n\n━━━━━━━━━━━━━━━\n📎 <b>풀 사업계획서는 첨부 PDF 참조</b> (이어진 부분: 도달 부트스트랩·단위 경제학·로드맵)';
   }
 
   await sendTelegram(html, { dryRun: opts.dryRun });
