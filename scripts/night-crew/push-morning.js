@@ -95,6 +95,31 @@ function mdToTelegram(md) {
   }).join('');
 }
 
+// ========== HTML 안전 잘림 (잘림 위치의 열린 태그 자동 닫기) ==========
+function safeTruncateHtml(html, maxLen) {
+  if (html.length <= maxLen) return html;
+  let cut = html.slice(0, maxLen);
+  // 마지막 줄바꿈에서 자르기 (태그 중간 잘림 방지에 도움)
+  const lastNl = cut.lastIndexOf('\n');
+  if (lastNl > maxLen - 200) cut = cut.slice(0, lastNl);
+  const openTags = [];
+  const tagRegex = /<\/?([a-z]+)[^>]*>/gi;
+  let m;
+  while ((m = tagRegex.exec(cut)) !== null) {
+    const isClose = m[0].startsWith('</');
+    const tag = m[1].toLowerCase();
+    if (tag === 'br' || tag === 'hr') continue;
+    if (isClose) {
+      const idx = openTags.lastIndexOf(tag);
+      if (idx !== -1) openTags.splice(idx, 1);
+    } else {
+      openTags.push(tag);
+    }
+  }
+  while (openTags.length > 0) cut += `</${openTags.pop()}>`;
+  return cut;
+}
+
 // ========== 텔레그램 발송 ==========
 async function sendTelegram(text, { dryRun = false } = {}) {
   if (dryRun) {
@@ -187,9 +212,10 @@ async function sendTelegramDocument(filePath, caption, { dryRun = false } = {}) 
   const reportMd = fs.readFileSync(reportPath, 'utf8');
   let html = mdToTelegram(reportMd);
 
-  // 텔레그램 4096자 한도
+  // 텔레그램 4096자 한도 — HTML 태그 잘림 방지
   if (html.length > 4000) {
-    html = html.slice(0, 3850) + '\n\n━━━━━━━━━━━━━━━\n📎 <b>풀 사업계획서는 첨부 PDF 참조</b> (이어진 부분: 도달 부트스트랩·단위 경제학·로드맵)';
+    html = safeTruncateHtml(html, 3700) +
+      '\n\n━━━━━━━━━━━━━━━\n📎 <b>풀 사업계획서는 첨부 PDF 참조</b> (이어진 부분: 도달 부트스트랩·단위 경제학·로드맵)';
   }
 
   await sendTelegram(html, { dryRun: opts.dryRun });
