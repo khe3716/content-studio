@@ -13,6 +13,8 @@
 //   node scripts/night-crew/push-morning.js --date 2026-04-25
 //   node scripts/night-crew/push-morning.js --sample     # reports/SAMPLE.md
 //   node scripts/night-crew/push-morning.js --dry-run    # 텔레그램 발송 없이 stdout
+//   node scripts/night-crew/push-morning.js --pdf <path> # PDF 첨부 (없으면 reports/<date>.pdf 자동 감지)
+//   node scripts/night-crew/push-morning.js --no-pdf     # PDF 자동 발송 끄기
 
 const fs = require('fs');
 const path = require('path');
@@ -40,11 +42,13 @@ loadEnv();
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const out = { date: null, sample: false, dryRun: false };
+  const out = { date: null, sample: false, dryRun: false, pdfPath: null, noPdf: false };
   for (let i = 0; i < args.length; i += 1) {
     if (args[i] === '--sample') out.sample = true;
     else if (args[i] === '--dry-run') out.dryRun = true;
+    else if (args[i] === '--no-pdf') out.noPdf = true;
     else if (args[i] === '--date' && args[i + 1]) { out.date = args[i + 1]; i += 1; }
+    else if (args[i] === '--pdf' && args[i + 1]) { out.pdfPath = args[i + 1]; i += 1; }
   }
   return out;
 }
@@ -127,6 +131,44 @@ async function sendTelegram(text, { dryRun = false } = {}) {
   return data;
 }
 
+// ========== 텔레그램 PDF 첨부 발송 ==========
+async function sendTelegramDocument(filePath, caption, { dryRun = false } = {}) {
+  if (dryRun) {
+    console.log(`--- DRY RUN sendDocument: ${filePath} ---`);
+    return { ok: true, dry_run: true };
+  }
+  const token = process.env.TELEGRAM_BOT_TOKEN_NIGHT || process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID_NIGHT || process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) {
+    console.error('❌ 텔레그램 토큰/chat_id 없음 (PDF 발송 스킵)');
+    return { ok: false };
+  }
+  if (!fs.existsSync(filePath)) {
+    console.error(`⚠️  PDF 파일 없음: ${filePath} (스킵)`);
+    return { ok: false };
+  }
+  const buffer = fs.readFileSync(filePath);
+  const blob = new Blob([buffer], { type: 'application/pdf' });
+  const form = new FormData();
+  form.append('chat_id', chatId);
+  if (caption) {
+    form.append('caption', caption);
+    form.append('parse_mode', 'HTML');
+  }
+  form.append('document', blob, path.basename(filePath));
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
+    method: 'POST',
+    body: form,
+  });
+  const data = await res.json();
+  if (!data.ok) {
+    console.error('❌ 텔레그램 sendDocument 오류:', JSON.stringify(data));
+    return { ok: false };
+  }
+  console.log(`✅ PDF 발송 완료 (${path.basename(filePath)}, ${(buffer.length / 1024).toFixed(0)}KB)`);
+  return data;
+}
+
 // ========== 메인 ==========
 (async () => {
   const opts = parseArgs();
@@ -151,6 +193,17 @@ async function sendTelegram(text, { dryRun = false } = {}) {
   }
 
   await sendTelegram(html, { dryRun: opts.dryRun });
+
+  // PDF 첨부 발송 (있으면)
+  if (!opts.noPdf) {
+    const pdfPath = opts.pdfPath || path.join(REPORTS_DIR, `${dateKey}.pdf`);
+    if (fs.existsSync(pdfPath)) {
+      const caption = `📎 <b>야간 리서치 풀 레포트 (${escapeHtml(dateKey)})</b>\n핸드폰에서 클릭하면 디자인된 풀 버전 열림`;
+      await sendTelegramDocument(pdfPath, caption, { dryRun: opts.dryRun });
+    } else {
+      console.log(`ℹ️  PDF 첨부 없음 (${pdfPath} 미존재)`);
+    }
+  }
 })().catch(err => {
   console.error('❌ push-morning 실패:', err);
   process.exit(1);

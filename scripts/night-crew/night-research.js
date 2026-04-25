@@ -233,6 +233,16 @@ function buildGyeoljaePrompt(date, allRounds, ctx) {
     '5. 오늘 한 건 지정 (★★★ 중 자본 0원·실행 가장 쉬운 것)',
     '6. 핸드폰 3분 브리핑 작성 (프로필 출력 형식 엄수, 4000자 이내)',
     '',
+    '## 후보 디테일 (필수 7필드)',
+    '각 사업화 후보는 반드시 아래 7필드를 모두 채워주세요. raw 응답(서사업·구현실)에서 정보를 길어 올리고, 그래도 부족하면 "(미확정)"으로 표기 — 빈 필드 금지.',
+    '- **형태**: 디지털 가이드 / 노코드 웹앱 / 컨설팅 / 구독 뉴스레터 등 (1줄)',
+    '- **누구에게**: 구체 타겟·연령·상황 (1줄)',
+    '- **수익 모델**: 건당 N원 × 월 N건 / 구독 N원 등 — 숫자 포함 (1줄)',
+    '- **실행 3주**: 1주차 / 2주차 / 3주차 각 할 일 (1줄)',
+    '- **첫 수익 시점**: N주차 예상, N원 수준',
+    '- **활용 자산**: 기존 스토어·블로그·고객 DB·인스타 등 어떻게 (1줄)',
+    '- **구현실 위험**: 반론 핵심 1줄',
+    '',
     skippedCount === allRounds.length
       ? '**전 라운드 수확 없음 → "수확 없음 에스컬레이션" 형식으로 작성**'
       : '',
@@ -371,6 +381,7 @@ function buildMockGyeoljae(date, allRounds) {
       '실제 Gemini 호출 시 정상 브리핑이 생성됩니다.',
     ].join('\n');
   }
+  const completeRounds = allRounds.filter(r => r.status === 'complete');
   return [
     `🌅 야간 브리핑 (${date}, ${allRounds.length}라운드)`,
     '',
@@ -379,11 +390,19 @@ function buildMockGyeoljae(date, allRounds) {
     '└ 왜 쉬움: MOCK 설명',
     '└ 첫 액션: MOCK 액션',
     '',
-    '📋 **사업화 후보 (MOCK)**',
-    ...allRounds.filter(r => r.status === 'complete').map((r, i) =>
-      `${i + 1}. **MOCK Round ${r.number} 후보** (★★★)`
-    ),
+    `📋 **사업화 후보 (${completeRounds.length}개 생존, MOCK)**`,
     '',
+    ...completeRounds.flatMap((r, i) => [
+      `${i + 1}. **MOCK Round ${r.number} 후보** (★★★)`,
+      '   ├ 형태: MOCK 디지털 가이드',
+      '   ├ 누구에게: MOCK 30~40대 초보',
+      '   ├ 수익 모델: 건당 9,900원 × 월 30건',
+      '   ├ 실행 3주: 1주차 MVP · 2주차 베타 · 3주차 첫 판매',
+      '   ├ 첫 수익 시점: 3주차, ~10만원',
+      '   ├ 활용 자산: 기존 스토어 고객 DB',
+      '   └ 구현실 위험: 시장 검증 부족',
+      '',
+    ]),
     '⏸️ **보류** (없음)',
     '',
     '📊 4라운드 전체 상세: /morning',

@@ -39,7 +39,30 @@ jobs:
       - name: 3. 의존성 설치
         run: npm ci
 
-      - name: 4. 텔레그램 브리핑 푸시
+      - name: 4. Playwright Chromium 설치 (PDF 변환용)
+        run: npx playwright install --with-deps chromium
+
+      - name: 5. 마크다운 → PDF 변환
+        env:
+          TZ: Asia/Seoul
+        run: |
+          if [ "${{ inputs.sample }}" = "true" ]; then
+            DATE_KEY="SAMPLE"
+          elif [ -n "${{ inputs.date }}" ]; then
+            DATE_KEY="${{ inputs.date }}"
+          else
+            DATE_KEY=$(date +%Y-%m-%d)
+          fi
+          MD_PATH="reports/${DATE_KEY}.md"
+          PDF_PATH="reports/${DATE_KEY}.pdf"
+          if [ -f "$MD_PATH" ]; then
+            echo "PDF 변환: $MD_PATH → $PDF_PATH"
+            node scripts/convert-markdown-to-pdf.js "$MD_PATH" "$PDF_PATH" || echo "⚠️ PDF 변환 실패 (텍스트만 발송)"
+          else
+            echo "ℹ️ 리포트 파일 없음: $MD_PATH (PDF 스킵)"
+          fi
+
+      - name: 6. 텔레그램 브리핑 푸시 (텍스트 + PDF 첨부)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -57,7 +80,7 @@ jobs:
           echo "실행: node scripts/night-crew/push-morning.js $ARGS"
           node scripts/night-crew/push-morning.js $ARGS
 
-      - name: 5. 실패 시 텔레그램 알림 (야간 봇 우선)
+      - name: 7. 실패 시 텔레그램 알림 (야간 봇 우선)
         if: failure()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
