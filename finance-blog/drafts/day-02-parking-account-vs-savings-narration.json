@@ -1,0 +1,12 @@
+{
+  "slug": "day-02-parking-account-vs-savings",
+  "voice": "Leda",
+  "speed": 1.3,
+  "image_prompts": {
+    "cover": "A symmetric top-down flat-lay split into two halves: left half has a single open piggy bank with one bright Korean coin balanced on top (representing flexible parking account), right half has a sealed glass jar tied with a silk ribbon and several stacked coins (representing locked savings). Subtle wooden desk surface, very clean composition, soft natural light from above, balanced minimalist symmetry suggesting a face-off or comparison.",
+    "section-1": "A side-angle macro shot: two transparent glass jars side by side on a wooden desk. The left jar (parking) is half-filled with loose Korean 500won coins. The right jar (savings) is filled to the brim and slightly taller, with coins stacked neatly. Soft window light from upper-left, warm beige background. Symbolizing rate comparison and growth.",
+    "section-2": "An elegant top-down composition on a clean light beige paper: two minimalist line illustrations rendered as physical objects — one open notebook page with simple geometric arrows and circles symbolizing flow, next to several Korean coins arranged as a small bar chart from short to tall. Editorial magazine flat-lay style, soft shadow, refined and analytical mood, suggesting comparison and decision-making."
+  },
+  "long": "이웃님들 안녕하세요! 어제 한국은행 5월 가계자산 통계 봤어요? 가계 저축률이 6년 만에 최고래요. 즉 '돈은 모으겠는데 어디 넣어둘지' 고민하는 분들이 그만큼 많다는 거죠. 그래서 오늘은 파킹통장 vs 자유적금, 어느 쪽이 답인지 4라운드로 깔끔하게 정리할게요. 미리 결론부터 말하면, 비상금은 파킹, 목돈 모으기는 적금입니다. 라운드 1, 금리. 파킹 평균 3.30퍼, 자유적금 평균 4.50퍼. 자유적금 압승이에요. 라운드 2, 출금 자유. 파킹은 언제든 빼도 금리 그대로, 자유적금은 중도해지하면 금리 절반 이하로 떨어져요. 파킹 승. 라운드 3, 한도. 파킹은 대부분 무제한, 자유적금은 월 30에서 100만원. 파킹 승. 라운드 4, 우대조건. 파킹은 거의 없거나 단순, 자유적금은 카드실적이나 챌린지 까다로워요. 파킹 승. 결국 파킹은 비상금용, 자유적금은 목돈 모으기용으로 나눠 쓰는 게 정답이에요. 둘 다 갖는 게 베스트라는 뜻이죠. 통장 쪼개기는 재테크 기본 원칙이니까 꼭 기억해두세요!",
+  "short": "파킹통장 vs 자유적금, 진짜 답은? 4라운드로 빠르게 정리할게요! 라운드 1 금리, 파킹 3.30퍼 vs 적금 4.50퍼, 적금 승! 라운드 2 출금 자유, 파킹은 자유 vs 적금은 페널티, 파킹 승! 라운드 3 한도, 파킹 무제한 vs 적금 월 100만원, 파킹 승! 라운드 4 우대조건, 파킹 부담 없음 vs 적금 까다로움, 파킹 승! 결론, 비상금은 파킹, 목돈은 적금. 자세한 시나리오는 블로그에서 확인하세요!"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "finance-remotion",
+  "version": "1.0.0",
+  "description": "월급쟁이 재테크 블로그 영상 렌더링",
+  "private": true,
+  "scripts": {
+    "start": "remotion studio",
+    "build:long": "remotion render src/index.ts LongForm out/long.mp4",
+    "build:short": "remotion render src/index.ts ShortForm out/short.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.380",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "remotion": "4.0.380"
+  },
+  "devDependencies": {
+    "@types/react": "19.0.0",
+    "typescript": "5.4.5"
+  }
+}

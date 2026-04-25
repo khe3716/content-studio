@@ -30,8 +30,15 @@ debug-*.html
 try-*.js
 check-post.js
 
-# 기타 프로젝트 (이 저장소와 무관)
-remotion/
+# 기타 프로젝트 (이 저장소와 무관) — 루트의 remotion/만 무시 (finance-blog/remotion/는 포함)
+/remotion/
+
+# Remotion 빌드 산출물 (영상은 finance-blog/videos/ 에서 보관)
+finance-blog/remotion/out/
+finance-blog/remotion/.cache/
+
+# 트렌드 분석 결과 (재실행 시 재생성)
+keyword-trend/results/
 
 # 일회성 인증 스크립트 (refresh_token은 .env에 저장됨)
 get-refresh-token.js
