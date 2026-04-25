@@ -274,7 +274,7 @@ function buildGyeoljaePrompt(date, allRounds, ctx) {
         retryHints: HOGIGSIM_RETRY_HINTS,
         mock,
         mockOutput: `### 이호기심 — 요즘 뜨는 것 (Round ${r})\n\n## 관찰한 주제 3~5개\n- 🔥 MOCK 주제 ${r}-A: 샘플 설명\n- 🔥 MOCK 주제 ${r}-B: 샘플 설명\n- 🔥 MOCK 주제 ${r}-C: 샘플 설명\n\n## 공통 흐름\nMOCK 공통점\n\n## 사업화 힌트\n- 주제 A → 1인 사업 힌트\n- 주제 B → 1인 사업 힌트\n- 주제 C → 1인 사업 힌트`,
-        geminiOpts: { temperature: 0.6, maxTokens: 2048 },
+        geminiOpts: { temperature: 0.6, maxTokens: 8192 },
       });
     round.hogigsim = hogigsimRes.output;
     if (hogigsimRes.bankrupt) {
@@ -294,7 +294,7 @@ function buildGyeoljaePrompt(date, allRounds, ctx) {
         retryHints: SAEOP_RETRY_HINTS,
         mock,
         mockOutput: `### 서사업 — 1인 사업화 기획 (Round ${r})\n\n## 후보 1: MOCK 사업 R${r}-1\n- 자본: 0원\n- 주간: 5시간\n- 실행 단계: 1주 MVP · 2주 피드백 · 3주 첫 수익 시도\n\n## 후보 2: MOCK 사업 R${r}-2\n- 자본: 3만원\n- 주간: 10시간`,
-        geminiOpts: { temperature: 0.5, maxTokens: 3072 },
+        geminiOpts: { temperature: 0.5, maxTokens: 8192 },
       });
     round.saeop = saeopRes.output;
     if (saeopRes.bankrupt) {
@@ -314,7 +314,7 @@ function buildGyeoljaePrompt(date, allRounds, ctx) {
         retryHints: HYEONSIL_RETRY_HINTS,
         mock,
         mockOutput: `### 구현실 — 사업화안 반론 (Round ${r})\n\n## 후보 1: MOCK 사업 R${r}-1\n- 판정: ✅ 승인\n- 위험 1: MOCK 시장 포화 가능성\n- 위험 2: MOCK 초기 홍보 부담\n\n## 후보 2: MOCK 사업 R${r}-2\n- 판정: ⚠️ 조건부`,
-        geminiOpts: { temperature: 0.4, maxTokens: 2048 },
+        geminiOpts: { temperature: 0.4, maxTokens: 8192 },
       });
     round.hyeonsil = hyeonsilRes.output;
     round.status = hyeonsilRes.bankrupt ? 'partial' : 'complete';
@@ -332,7 +332,7 @@ function buildGyeoljaePrompt(date, allRounds, ctx) {
     mock,
     mockOutput: buildMockGyeoljae(date, allRounds),
     isBankrupt: (o) => !o || o.length < 200,
-    geminiOpts: { temperature: 0.3, maxTokens: 4096 },
+    geminiOpts: { temperature: 0.3, maxTokens: 12288 },
   });
 
   // 5. 리포트 저장

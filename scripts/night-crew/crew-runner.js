@@ -55,8 +55,8 @@ async function callGemini(userPrompt, systemPrompt, opts = {}) {
     generationConfig: {
       temperature,
       maxOutputTokens: maxTokens,
-      // Gemini 2.5 Pro는 기본 thinking이 토큰을 잡아먹어 답변이 비어올 수 있음 → 명시적 끄기
-      thinkingConfig: { thinkingBudget: 0 },
+      // Gemini 2.5 Pro는 thinking 강제 모드 (budget 0 불가). thinking 토큰이 maxOutputTokens를
+      // 잠식하므로 호출자가 충분히 큰 maxTokens를 주도록 (8192 권장).
     },
   };
   const res = await fetch(url, {
