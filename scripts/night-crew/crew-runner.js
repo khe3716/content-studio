@@ -52,7 +52,12 @@ async function callGemini(userPrompt, systemPrompt, opts = {}) {
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-    generationConfig: { temperature, maxOutputTokens: maxTokens },
+    generationConfig: {
+      temperature,
+      maxOutputTokens: maxTokens,
+      // Gemini 2.5 Pro는 기본 thinking이 토큰을 잡아먹어 답변이 비어올 수 있음 → 명시적 끄기
+      thinkingConfig: { thinkingBudget: 0 },
+    },
   };
   const res = await fetch(url, {
     method: 'POST',
@@ -65,7 +70,17 @@ async function callGemini(userPrompt, systemPrompt, opts = {}) {
   }
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Gemini 응답 비어있음');
+  if (!text) {
+    const finishReason = data.candidates?.[0]?.finishReason || 'unknown';
+    const blockReason = data.promptFeedback?.blockReason;
+    const safety = data.candidates?.[0]?.safetyRatings;
+    throw new Error(
+      `Gemini 응답 비어있음 (finishReason=${finishReason}` +
+      (blockReason ? `, blockReason=${blockReason}` : '') +
+      (safety ? `, safety=${JSON.stringify(safety).slice(0, 200)}` : '') +
+      ')'
+    );
+  }
   return text.trim();
 }
 
