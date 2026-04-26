@@ -1,6 +1,154 @@
-import { useCurrentFrame, useVideoConfig, spring, interpolate, AbsoluteFill } from 'remotion';
+import { useCurrentFrame, useVideoConfig, spring, interpolate, AbsoluteFill, Easing } from 'remotion';
 import React from 'react';
 import { COLORS } from './data';
+
+// ─────────────────────────────────────────────────────────────────
+// Easing presets — 메인 텍스트는 ease-in, 보조는 spring·linear
+// ─────────────────────────────────────────────────────────────────
+export const easeIn = Easing.in(Easing.cubic);
+export const easeInOut = Easing.inOut(Easing.cubic);
+export const easeOut = Easing.out(Easing.cubic);
+
+// ─────────────────────────────────────────────────────────────────
+// StaggerTextRich — 풍부한 글자 등장 (blur + scale + slide + rotate + ease-in)
+// ─────────────────────────────────────────────────────────────────
+export const StaggerTextRich: React.FC<{
+  text: string;
+  startFrame?: number;
+  staggerFrames?: number;
+  duration?: number;
+  style?: React.CSSProperties;
+  axis?: 'y' | 'x';
+}> = ({ text, startFrame = 0, staggerFrames = 3, duration = 22, style, axis = 'y' }) => {
+  const frame = useCurrentFrame();
+  return (
+    <span style={{ display: 'inline-block', whiteSpace: 'pre', ...style }}>
+      {[...text].map((ch, i) => {
+        const local = frame - startFrame - i * staggerFrames;
+        // ease-in 곡선 (cubic): 천천히 시작 → 빠르게 끝
+        const t = interpolate(local, [0, duration], [0, 1], {
+          extrapolateLeft: 'clamp',
+          extrapolateRight: 'clamp',
+          easing: easeIn,
+        });
+        const op = t;
+        const slide = (1 - t) * 80;
+        const sc = 0.55 + t * 0.45;
+        const blur = (1 - t) * 18;
+        const rot = (1 - t) * (i % 2 === 0 ? -8 : 8);
+        const transform = axis === 'y'
+          ? `translateY(${slide}px) scale(${sc}) rotate(${rot}deg)`
+          : `translateX(${slide}px) scale(${sc}) rotate(${rot}deg)`;
+        return (
+          <span
+            key={i}
+            style={{
+              display: 'inline-block',
+              transform,
+              opacity: op,
+              filter: `blur(${blur}px)`,
+            }}
+          >
+            {ch === ' ' ? ' ' : ch}
+          </span>
+        );
+      })}
+    </span>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────
+// BouncyDampedText — After Effects damped oscillation expression 그대로
+// 원본 AE expression:
+//   delay = .04;
+//   myDelay = delay * textIndex;
+//   t = (time - inPoint) - myDelay;
+//   if (t >= 0) {
+//     freq = 3; amplitude = 30; decay = 8.0;
+//     s = amplitude * Math.cos(freq*t*2*Math.PI) / Math.exp(decay*t);
+//     [s, s];
+//   } else { value }
+// ─────────────────────────────────────────────────────────────────
+export const BouncyDampedText: React.FC<{
+  text: string;
+  startFrame?: number;
+  staggerDelay?: number;       // 글자별 지연 (sec) — AE의 delay
+  amplitudePos?: number;       // y축 진동 폭 (px)
+  amplitudeRot?: number;       // 회전 진동 폭 (deg)
+  amplitudeScale?: number;     // 스케일 진동 폭 (0~1)
+  freq?: number;               // Hz
+  decay?: number;              // 감쇠
+  style?: React.CSSProperties;
+}> = ({
+  text,
+  startFrame = 0,
+  staggerDelay = 0.04,
+  amplitudePos = 90,
+  amplitudeRot = 90,
+  amplitudeScale = 1,
+  freq = 3,
+  decay = 8,
+  style,
+}) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  return (
+    <span style={{ display: 'inline-block', whiteSpace: 'pre', ...style }}>
+      {[...text].map((ch, i) => {
+        // AE: t = (time - inPoint) - myDelay
+        const t = (frame - startFrame) / fps - staggerDelay * i;
+
+        // before inPoint — 화면 밖 (opacity 0)
+        if (t < 0) {
+          return (
+            <span key={i} style={{ display: 'inline-block', opacity: 0 }}>
+              {ch === ' ' ? ' ' : ch}
+            </span>
+          );
+        }
+
+        // damped oscillation: cos(freq * t * 2π) / exp(decay * t)
+        // t=0일 때 1, 시간 지나며 진동하다 0으로 수렴
+        const osc = Math.cos(freq * t * 2 * Math.PI) / Math.exp(decay * t);
+
+        const posY = amplitudePos * osc;        // 90px 진동 → 0
+        const rot = amplitudeRot * osc;          // 90deg 진동 → 0
+        const sc = 1 - amplitudeScale * osc;     // 0에서 시작 → 1로 수렴
+
+        return (
+          <span
+            key={i}
+            style={{
+              display: 'inline-block',
+              transform: `translateY(${posY}px) rotate(${rot}deg) scale(${Math.max(0, sc)})`,
+              transformOrigin: 'center',
+            }}
+          >
+            {ch === ' ' ? ' ' : ch}
+          </span>
+        );
+      })}
+    </span>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────
+// useEaseIn — 단일 값 ease-in 보간
+// ─────────────────────────────────────────────────────────────────
+export const useEaseIn = (
+  startFrame: number,
+  duration: number,
+  from: number,
+  to: number,
+): number => {
+  const frame = useCurrentFrame();
+  return interpolate(frame, [startFrame, startFrame + duration], [from, to], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: easeIn,
+  });
+};
 
 // ─────────────────────────────────────────────────────────────────
 // StaggerText — 글자 단위 등장 (절제된 모션)

@@ -1,0 +1,52 @@
+{
+  "hook": {
+    "path": "C:\\antigravity\\claude code\\finance-blog\\remotion\\public\\audio\\day-03-cheong-do-account-guide-hook.wav",
+    "duration": 7.300708,
+    "durationFrames": 220
+  },
+  "intro": {
+    "path": "C:\\antigravity\\claude code\\finance-blog\\remotion\\public\\audio\\day-03-cheong-do-account-guide-intro.wav",
+    "duration": 2.653333,
+    "durationFrames": 80
+  },
+  "item-1": {
+    "path": "C:\\antigravity\\claude code\\finance-blog\\remotion\\public\\audio\\day-03-cheong-do-account-guide-item-1.wav",
+    "duration": 1.76875,
+    "durationFrames": 54
+  },
+  "item-2": {
+    "path": "C:\\antigravity\\claude code\\finance-blog\\remotion\\public\\audio\\day-03-cheong-do-account-guide-item-2.wav",
+    "duration": 2.392833,
+    "durationFrames": 72
+  },
+  "item-3": {
+    "path": "C:\\antigravity\\claude code\\finance-blog\\remotion\\public\\audio\\day-03-cheong-do-account-guide-item-3.wav",
+    "duration": 3.00725,
+    "durationFrames": 91
+  },
+  "item-4": {
+    "path": "C:\\antigravity\\claude code\\finance-blog\\remotion\\public\\audio\\day-03-cheong-do-account-guide-item-4.wav",
+    "duration": 2.499542,
+    "durationFrames": 75
+  },
+  "item-5": {
+    "path": "C:\\antigravity\\claude code\\finance-blog\\remotion\\public\\audio\\day-03-cheong-do-account-guide-item-5.wav",
+    "duration": 1.21075,
+    "durationFrames": 37
+  },
+  "benefit": {
+    "path": "C:\\antigravity\\claude code\\finance-blog\\remotion\\public\\audio\\day-03-cheong-do-account-guide-benefit.wav",
+    "duration": 4.242417,
+    "durationFrames": 128
+  },
+  "warning": {
+    "path": "C:\\antigravity\\claude code\\finance-blog\\remotion\\public\\audio\\day-03-cheong-do-account-guide-warning.wav",
+    "duration": 4.733,
+    "durationFrames": 142
+  },
+  "cta": {
+    "path": "C:\\antigravity\\claude code\\finance-blog\\remotion\\public\\audio\\day-03-cheong-do-account-guide-cta.wav",
+    "duration": 2.579667,
+    "durationFrames": 78
+  }
+}

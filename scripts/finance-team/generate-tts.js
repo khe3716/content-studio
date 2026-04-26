@@ -112,27 +112,37 @@ function ffprobeDuration(filePath) {
   });
 }
 
+async function processVariant(key, text, speed, voice) {
+  process.stdout.write(`🎙️  ${key} (${text.length}자) ... `);
+  const pcm = await generateTtsRaw(text, voice);
+  const wav = pcmToWav(pcm, TTS_CONFIG.sampleRate);
+  const rawPath = path.join(PUBLIC_AUDIO_DIR, `${slug}-${key}-raw.wav`);
+  fs.writeFileSync(rawPath, wav);
+  const finalPath = path.join(PUBLIC_AUDIO_DIR, `${slug}-${key}.wav`);
+  await ffmpegAtempo(rawPath, finalPath, speed);
+  fs.unlinkSync(rawPath);
+  const dur = await ffprobeDuration(finalPath);
+  console.log(`✓ ${dur.toFixed(2)}s @ ${speed}x`);
+  return { path: finalPath, duration: dur, durationFrames: Math.ceil(dur * 30) };
+}
+
 (async () => {
-  const variants = [
-    { key: 'long',  text: narration.long },
-    { key: 'short', text: narration.short },
-  ];
   const result = {};
-  for (const v of variants) {
-    if (!v.text) continue;
-    process.stdout.write(`🎙️  ${v.key} (${v.text.length}자) ... `);
-    const pcm = await generateTtsRaw(v.text, narration.voice || TTS_CONFIG.voice);
-    const wav = pcmToWav(pcm, TTS_CONFIG.sampleRate);
-    const rawPath = path.join(PUBLIC_AUDIO_DIR, `${slug}-${v.key}-raw.wav`);
-    fs.writeFileSync(rawPath, wav);
-    const finalPath = path.join(PUBLIC_AUDIO_DIR, `${slug}-${v.key}.wav`);
-    const speed = narration.speed || TTS_CONFIG.speed;
-    await ffmpegAtempo(rawPath, finalPath, speed);
-    fs.unlinkSync(rawPath);
-    const dur = await ffprobeDuration(finalPath);
-    result[v.key] = { path: finalPath, duration: dur };
-    console.log(`✓ ${dur.toFixed(2)}s @ ${speed}x`);
+  const speed = narration.speed || TTS_CONFIG.speed;
+  const voice = narration.voice || TTS_CONFIG.voice;
+
+  if (Array.isArray(narration.scenes) && narration.scenes.length) {
+    // Scene mode — scene별 wav 생성 (sync 정확)
+    for (const sc of narration.scenes) {
+      if (!sc.id || !sc.text) continue;
+      result[sc.id] = await processVariant(sc.id, sc.text, speed, voice);
+    }
+  } else {
+    // Legacy mode — long / short 통짜
+    if (narration.long)  result.long  = await processVariant('long',  narration.long,  speed, voice);
+    if (narration.short) result.short = await processVariant('short', narration.short, speed, voice);
   }
+
   const metaPath = path.join(PUBLIC_AUDIO_DIR, `${slug}-meta.json`);
   fs.writeFileSync(metaPath, JSON.stringify(result, null, 2), 'utf8');
   console.log(`\n💾 ${path.relative(ROOT, metaPath)}`);
