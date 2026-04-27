@@ -1,7 +1,9 @@
-name: 야간 리서치 08:00 브리핑 푸시
+name: 야간 푸시 (수동 발송 전용 - 자동 스케줄 비활성화됨)
+
+# 자동 cron 제거: 큐 지연이 두 번 누적되는 문제로 night-team-research.yml에 통합됨.
+# 이 워크플로는 특정 날짜 리포트를 다시 보내고 싶을 때 수동 dispatch로만 사용.
 
 on:
-  # 핸드폰 수동 실행 (샘플 테스트 가능)
   workflow_dispatch:
     inputs:
       sample:
@@ -13,10 +15,6 @@ on:
         description: '특정 날짜 리포트 (예: 2026-04-25)'
         required: false
         type: string
-
-  # 자동 스케줄: 매일 아침 08:00 KST = UTC 23:00
-  schedule:
-    - cron: '0 23 * * *'
 
 permissions:
   contents: read

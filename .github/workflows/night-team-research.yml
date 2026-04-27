@@ -1,14 +1,14 @@
-name: 야간 리서치 01:00 실행 (4라운드)
+name: 야간 사업계획서 통합 (리서치 → PDF → 텔레그램)
 
 on:
   # 수동 실행 (/night-research 명령에서 트리거)
   workflow_dispatch:
     inputs:
       rounds:
-        description: '라운드 수 (기본 4, 테스트용 1~2로 줄일 수 있음)'
+        description: '라운드 수 (기본 6, 테스트용 1~2로 줄일 수 있음)'
         required: false
         type: string
-        default: '4'
+        default: '6'
       mock:
         description: 'Mock 모드 (Gemini 호출 없이 뼈대 검증)'
         required: false
@@ -18,18 +18,24 @@ on:
         description: '리포트 날짜 (비우면 오늘)'
         required: false
         type: string
+      skip_push:
+        description: 'PDF/텔레그램 발송 스킵 (리서치만)'
+        required: false
+        type: boolean
+        default: false
 
-  # 자동 스케줄: 매일 밤 01:00 KST = UTC 16:00 (전날)
+  # 자동 스케줄: 매일 KST 07:00 시작 → 약 45~60분 작업 + 큐 지연 = KST 08:00 ± 30분 도착
+  # UTC 22:00 = KST 07:00
   schedule:
-    - cron: '0 16 * * *'
+    - cron: '0 22 * * *'
 
 permissions:
   contents: write
 
 jobs:
-  research:
+  research-and-push:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 70
 
     steps:
       - name: 1. 코드 체크아웃
@@ -47,7 +53,11 @@ jobs:
       - name: 3. 의존성 설치
         run: npm ci
 
-      - name: 4. 4라운드 리서치 실행
+      - name: 4. Playwright Chromium 설치 (PDF 변환용)
+        if: inputs.skip_push != true
+        run: npx playwright install --with-deps chromium
+
+      - name: 5. 6라운드 리서치 + 한감독 + 박결재 2단계
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TZ: Asia/Seoul
@@ -65,7 +75,7 @@ jobs:
           echo "실행: node scripts/night-crew/night-research.js $ARGS"
           node scripts/night-crew/night-research.js $ARGS
 
-      - name: 5. 리포트 커밋
+      - name: 6. 리포트 커밋
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -78,7 +88,42 @@ jobs:
             git push
           fi
 
-      - name: 6. 실패 시 텔레그램 알림 (야간 봇 우선)
+      - name: 7. 마크다운 → PDF 변환
+        if: inputs.skip_push != true
+        env:
+          TZ: Asia/Seoul
+        run: |
+          if [ -n "${{ inputs.date }}" ]; then
+            DATE_KEY="${{ inputs.date }}"
+          else
+            DATE_KEY=$(date +%Y-%m-%d)
+          fi
+          MD_PATH="reports/${DATE_KEY}.md"
+          PDF_PATH="reports/${DATE_KEY}.pdf"
+          if [ -f "$MD_PATH" ]; then
+            echo "PDF 변환: $MD_PATH → $PDF_PATH"
+            node scripts/convert-markdown-to-pdf.js "$MD_PATH" "$PDF_PATH" || echo "⚠️ PDF 변환 실패 (텍스트만 발송)"
+          else
+            echo "ℹ️ 리포트 파일 없음: $MD_PATH (PDF 스킵)"
+          fi
+
+      - name: 8. 텔레그램 발송 (텍스트 + PDF 첨부)
+        if: inputs.skip_push != true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN_NIGHT: ${{ secrets.TELEGRAM_BOT_TOKEN_NIGHT }}
+          TELEGRAM_CHAT_ID_NIGHT: ${{ secrets.TELEGRAM_CHAT_ID_NIGHT }}
+          TZ: Asia/Seoul
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.date }}" ]; then
+            ARGS="$ARGS --date ${{ inputs.date }}"
+          fi
+          echo "실행: node scripts/night-crew/push-morning.js $ARGS"
+          node scripts/night-crew/push-morning.js $ARGS
+
+      - name: 9. 실패 시 텔레그램 알림 (야간 봇 우선)
         if: failure()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -96,7 +141,7 @@ jobs:
               headers: {'Content-Type':'application/json'},
               body: JSON.stringify({
                 chat_id: chatId,
-                text: '🚨 <b>야간 리서치 실패</b>\n\n' + process.env.RUN_URL,
+                text: '🚨 <b>야간 사업계획서 워크플로 실패</b>\n\n' + process.env.RUN_URL,
                 parse_mode: 'HTML',
                 disable_web_page_preview: true
               })
