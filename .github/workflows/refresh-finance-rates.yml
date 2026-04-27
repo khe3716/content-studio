@@ -1,0 +1,70 @@
+name: 재테크 금리 데이터 자동 갱신 (매월 1일)
+
+on:
+  workflow_dispatch:
+  # 매월 1일 KST 02:00 (UTC 17:00 전날) — 금감원 공시는 매월 1일 새벽 갱신
+  schedule:
+    - cron: '0 17 1 * *'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-rates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 1. 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: 2. Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 3. 의존성 설치
+        run: npm ci
+
+      - name: 4. 금감원 데이터 갱신 (savings + deposit)
+        env:
+          FSS_FINLIFE_API_KEY: ${{ secrets.FSS_FINLIFE_API_KEY }}
+          TZ: Asia/Seoul
+        run: |
+          node scripts/finance-team/fetch-rates.js savings
+          node scripts/finance-team/fetch-rates.js deposit
+
+      - name: 5. 갱신 데이터 git 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add finance-blog/rates/*.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "변경사항 없음"
+          else
+            git commit -m "chore(finance): 매월 1일 금리 데이터 자동 갱신 [skip ci]"
+            git push
+          fi
+
+      - name: 6. 텔레그램 알림
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          STATUS: ${{ job.status }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ]; then exit 0; fi
+          ICON="✅"
+          if [ "$STATUS" != "success" ]; then ICON="❌"; fi
+          MSG="$ICON 재테크 금리 데이터 매월 갱신 ($STATUS)"
+          node -e "
+            fetch('https://api.telegram.org/bot' + process.env.TELEGRAM_BOT_TOKEN + '/sendMessage', {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({ chat_id: process.env.TELEGRAM_CHAT_ID, text: '$MSG' })
+            });
+          "
