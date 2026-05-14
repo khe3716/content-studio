@@ -42,13 +42,22 @@ function extractContent(slug) {
   // 핵심 숫자 추출 (verified_rate_data에서 전체 최고 금리 1개만 강조)
   let bigStat = '';
   let statSubtitle = '';
-  const v = research?.verified_rate_data;
-  if (v?.bankTop10?.[0]?.max12m || v?.savingbankTop5?.[0]?.max12m) {
-    const maxBank = v?.bankTop10?.[0]?.max12m || 0;
-    const maxSb = v?.savingbankTop5?.[0]?.max12m || 0;
-    const overall = Math.max(maxBank, maxSb);
-    bigStat = `최고 연 ${overall}%`;
-    statSubtitle = '1금융권 · 저축은행 한눈에';
+  // 제목 자동 분석 — 적금/예금 글에만 노란 박스 박기 (다른 토픽에 14% 박히는 사고 방지)
+  // 매칭 키워드: 적금·예금·고금리·TOP·1금융권·저축은행
+  // 제외 키워드: ISA·청년도약·청년희망·파킹·연금저축·대출·카드·보험·vs (글 토픽과 적금 금리 안 맞음)
+  const titleText = mainTitle || meta.title || '';
+  const isRateArticle = /적금|예금|고금리|TOP\s*\d|1금융권|저축은행/.test(titleText);
+  const isExcludedTopic = /(ISA|청년도약|청년희망|파킹|연금저축|대출|카드|보험|\bvs\b)/i.test(titleText);
+  const skipStat = process.env.NO_STAT === '1' || !isRateArticle || isExcludedTopic;
+  if (!skipStat) {
+    const v = research?.verified_rate_data;
+    if (v?.bankTop10?.[0]?.max12m || v?.savingbankTop5?.[0]?.max12m) {
+      const maxBank = v?.bankTop10?.[0]?.max12m || 0;
+      const maxSb = v?.savingbankTop5?.[0]?.max12m || 0;
+      const overall = Math.max(maxBank, maxSb);
+      bigStat = `최고 연 ${overall}%`;
+      statSubtitle = '1금융권 · 저축은행 한눈에';
+    }
   }
 
   return {
@@ -64,21 +73,36 @@ function extractContent(slug) {
 // 1안 — Toss editorial (라이트 + 블루 + 골드) — 1:1 1080×1080
 // ─────────────────────────────────────────────────────────────
 function svgTone1({ season, mainTitle, bigStat, statSubtitle, signature }) {
+  // 끝의 이모지 분리 (분할 후 마지막 줄 끝에 다시 붙여서 항상 두 번째 줄에 위치 보장)
+  let titleText = mainTitle;
+  let trailingEmoji = '';
+  const emojiMatch = titleText.match(/([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F900}-\u{1F9FF}]+)\s*$/u);
+  if (emojiMatch) {
+    trailingEmoji = emojiMatch[1];
+    titleText = titleText.slice(0, emojiMatch.index).trim();
+  }
+
   // 메인 제목 — 시각적으로 가장 강한 요소 (페이지 정체성)
   const titleLines = (() => {
-    if (mainTitle.length <= 7) return [mainTitle];
-    const half = Math.ceil(mainTitle.length / 2);
-    const idx = mainTitle.lastIndexOf(' ', half + 2);
-    if (idx > 2) return [mainTitle.slice(0, idx), mainTitle.slice(idx + 1)];
-    return [mainTitle];
+    if (titleText.length <= 7) return [titleText];
+    const half = Math.ceil(titleText.length / 2);
+    const idx = titleText.lastIndexOf(' ', half + 2);
+    if (idx > 2) return [titleText.slice(0, idx), titleText.slice(idx + 1)];
+    return [titleText];
   })();
+  // 이모지를 마지막 줄 끝에 다시 붙임 (항상 두 번째 줄에 위치)
+  if (trailingEmoji) {
+    titleLines[titleLines.length - 1] = titleLines[titleLines.length - 1] + ' ' + trailingEmoji;
+  }
 
+  // 제목 길이별 폰트 크기 — 좌우 여백 80px씩 제외 활용 폭 ~920px
+  const maxLen = Math.max(...titleLines.map(l => l.length));
   const titleFs = titleLines.length === 2
-    ? (Math.max(...titleLines.map(l => l.length)) <= 7 ? 148 : 124)
-    : (mainTitle.length <= 8 ? 168 : 134);
+    ? (maxLen <= 7 ? 148 : maxLen <= 9 ? 110 : maxLen <= 11 ? 92 : 80)
+    : (mainTitle.length <= 8 ? 168 : mainTitle.length <= 11 ? 124 : mainTitle.length <= 13 ? 100 : 86);
 
   const titleStartY = season ? 340 : 270;
-  const titleLineHeight = titleFs - 3;
+  const titleLineHeight = 95;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
@@ -120,10 +144,15 @@ function svgTone1({ season, mainTitle, bigStat, statSubtitle, signature }) {
   <text x="${80 + (60 + season.length * 40) / 2}" y="159" class="t-season" font-size="44" fill="white" text-anchor="middle">📅 ${season}</text>
   ` : ''}
 
-  <!-- 메인 제목 (큰 폰트, 1~2줄) — stroke로 더 굵게 -->
-  ${titleLines.map((line, i) =>
-    `<text x="80" y="${titleStartY + i * titleLineHeight}" class="t-title" font-size="${titleFs}" fill="#0B1B3D" stroke="#0B1B3D" stroke-width="3" paint-order="stroke fill">${line}</text>`
-  ).join('\n  ')}
+  <!-- 메인 제목 (큰 폰트, 1~2줄) — stroke로 더 굵게 / 이모지는 baseline +20px -->
+  ${titleLines.map((line, i) => {
+    const isLastWithEmoji = i === titleLines.length - 1 && trailingEmoji && line.endsWith(trailingEmoji);
+    if (isLastWithEmoji) {
+      const textPart = line.slice(0, line.lastIndexOf(trailingEmoji)).trimEnd();
+      return `<text x="80" y="${titleStartY + i * titleLineHeight}" class="t-title" font-size="${titleFs}" fill="#0B1B3D" stroke="#0B1B3D" stroke-width="3" paint-order="stroke fill">${textPart} <tspan dy="20">${trailingEmoji}</tspan></text>`;
+    }
+    return `<text x="80" y="${titleStartY + i * titleLineHeight}" class="t-title" font-size="${titleFs}" fill="#0B1B3D" stroke="#0B1B3D" stroke-width="3" paint-order="stroke fill">${line}</text>`;
+  }).join('\n  ')}
 
   <!-- 골드 액센트 박스 — 보조 후킹 (메인보다 작게) -->
   ${bigStat ? `

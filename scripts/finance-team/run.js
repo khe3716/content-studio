@@ -41,6 +41,7 @@ function parseArgs() {
     skipVideo: false,
     skipPublish: false,
     forceTrend: false,
+    trending: false,
   };
   for (let i = 0; i < args.length; i += 1) {
     if (args[i] === '--day' && args[i + 1]) { out.day = parseInt(args[i + 1], 10); i += 1; }
@@ -49,12 +50,66 @@ function parseArgs() {
     else if (args[i] === '--skip-video') out.skipVideo = true;
     else if (args[i] === '--skip-publish') out.skipPublish = true;
     else if (args[i] === '--force-trend') out.forceTrend = true;
+    else if (args[i] === '--trending') out.trending = true;
   }
-  if (!out.day && !out.slug) {
-    console.error('❌ --day N 또는 --slug <slug> 중 하나 필요');
+  if (!out.day && !out.slug && !out.trending) {
+    console.error('❌ --day N | --slug <slug> | --trending 중 하나 필요');
     process.exit(1);
   }
   return out;
+}
+
+// 트렌드 키워드를 박재은 토픽으로 변환 + topics.yaml에 추가
+function createTrendingTopic() {
+  const { spawnSync } = require('child_process');
+  console.log('🔍 트렌드 조사 중 (네이버 + 구글)...');
+  const r = spawnSync('node', ['scripts/trend-research.js', '--count', '20'], { cwd: REPO_ROOT, encoding: 'utf8' });
+  if (r.status !== 0) throw new Error(`트렌드 조사 실패: ${r.stderr}`);
+  const trendData = JSON.parse(r.stdout);
+
+  // 최근 발행 토픽 키워드 회피
+  const config = yaml.load(fs.readFileSync(TOPICS_PATH, 'utf8'));
+  const recentTitles = (config.topics || []).slice(-10).map(t => t.title || '').join(' ');
+  const pick = trendData.keywords.find(k => !recentTitles.includes(k.keyword)) || trendData.keywords[0];
+  if (!pick) throw new Error('트렌드 키워드 추출 실패');
+  console.log(`   ✓ 선정 키워드: ${pick.keyword} (점수 ${pick.total_score})`);
+
+  // 카테고리 + 이모지 자동 추론
+  const k = pick.keyword;
+  let category = 'savings';
+  let emoji = '🏦';
+  if (/대출|디딤돌|버팀목|마이너스|전세자금/.test(k)) { category = 'loan'; emoji = '💸'; }
+  else if (/카드|체크카드|마일리지|포인트/.test(k)) { category = 'card'; emoji = '💳'; }
+  else if (/보험|실손|암보험|치아|자동차보험/.test(k)) { category = 'insurance'; emoji = '🛡️'; }
+  else if (/주식|코스피|비트코인|환율|투자|펀드/.test(k)) { emoji = '📈'; }
+
+  // pattern + 제목 어미 자동 추론 (박재은 페르소나 패턴)
+  let pattern = 'guide';
+  let titleSuffix = '꼭 알아야 할 5가지';
+  if (/TOP|순위|랭킹/.test(k)) { pattern = 'ranking'; titleSuffix = 'TOP 5'; }
+  else if (/vs|차이/.test(k)) { pattern = 'vs'; titleSuffix = '뭐가 다른가요?'; }
+
+  const nextDay = ((config.topics || []).slice(-1)[0]?.day || 0) + 1;
+  // ASCII-safe slug (한글 URL 인코딩 이슈 방지 — Blogger raw 이미지 호스팅 안정성)
+  const slug = `${category}-${Date.now()}`;
+  const year = new Date().getFullYear();
+  const month = new Date().getMonth() + 1;
+  const topic = {
+    day: nextDay,
+    slug,
+    category,
+    title: `${year}년 ${month}월 ${k} ${titleSuffix} ${emoji}`,
+    keywords: [k, '재테크', '월급쟁이'],
+    season: `${month}월`,
+    pattern,
+    trending_source: pick.sources,
+    trending_score: pick.total_score,
+  };
+  config.topics = config.topics || [];
+  config.topics.push(topic);
+  fs.writeFileSync(TOPICS_PATH, yaml.dump(config, { lineWidth: 120, noRefs: true }), 'utf8');
+  console.log(`   ✓ 임시 토픽 Day ${nextDay} 추가 (category=${category}, pattern=${pattern})\n`);
+  return slug;
 }
 
 // ========== 토픽에서 slug 해석 ==========
@@ -123,6 +178,9 @@ async function stepPublish({ slug, publish }) {
 // ========== 메인 ==========
 (async () => {
   const opts = parseArgs();
+  if (opts.trending && !opts.slug && !opts.day) {
+    opts.slug = createTrendingTopic();
+  }
   const slug = resolveSlug(opts);
   const t0 = Date.now();
 

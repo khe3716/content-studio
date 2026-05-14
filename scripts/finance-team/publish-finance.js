@@ -315,6 +315,7 @@ async function uploadDraft({ accessToken, blogId, title, labels, content }) {
       title,
       labels,
       content,
+      location: { name: '서울특별시, 대한민국', lat: 37.5665, lng: 126.9780 },
     }),
   });
   if (!res.ok) {
@@ -664,6 +665,11 @@ async function injectImages(html, slug) {
 
   console.log('\n[2/3] DRAFT 업로드');
   const enriched = await enrichContent({ html, meta, slug });
+  // 본문 길이 검증 — 빈 본문 발행 사고 방지
+  if (!enriched || enriched.length < 1500) {
+    throw new Error(`본문이 너무 짧음 (${enriched?.length || 0}자, 최소 1500자) — 발행 차단. drafts/${slug}.html 확인 필요.`);
+  }
+  console.log(`   ✓ 본문 검증 통과 (${enriched.length}자)`);
   const draft = await uploadDraft({
     accessToken,
     blogId,
@@ -677,6 +683,29 @@ async function injectImages(html, slug) {
   // last_post_id 저장 (다음 publish에서 자동 삭제하도록)
   meta.last_post_id = draft.id;
   fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf8');
+
+  // Playwright로 검색 설명 + 퍼머링크 자동 설정 (DRAFT 상태에서만 정상 작동)
+  // SEO 핵심 — Blogger API가 searchDescription 필드를 노출 안 해서 UI 자동화로 처리
+  const sessionExists = fs.existsSync(path.join(REPO_ROOT, '.blogger-session', 'state.json'));
+  if (sessionExists && meta.meta_description) {
+    console.log('\n🤖 Playwright로 퍼머링크·검색설명 자동 설정 중...');
+    try {
+      const { finalizePost } = require('../blogger-finalize-post');
+      await finalizePost({
+        blogId,
+        postId: draft.id,
+        slug,
+        description: meta.meta_description,
+        headless: true,
+      });
+      console.log('   ⏳ publish API 호출 전 추가 3초 대기');
+      await new Promise(r => setTimeout(r, 3000));
+    } catch (e) {
+      console.warn(`   ⚠ Playwright finalize 실패 (계속 진행): ${e.message}`);
+    }
+  } else if (!sessionExists) {
+    console.log('\nℹ️ Blogger 세션 없음 (.blogger-session/state.json) → Playwright 자동화 스킵');
+  }
 
   if (!publish) {
     console.log('\n─'.repeat(60));

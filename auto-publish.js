@@ -38,7 +38,7 @@ function loadEnv() {
 }
 loadEnv();
 
-const GEMINI_MODEL = 'gemini-2.5-pro';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!GEMINI_API_KEY) {
@@ -326,6 +326,7 @@ function resolvePublishDate(args) {
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
+  const trending = args.includes('--trending');
   const dayArg = args.indexOf('--day') >= 0 ? parseInt(args[args.indexOf('--day') + 1]) : null;
   const publishDate = resolvePublishDate(args);
 
@@ -334,6 +335,37 @@ async function main() {
   if (dayArg) {
     topic = topicsData.topics.find(t => t.day === dayArg);
     if (!topic) throw new Error(`Day ${dayArg} 주제를 찾을 수 없음`);
+  } else if (trending) {
+    // 트렌드 자동: 네이버 + 구글 트렌드에서 키워드 잡아 즉석 토픽 생성
+    console.log('🔍 트렌드 조사 중 (네이버 + 구글)...');
+    const { spawnSync } = require('child_process');
+    const r = spawnSync('node', ['scripts/trend-research.js', '--count', '20'], { cwd: __dirname, encoding: 'utf8' });
+    if (r.status !== 0) throw new Error(`트렌드 조사 실패: ${r.stderr}`);
+    const trendData = JSON.parse(r.stdout);
+    // 최근 발행 글의 키워드와 중복 회피
+    const recentTitles = topicsData.topics.slice(-10).map(t => t.title || '').join(' ');
+    const pick = trendData.keywords.find(k => !recentTitles.includes(k.keyword)) || trendData.keywords[0];
+    if (!pick) throw new Error('트렌드 키워드 추출 실패');
+    console.log(`   ✓ 선정 키워드: ${pick.keyword} (점수 ${pick.total_score})`);
+    // ASCII-safe slug (한글 URL 인코딩 이슈 방지)
+    const slug = `trending-${Date.now()}`;
+    const nextDay = (topicsData.topics[topicsData.topics.length - 1]?.day || 0) + 1;
+    topic = {
+      day: nextDay,
+      cluster: 'trending',
+      title: `${pick.keyword} 완벽 정리 — 직장인이 꼭 알아야 할 핵심`,
+      thumb_title: pick.keyword,
+      subtitle: ['오늘의 키워드', '5분 정리'],
+      emoji: 'lightbulb',
+      slug,
+      labels: [pick.keyword, '재테크', '경제꿀팁', '오늘의경제'],
+      status: 'ready',
+      trending_source: pick.sources,
+      trending_score: pick.total_score,
+    };
+    topicsData.topics.push(topic);
+    saveTopics(topicsData);
+    console.log(`   ✓ 임시 토픽 Day ${nextDay} 추가\n`);
   } else {
     topic = topicsData.topics.find(t => t.status === 'ready');
     if (!topic) {

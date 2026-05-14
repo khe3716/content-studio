@@ -1,0 +1,171 @@
+name: 재테크 블로그 자동 발행 (월급쟁이 재테크)
+
+on:
+  workflow_dispatch:
+    inputs:
+      day:
+        description: '특정 Day 번호 (비우면 topics.yaml 다음 ready 토픽)'
+        required: false
+        type: string
+      slug:
+        description: 'slug 직접 지정 (--slug, day와 함께 쓰면 slug 우선)'
+        required: false
+        type: string
+      publish_mode:
+        description: '발행 모드 (draft / now)'
+        required: false
+        default: 'draft'
+        type: choice
+        options:
+          - draft
+          - now
+      skip_video:
+        description: '영상 단계 스킵 (글만 발행)'
+        required: false
+        default: false
+        type: boolean
+
+  # 자동 스케줄: 매일 KST 20:00 (UTC 11:00) — 재테크는 저녁 퇴근 후 트래픽 많음
+  # ⚠️ 시작일 가드 (아래 step) 통과해야 실제 실행
+  schedule:
+    - cron: '0 11 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 0. 자동 스케줄 시작일 가드 (수동 트리거 안전)
+        id: date_guard
+        env:
+          TZ: Asia/Seoul
+          EVENT: ${{ github.event_name }}
+        run: |
+          today=$(date +%Y%m%d)
+          start_date="${FINANCE_START:-20260501}"
+          if [ "$EVENT" = "schedule" ] && [ "$today" -lt "$start_date" ]; then
+            echo "📅 $today < $start_date: 시작일 전이라 스킵"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "✅ 실행 진행 (event=$EVENT, today=$today)"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 1. 코드 체크아웃
+        if: steps.date_guard.outputs.skip != 'true'
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: 2. Node.js 20
+        if: steps.date_guard.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 3. 의존성 설치
+        if: steps.date_guard.outputs.skip != 'true'
+        run: npm ci
+
+      - name: 3-1. 한국어 폰트 + Pretendard
+        if: steps.date_guard.outputs.skip != 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-color-emoji ffmpeg
+          fc-cache -f
+
+      - name: 3-2. Remotion 의존성 (영상 렌더용)
+        if: steps.date_guard.outputs.skip != 'true' && inputs.skip_video != 'true'
+        working-directory: finance-blog/remotion
+        run: npm ci
+
+      - name: 4. 풀 파이프라인 실행 (research → write → images → tts → video → publish)
+        if: steps.date_guard.outputs.skip != 'true'
+        env:
+          # 글쓰기 + 이미지 (Gemini)
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # 키워드 트렌드 (네이버 데이터랩)
+          NAVER_DATALAB_CLIENT_ID: ${{ secrets.NAVER_DATALAB_CLIENT_ID }}
+          NAVER_DATALAB_CLIENT_SECRET: ${{ secrets.NAVER_DATALAB_CLIENT_SECRET }}
+          # Blogspot 발행
+          FINANCE_BLOG_ID: ${{ secrets.FINANCE_BLOG_ID }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          # 텔레그램 알림
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TZ: Asia/Seoul
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.slug }}" ]; then
+            ARGS="$ARGS --slug ${{ inputs.slug }}"
+          elif [ -n "${{ inputs.day }}" ]; then
+            ARGS="$ARGS --day ${{ inputs.day }}"
+          else
+            # 자동 스케줄 / 인자 없는 수동 트리거 → 트렌드 자동 모드
+            # (네이버 데이터랩 + 구글 트렌드로 키워드 자동 선정 → 박재은 글 작성)
+            ARGS="$ARGS --trending"
+            echo "🤖 트렌드 자동 모드 (네이버 + 구글)"
+          fi
+
+          # 발행 모드 (cron 자동 실행 시 now가 기본, 수동 dispatch에선 inputs.publish_mode 우선)
+          if [ "${{ inputs.publish_mode }}" = "now" ]; then
+            ARGS="$ARGS --publish now"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            ARGS="$ARGS --publish now"
+          fi
+
+          # 영상 스킵 (cron 자동 실행 시 글만 발행이 기본, 수동에선 inputs.skip_video 따름)
+          if [ "${{ inputs.skip_video }}" = "true" ]; then
+            ARGS="$ARGS --skip-video"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            ARGS="$ARGS --skip-video"
+          fi
+
+          echo "실행: node scripts/finance-team/run.js $ARGS"
+          node scripts/finance-team/run.js $ARGS
+
+      - name: 5. 산출물 커밋
+        if: steps.date_guard.outputs.skip != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash || true
+          git add finance-blog/research/*.json finance-blog/drafts/*.html finance-blog/drafts/*.json finance-blog/images/*.jpg finance-blog/videos/*.mp4 finance-blog/remotion/public/audio/*.wav 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "변경사항 없음, 커밋 스킵"
+          else
+            git commit -m "chore(finance): auto-publish [skip ci]"
+            git push
+          fi
+
+      - name: 6. 실패 시 텔레그램 알림
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "텔레그램 시크릿 없음, 알림 스킵"
+            exit 0
+          fi
+          node -e "
+            fetch('https://api.telegram.org/bot' + process.env.TELEGRAM_BOT_TOKEN + '/sendMessage', {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({
+                chat_id: process.env.TELEGRAM_CHAT_ID,
+                text: '🚨 <b>재테크블로그 워크플로 실패</b>\n\n로그:\n' + process.env.RUN_URL,
+                parse_mode: 'HTML',
+                disable_web_page_preview: true
+              })
+            }).then(r => r.json()).then(j => console.log(JSON.stringify(j)));
+          "
