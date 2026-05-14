@@ -45,8 +45,12 @@ const VsShortHook: React.FC<{ data: VsData }> = ({ data }) => {
   const vsRot = interpolate(vsScale, [0, 1], [-180, 0]);
   const vsImpact = useShake(8, 30, 18);
 
+  // Whip pan 슬라이드 아웃 (frame 90~96, 6 frame) — 왼쪽으로 빠르게 + 모션 블러
+  const slideOutX = interpolate(frame, [90, 96], [0, -1080], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const blurOut = interpolate(frame, [90, 93, 96], [0, 18, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+
   return (
-    <AbsoluteFill style={{ background: COLORS.bg, fontFamily: FONT_FAMILY, color: COLORS.text }}>
+    <AbsoluteFill style={{ background: COLORS.bg, fontFamily: FONT_FAMILY, color: COLORS.text, transform: `translateX(${slideOutX}px)`, filter: blurOut > 0 ? `blur(${blurOut}px)` : 'none' }}>
       <SubtleGrid size={100} />
       <Flash color={COLORS.primary} startFrame={30} durationFrames={10} />
 
@@ -96,6 +100,10 @@ const VsShortRound: React.FC<{ round: VsRound; data: VsData; totalRounds: number
   const { fps } = useVideoConfig();
   const winnerIsA = round.winner === 'A';
 
+  // Whip pan 슬라이드 인 (frame 0~6) — 오른쪽에서 빠르게 + 모션 블러
+  const slideX = interpolate(frame, [0, 6], [1080, 0], { extrapolateRight: 'clamp' });
+  const blurIn = interpolate(frame, [0, 3, 6], [0, 18, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+
   const titleOp = interpolate(frame, [0, 14], [0, 1], { extrapolateRight: 'clamp' });
   const titleSlide = interpolate(frame, [0, 14], [40, 0], { extrapolateRight: 'clamp' });
   const aOp = interpolate(frame, [16, 35], [0, 1], { extrapolateRight: 'clamp' });
@@ -139,7 +147,7 @@ const VsShortRound: React.FC<{ round: VsRound; data: VsData; totalRounds: number
   };
 
   return (
-    <AbsoluteFill style={{ background: COLORS.bg, fontFamily: FONT_FAMILY, color: COLORS.text }}>
+    <AbsoluteFill style={{ background: COLORS.bg, fontFamily: FONT_FAMILY, color: COLORS.text, transform: `translateX(${slideX}px)`, overflow: 'hidden', filter: blurIn > 0 ? `blur(${blurIn}px)` : 'none' }}>
       <SubtleGrid size={100} />
       <Flash color={COLORS.data} startFrame={winStart} durationFrames={5} />
 
@@ -156,15 +164,15 @@ const VsShortRound: React.FC<{ round: VsRound; data: VsData; totalRounds: number
         </div>
 
         {/* Metric title */}
-        <div style={{ fontWeight: 900, fontSize: 180, letterSpacing: -8, marginTop: 24, lineHeight: 1, opacity: titleOp, textAlign: 'center' }}>
+        <div style={{ fontWeight: 900, fontSize: 180, letterSpacing: -8, marginTop: 246, lineHeight: 1, opacity: titleOp, textAlign: 'center' }}>
           <StaggerText text={round.metric} startFrame={5} staggerFrames={2} />
         </div>
 
         {/* A row */}
         <div
           style={{
-            marginTop: 30,
-            padding: 26,
+            marginTop: 70,
+            padding: '26px 26px 26px 50px',
             borderRadius: 20,
             background: winnerIsA ? COLORS.dataSoft : 'transparent',
             border: winnerIsA ? `3px solid ${COLORS.data}` : `2px solid ${COLORS.line}`,
@@ -196,7 +204,7 @@ const VsShortRound: React.FC<{ round: VsRound; data: VsData; totalRounds: number
         {/* B row */}
         <div
           style={{
-            padding: 26,
+            padding: '26px 26px 26px 50px',
             borderRadius: 20,
             background: !winnerIsA ? COLORS.dataSoft : 'transparent',
             border: !winnerIsA ? `3px solid ${COLORS.data}` : `2px solid ${COLORS.line}`,
@@ -241,9 +249,10 @@ const VsShortVerdict: React.FC<{ data: VsData }> = ({ data }) => {
     <AbsoluteFill style={{ background: COLORS.bgDark, fontFamily: FONT_FAMILY, color: COLORS.textInverse, opacity: op }}>
       <ColorWipe color={COLORS.primary} startFrame={0} durationFrames={18} direction="bottom" />
       <SubtleGrid size={100} color="rgba(255,255,255,0.06)" />
-      <Sparkles count={14} color={COLORS.accent} />
+      <Sparkles count={36} color={COLORS.accent} />
+      <Sparkles count={20} color="#FFB800" />
 
-      <AbsoluteFill style={{ padding: '120px 80px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 36 }}>
+      <AbsoluteFill style={{ padding: '120px 80px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 70 }}>
         <div style={{ textAlign: 'center', fontWeight: 700, fontSize: 36, color: COLORS.accent, letterSpacing: 8 }}>
           VERDICT · 결론
         </div>
@@ -254,7 +263,7 @@ const VsShortVerdict: React.FC<{ data: VsData }> = ({ data }) => {
             borderRadius: 20,
             border: `2px solid ${COLORS.accent}`,
             opacity: aOp,
-            transform: `scale(${0.85 + 0.15 * aBounce})`,
+            transform: `scale(${0.7 + 0.45 * aBounce - 0.15 * Math.max(0, aBounce - 1) * 2})`,
             boxShadow: aGlow,
             display: 'flex',
             alignItems: 'center',
@@ -274,7 +283,7 @@ const VsShortVerdict: React.FC<{ data: VsData }> = ({ data }) => {
             borderRadius: 20,
             border: `2px solid ${COLORS.accent}`,
             opacity: bOp,
-            transform: `scale(${0.85 + 0.15 * bBounce})`,
+            transform: `scale(${0.7 + 0.45 * bBounce - 0.15 * Math.max(0, bBounce - 1) * 2})`,
             boxShadow: bGlow,
             display: 'flex',
             alignItems: 'center',
@@ -324,7 +333,8 @@ const VsShortCta: React.FC = () => {
         <div>
           <div style={{ fontWeight: 500, fontSize: 22, color: COLORS.muted, letterSpacing: 4 }}>EDITOR</div>
           <div style={{ fontWeight: 900, fontSize: 60, marginTop: 6, letterSpacing: -2 }}>박재은</div>
-          <div style={{ fontWeight: 700, fontSize: 30, color: COLORS.primary, marginTop: 10 }}>월급쟁이 재테크</div>
+          <div style={{ fontWeight: 700, fontSize: 30, color: COLORS.primary, marginTop: 10 }}>월급쟁이 재테크 노트</div>
+          <div style={{ fontWeight: 500, fontSize: 26, color: COLORS.muted, marginTop: 14, letterSpacing: 1 }}>worker-money-note.blogspot.com</div>
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
@@ -340,8 +350,77 @@ export const ShortFormVS: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: COLORS.bg }}>
       <FontLoader />
-      <Audio src={staticFile(`audio/${data.slug}-short.wav`)} />
-      <Sequence from={0} durationInFrames={90}>
+      <Audio src={staticFile(`audio/${data.slug}-short.wav`)} volume={1.25} />
+      <Audio src={staticFile('audio/bgm/260428_funky-lofi-v3.mp3')} volume={0.16} loop />
+
+      {/* SFX — Hook 인트로 (frame 0) */}
+      <Sequence from={0} durationInFrames={20}>
+        <Audio src={staticFile('audio/sfx/user/u08.wav')} volume={0.5} />
+      </Sequence>
+
+      {/* SFX — Hook VS 충돌 임팩트 (frame 30) */}
+      <Sequence from={30} durationInFrames={25}>
+        <Audio src={staticFile('audio/sfx/user/u01.wav')} volume={0.85} />
+      </Sequence>
+
+      {/* SFX — Hook→Round 1 Whip pan whoosh (frame 88) */}
+      <Sequence from={88} durationInFrames={12}>
+        <Audio src={staticFile('audio/sfx/user/u08.wav')} volume={0.85} />
+      </Sequence>
+
+      {/* SFX — Round 1 카운트업 (frame 125) */}
+      <Sequence from={125} durationInFrames={32}>
+        <Audio src={staticFile('audio/sfx/count_up.mp3')} volume={0.55} />
+      </Sequence>
+
+      {/* SFX — Round 2~4 메트릭 등장 임팩트 (각 round start +14) */}
+      <Sequence from={248} durationInFrames={20}>
+        <Audio src={staticFile('audio/sfx/user/u02.wav')} volume={0.7} />
+      </Sequence>
+      <Sequence from={392} durationInFrames={20}>
+        <Audio src={staticFile('audio/sfx/user/u02.wav')} volume={0.7} />
+      </Sequence>
+      <Sequence from={536} durationInFrames={20}>
+        <Audio src={staticFile('audio/sfx/user/u02.wav')} volume={0.7} />
+      </Sequence>
+
+      {/* SFX — 각 Round winner 발표 (winStart=60, 각 round start + 60) */}
+      <Sequence from={150} durationInFrames={20}>
+        <Audio src={staticFile('audio/sfx/rank_pop.mp3')} volume={0.7} />
+      </Sequence>
+      <Sequence from={294} durationInFrames={20}>
+        <Audio src={staticFile('audio/sfx/rank_pop.mp3')} volume={0.7} />
+      </Sequence>
+      <Sequence from={438} durationInFrames={20}>
+        <Audio src={staticFile('audio/sfx/rank_pop.mp3')} volume={0.7} />
+      </Sequence>
+      <Sequence from={582} durationInFrames={20}>
+        <Audio src={staticFile('audio/sfx/rank_pop.mp3')} volume={0.7} />
+      </Sequence>
+
+      {/* SFX — Round 1 BarRise 사운드 (frame 130 = round1 start 90 + bar start 40) */}
+      <Sequence from={130} durationInFrames={28}>
+        <Audio src={staticFile('audio/sfx/user/u03.wav')} volume={0.4} />
+      </Sequence>
+
+      {/* SFX — Verdict 폭죽 (frame 666) */}
+      <Sequence from={666} durationInFrames={90}>
+        <Audio src={staticFile('audio/sfx/fireworks.mp3')} volume={0.65} />
+      </Sequence>
+
+      {/* SFX — Verdict A·B 박스 등장 ding (frame 670, 690) */}
+      <Sequence from={670} durationInFrames={15}>
+        <Audio src={staticFile('audio/sfx/user/u06.wav')} volume={0.55} />
+      </Sequence>
+      <Sequence from={695} durationInFrames={15}>
+        <Audio src={staticFile('audio/sfx/user/u06.wav')} volume={0.55} />
+      </Sequence>
+
+      {/* SFX — CTA 시작 transition (frame 756) */}
+      <Sequence from={756} durationInFrames={18}>
+        <Audio src={staticFile('audio/sfx/user/u05.wav')} volume={0.55} />
+      </Sequence>
+      <Sequence from={0} durationInFrames={96}>
         <VsShortHook data={data} />
       </Sequence>
       {data.rounds.map((r, i) => (

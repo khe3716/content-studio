@@ -1,10 +1,12 @@
 {
   "long": {
     "path": "C:\\antigravity\\claude code\\finance-blog\\remotion\\public\\audio\\day-01-may-high-rate-savings-top10-long.wav",
-    "duration": 57.201292
+    "duration": 53.023875,
+    "durationFrames": 1591
   },
   "short": {
     "path": "C:\\antigravity\\claude code\\finance-blog\\remotion\\public\\audio\\day-01-may-high-rate-savings-top10-short.wav",
-    "duration": 26.589042
+    "duration": 21.917208,
+    "durationFrames": 658
   }
 }

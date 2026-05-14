@@ -7,6 +7,7 @@ import { ShortFormGuide, SHORT_GUIDE_TOTAL_FRAMES } from './ShortFormGuide';
 import { DemoStyleA, DemoStyleB, DemoStyleC, DemoStyleD, DemoBouncy } from './DemoStyles';
 import { ShortFormStyleA } from './ShortFormStyleA';
 import { ShortFormStyleD } from './ShortFormStyleD';
+import { ShortFormSimulationMG, SHORT_SIM_MG_TOTAL_FRAMES } from './ShortFormSimulationMG';
 import { FontLoader } from './FontLoader';
 
 const DemoWrapper = (Comp: React.FC) => {
@@ -48,8 +49,18 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="DemoBouncy" component={DemoWrapper(DemoBouncy)} durationInFrames={180} fps={30} width={1080} height={1920} />
 
       {/* Style A·D Full 30s (Day 1 데이터·음성 사용) */}
-      <Composition id="ShortFormStyleA" component={ShortFormStyleA} durationInFrames={900} fps={30} width={1080} height={1920} />
+      <Composition id="ShortFormStyleA" component={ShortFormStyleA} durationInFrames={720} fps={30} width={1080} height={1920} />
       <Composition id="ShortFormStyleD" component={ShortFormStyleD} durationInFrames={900} fps={30} width={1080} height={1920} />
+
+      {/* Day 4 — Simulation (Motion Graphics 톤) */}
+      <Composition
+        id="ShortFormSimulationMG"
+        component={ShortFormSimulationMG}
+        durationInFrames={SHORT_SIM_MG_TOTAL_FRAMES}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
     </>
   );
 };

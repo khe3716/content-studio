@@ -1,11 +1,11 @@
-// 인스타 카드뉴스 5장 자동 생성
-// - Gemini로 텍스트·캡션·해시태그 생성
+// 인스타 카드뉴스 5장 + 스레드 캡션 자동 생성
+// - Gemini로 카드 텍스트 + 인스타 캡션 + 스레드 캡션 + 해시태그 생성
 // - Imagen 4 Fast로 배경 이미지 5장
 // - SVG 오버레이 → Sharp PNG 합성 (1080×1350)
-// - 텔레그램으로 이미지 + 캡션 묶음 전송
+// - 텔레그램으로 이미지 + 인스타 캡션 + 스레드 캡션 묶음 전송
 //
 // 사용법:
-//   node insta/generate-card-news.js             # topics.yaml의 다음 ready 주제
+//   node insta/generate-card-news.js             # topics.yaml의 다음 ready card_news
 //   node insta/generate-card-news.js --day 1     # 특정 Day
 
 const fs = require('fs');
@@ -30,7 +30,7 @@ loadEnv();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) { console.error('❌ GEMINI_API_KEY 없음'); process.exit(1); }
 
-const GEMINI_MODEL = 'gemini-2.5-pro';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 const TOPICS_PATH = path.join(__dirname, 'topics.yaml');
 const DRAFTS_DIR = path.join(__dirname, 'drafts');
 const PERSONA_PATH = path.join(__dirname, '..', 'agents', 'insta-writer.md');
@@ -140,8 +140,8 @@ function buildCoverSvg({ title, subtitle, pageNum = 1, total = 5 }) {
       .b { font-family: 'Pretendard', 'Malgun Gothic', sans-serif; font-weight: 600; fill: rgba(255,255,255,0.75); letter-spacing: -0.5px; }
     </style>
     <rect x="0" y="0" width="${W}" height="${H}" fill="rgba(0,0,0,0.52)"/>
-    <rect x="60" y="60" width="180" height="58" rx="29" fill="#E53935"/>
-    <text x="150" y="99" class="s" font-size="30" text-anchor="middle" fill="white">FRUIT GUIDE</text>
+    <rect x="60" y="60" width="140" height="58" rx="29" fill="#E53935"/>
+    <text x="130" y="99" class="s" font-size="30" text-anchor="middle" fill="white">박과일</text>
     ${titleLines.map((line, i) => `<text x="${W/2}" y="${startY + (i+1) * titleFontSize * 1.1}" class="t" font-size="${titleFontSize}" text-anchor="middle">${escapeXml(line)}</text>`).join('\n    ')}
     ${subtitle ? `<text x="${W/2}" y="${H - 140}" class="s" font-size="38" text-anchor="middle">${escapeXml(subtitle)}</text>` : ''}
     <text x="${W - 80}" y="${H - 60}" class="b" font-size="28" text-anchor="end">${pageNum} / ${total}</text>
@@ -185,7 +185,7 @@ function buildClosingSvg({ cta, brand, pageNum, total }) {
     <rect x="0" y="0" width="${W}" height="${H}" fill="rgba(0,0,0,0.58)"/>
     ${ctaLines.map((line, i) => `<text x="${W/2}" y="${startY + (i+1) * ctaFont * 1.1}" class="c" font-size="${ctaFont}" text-anchor="middle">${escapeXml(line)}</text>`).join('\n    ')}
     <rect x="${W/2 - 200}" y="${H - 200}" width="400" height="4" fill="#E53935"/>
-    <text x="${W/2}" y="${H - 120}" class="br" font-size="36" text-anchor="middle">${escapeXml(brand || '🍎 제철 과일 가이드')}</text>
+    <text x="${W/2}" y="${H - 120}" class="br" font-size="36" text-anchor="middle">${escapeXml(brand || '박과일 · 제철 과일정보')}</text>
     <text x="${W - 80}" y="${H - 60}" class="p" font-size="28" text-anchor="end">${pageNum} / ${total}</text>
   </svg>`;
 }
@@ -223,7 +223,8 @@ async function generateCardContent(topic) {
 훅: ${topic.hook}
 클러스터: ${topic.cluster}
 
-위 주제로 인스타 카드뉴스 5장 + 캡션 + 해시태그 + 이미지 프롬프트를 만들어주세요.
+위 주제로 인스타 카드뉴스 7장 + 캡션 + 해시태그 + 이미지 프롬프트를 만들어주세요.
+훅에 명시된 5가지 항목을 1~5번 카드에 각각 정확히 매칭해서 작성하세요.
 
 출력 형식 (엄격):
 {
@@ -232,22 +233,39 @@ async function generateCardContent(topic) {
     {"slide": 2, "type": "content", "number": "1️⃣", "title": "10~15자", "body": "30~60자"},
     {"slide": 3, "type": "content", "number": "2️⃣", "title": "10~15자", "body": "30~60자"},
     {"slide": 4, "type": "content", "number": "3️⃣", "title": "10~15자", "body": "30~60자"},
-    {"slide": 5, "type": "closing", "cta": "20~30자 저장 유도", "brand": "🍎 제철 과일 가이드"}
+    {"slide": 5, "type": "content", "number": "4️⃣", "title": "10~15자", "body": "30~60자"},
+    {"slide": 6, "type": "content", "number": "5️⃣", "title": "10~15자", "body": "30~60자"},
+    {"slide": 7, "type": "closing", "cta": "20~30자 저장 유도", "brand": "🍎 제철 과일 가이드"}
   ],
-  "caption": {
+  "instagram_caption": {
     "hook": "첫 줄 30~40자",
     "body": "본문 150~250자",
     "cta": "💾 저장해두세요~"
   },
-  "hashtags": ["#...", ...20~25개],
+  "threads_caption": "스레드용 별도 카피 300~450자. 인스타 캡션과 다른 표현으로. 줄바꿈 자주, 마지막에 #핵심태그하나만",
+  "hashtags": ["#...", "...20~25개..."],
   "image_prompts": [
     "카드1 배경용 영문 프롬프트",
     "카드2 배경용",
     "카드3 배경용",
     "카드4 배경용",
-    "카드5 배경용"
+    "카드5 배경용",
+    "카드6 배경용",
+    "카드7 배경용"
   ]
 }
+
+중요: 커버(slide 1)에는 훅에 명시된 다섯 가지 항목 수에 맞춰 "BEST 5"로 표기하세요.
+
+스레드 캡션 가이드 (반드시 지킬 것):
+- 인스타 캡션과 같은 문장 복사 금지 — 표현 완전히 다르게
+- 500자 절대 한도, 300~450자 권장
+- 첫 줄 후킹 (대화체 OK: "여러분 그거 아세요?", "이거 진짜인데")
+- 본문 1~2문장만 (가장 핵심 팁)
+- 줄바꿈 자주 (한 문장 단위)
+- 해시태그 1개만 글 끝에
+- 절대 인스타로 유도 금지 ("프로필 봐주세요" 등)
+- 자체 완결 (인스타 못 봐도 이해됨)
 
 이미지 프롬프트 가이드:
 - 영문, 한 줄, 100자 이내
@@ -281,12 +299,13 @@ async function generateCardContent(topic) {
     const content = await generateCardContent(topic);
     console.log(`   ✓ 카드 ${content.cards.length}장, 해시태그 ${content.hashtags.length}개`);
 
-    console.log(`\n🎨 [2/3] Imagen 배경 이미지 5장 생성 중...`);
+    const totalCards = content.cards.length;
+    console.log(`\n🎨 [2/3] Imagen 배경 이미지 ${totalCards}장 생성 중...`);
     const bgPaths = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < totalCards; i++) {
       const p = content.image_prompts[i] || `photorealistic food photography, fresh ${topic.cluster}, natural light`;
       const bgPath = `${outPrefix}-bg-${i + 1}.jpg`;
-      console.log(`   ${i + 1}/5: ${p.slice(0, 60)}...`);
+      console.log(`   ${i + 1}/${totalCards}: ${p.slice(0, 60)}...`);
       try {
         await generateImage(p, bgPath);
         bgPaths.push(bgPath);
@@ -301,16 +320,16 @@ async function generateCardContent(topic) {
 
     console.log(`\n🖼️ [3/3] SVG 오버레이 합성 중...`);
     const finalPaths = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < totalCards; i++) {
       const card = content.cards[i];
       const pageNum = i + 1;
       let svg;
       if (card.type === 'cover') {
-        svg = buildCoverSvg({ title: card.title, subtitle: card.subtitle, pageNum, total: 5 });
+        svg = buildCoverSvg({ title: card.title, subtitle: card.subtitle, pageNum, total: totalCards });
       } else if (card.type === 'content') {
-        svg = buildContentSvg({ number: card.number, title: card.title, body: card.body, pageNum, total: 5 });
+        svg = buildContentSvg({ number: card.number, title: card.title, body: card.body, pageNum, total: totalCards });
       } else {
-        svg = buildClosingSvg({ cta: card.cta, brand: card.brand, pageNum, total: 5 });
+        svg = buildClosingSvg({ cta: card.cta, brand: card.brand, pageNum, total: totalCards });
       }
       const outPath = `${outPrefix}-card-${pageNum}.jpg`;
       await overlaySvgOnImage(bgPaths[i], svg, outPath);
@@ -321,16 +340,24 @@ async function generateCardContent(topic) {
     // 배경 이미지는 삭제 (카드에 합성됐음)
     bgPaths.forEach(p => { try { fs.unlinkSync(p); } catch {} });
 
-    // 캡션 + 해시태그 저장
-    const captionText = `${content.caption.hook}\n\n${content.caption.body}\n\n${content.caption.cta}\n\n━━━━━━━━━━━━━━━━━━\n${content.hashtags.join(' ')}`;
-    const captionPath = `${outPrefix}-caption.txt`;
-    fs.writeFileSync(captionPath, captionText, 'utf8');
+    // 인스타 캡션 + 해시태그 (백워드 호환: caption 필드도 fallback으로 인식)
+    const igCap = content.instagram_caption || content.caption || { hook: '', body: '', cta: '' };
+    const instagramCaption = `${igCap.hook}\n\n${igCap.body}\n\n${igCap.cta}\n\n━━━━━━━━━━━━━━━━━━\n${content.hashtags.join(' ')}`;
+    const threadsCaption = content.threads_caption || `${igCap.hook}\n\n${igCap.body}\n\n${(content.hashtags || []).slice(0, 1).join(' ')}`;
+
+    const igCaptionPath = `${outPrefix}-instagram.txt`;
+    const thCaptionPath = `${outPrefix}-threads.txt`;
+    fs.writeFileSync(igCaptionPath, instagramCaption, 'utf8');
+    fs.writeFileSync(thCaptionPath, threadsCaption, 'utf8');
+    // 백워드 호환: caption.txt도 유지
+    fs.writeFileSync(`${outPrefix}-caption.txt`, instagramCaption, 'utf8');
     const metaPath = `${outPrefix}-meta.json`;
     fs.writeFileSync(metaPath, JSON.stringify({ topic, content }, null, 2), 'utf8');
 
     console.log(`\n💾 저장:`);
     console.log(`   이미지: ${finalPaths.length}장`);
-    console.log(`   캡션: ${path.relative(process.cwd(), captionPath)}`);
+    console.log(`   인스타 캡션: ${path.relative(process.cwd(), igCaptionPath)}`);
+    console.log(`   스레드 캡션: ${path.relative(process.cwd(), thCaptionPath)}`);
 
     // 텔레그램 전송 — GitHub raw URL 사용 (GitHub Actions 환경)
     // 로컬 실행 시엔 커밋이 안 되므로 파일 경로 안내만
@@ -339,9 +366,9 @@ async function generateCardContent(topic) {
 
     console.log(`\n📤 텔레그램 안내 전송 중...`);
     await notifyTelegram(
-      `📸 <b>인스타 카드뉴스 완성</b>\n\n` +
+      `📸 <b>인스타 + 스레드 카드뉴스 완성</b>\n\n` +
       `Day ${topic.day} — ${topic.title}\n` +
-      `📂 파일 ${finalPaths.length}장 생성됨`
+      `📂 카드 ${finalPaths.length}장 생성됨`
     );
 
     if (isCI) {
@@ -362,15 +389,26 @@ async function generateCardContent(topic) {
       );
     }
 
-    // 캡션 별도 메시지
+    // 인스타 캡션
     await notifyTelegram(
-      `📝 <b>캡션 (복사용)</b>\n\n<pre>${captionText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>\n\n` +
+      `📝 <b>① 인스타 캡션 (복사)</b>\n\n<pre>${instagramCaption.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>\n\n` +
       `📋 인스타 업로드 순서:\n` +
       `1️⃣ 위 카드 5장 폰에 저장\n` +
       `2️⃣ 인스타 앱 → 새 게시물 → 이미지 5장 선택 (순서대로)\n` +
       `3️⃣ 위 캡션 복사 → 붙여넣기\n` +
-      `4️⃣ 게시\n\n` +
-      `⏱️ 3분이면 끝나요!`
+      `4️⃣ 게시 (소요 ~3분)`
+    );
+
+    // 스레드 캡션 (별도)
+    await notifyTelegram(
+      `🧵 <b>② 스레드 캡션 (복사)</b>\n\n<pre>${threadsCaption.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>\n\n` +
+      `📋 스레드 업로드 순서:\n` +
+      `1️⃣ Threads 앱 열기\n` +
+      `2️⃣ 새 글 작성\n` +
+      `3️⃣ 위 캡션 복사 → 붙여넣기 (인스타 캡션 X — 별도 카피)\n` +
+      `4️⃣ 카드뉴스 1장(커버)만 첨부 (선택)\n` +
+      `5️⃣ 게시 (소요 ~1분)\n\n` +
+      `⚠️ 인스타 캡션 그대로 복붙 금지 — 알고리즘 페널티`
     );
 
     // 상태 업데이트

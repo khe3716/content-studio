@@ -7,10 +7,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const { incrementAndCheck } = require('../api-usage-tracker');
 
 const REPO_ROOT = path.join(__dirname, '..', '..');
 const AGENTS_DIR = path.join(REPO_ROOT, 'agents');
-const DEFAULT_MODEL = 'gemini-2.5-pro';
+const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 // ========== .env 로더 ==========
 function loadEnv() {
@@ -48,6 +49,9 @@ async function callGemini(userPrompt, systemPrompt, opts = {}) {
   const { temperature = 0.6, maxTokens = 8192, model = DEFAULT_MODEL } = opts;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY 환경변수 없음');
+
+  // 사용량 체크 (한도 도달 시 차단·알림)
+  await incrementAndCheck();
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const body = {

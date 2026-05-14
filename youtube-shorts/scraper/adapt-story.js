@@ -6,7 +6,7 @@ const { GoogleGenAI, Type } = require('@google/genai');
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const RANK_MODEL = 'gemini-2.5-flash';
-const ADAPT_MODEL = 'gemini-2.5-pro';
+const ADAPT_MODEL = 'gemini-2.5-flash';
 
 // ─── Stage 1: pick the best candidate ──────────────────────────────────────────
 

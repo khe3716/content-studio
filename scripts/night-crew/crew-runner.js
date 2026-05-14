@@ -9,7 +9,7 @@ const path = require('path');
 
 const REPO_ROOT = path.join(__dirname, '..', '..');
 const AGENTS_DIR = path.join(REPO_ROOT, 'agents');
-const DEFAULT_MODEL = 'gemini-2.5-pro';
+const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 // ========== .env 로더 ==========
 function loadEnv() {
@@ -43,11 +43,20 @@ function loadPersona(name) {
   throw new Error(`페르소나 파일 없음: ${name} (시도 경로: ${candidates.join(', ')})`);
 }
 
+const { incrementAndCheck } = require('../api-usage-tracker');
+
 // ========== Gemini 호출 ==========
 async function callGemini(userPrompt, systemPrompt, opts = {}) {
-  const { temperature = 0.55, maxTokens = 4096, model = DEFAULT_MODEL } = opts;
+  const { temperature = 0.55, maxTokens = 4096 } = opts;
+  // 야간 리서치는 Flash 강제 — Pro fallback 절대 금지 (유료 청구 방지)
+  // 호출자가 opts.model로 다른 모델 지정해도 무시하고 Flash로 호출
+  const model = DEFAULT_MODEL;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY 환경변수 없음');
+
+  // 사용량 체크 (Flash 한도 도달 시 차단·텔레그램 알림)
+  await incrementAndCheck();
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },

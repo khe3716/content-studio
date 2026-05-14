@@ -1,10 +1,10 @@
-name: 인스타 카드뉴스 생성
+name: 인스타 + 스레드 콘텐츠 생성
 
 on:
   workflow_dispatch:
     inputs:
       day:
-        description: '특정 Day 번호 (비우면 ready 상태인 다음 card_news)'
+        description: '특정 Day 번호 (비우면 ready 상태인 다음 토픽 — format 자동 분기)'
         required: false
         type: string
 
@@ -42,7 +42,29 @@ jobs:
           sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-color-emoji
           fc-cache -f
 
-      - name: 4. 카드뉴스 생성
+      - name: 4. 토픽 format 결정 (card_news / single / infographic)
+        id: pick
+        run: |
+          DAY_INPUT="${{ inputs.day }}"
+          FORMAT=$(node -e "
+            const y=require('js-yaml');
+            const fs=require('fs');
+            const d=y.load(fs.readFileSync('insta/topics.yaml','utf8'));
+            const dayArg='${DAY_INPUT}';
+            let t;
+            if (dayArg) {
+              const day=parseInt(dayArg);
+              t=d.topics.find(x=>x.day===day);
+            } else {
+              t=d.topics.find(x=>x.status==='ready');
+            }
+            if (!t) { console.error('no matching topic'); process.exit(1); }
+            console.log(t.format);
+          ")
+          echo "format=$FORMAT" >> $GITHUB_OUTPUT
+          echo "선택된 format: $FORMAT"
+
+      - name: 5. 콘텐츠 생성 (format별 분기)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -54,9 +76,14 @@ jobs:
           if [ -n "${{ inputs.day }}" ]; then
             ARGS="$ARGS --day ${{ inputs.day }}"
           fi
-          node insta/generate-card-news.js $ARGS
+          case "${{ steps.pick.outputs.format }}" in
+            card_news)   node insta/generate-card-news.js $ARGS ;;
+            single)      node insta/generate-single.js $ARGS ;;
+            infographic) node insta/generate-infographic.js $ARGS ;;
+            *) echo "❌ 알 수 없는 format: ${{ steps.pick.outputs.format }}"; exit 1 ;;
+          esac
 
-      - name: 5. 생성 파일 커밋
+      - name: 6. 생성 파일 커밋
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -65,11 +92,11 @@ jobs:
           if git diff --cached --quiet; then
             echo "변경사항 없음"
           else
-            git commit -m "chore: auto-generate insta card news [skip ci]"
+            git commit -m "chore: auto-generate insta+threads content [skip ci]"
             git push
           fi
 
-      - name: 6. 실패 알림
+      - name: 7. 실패 알림
         if: failure()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -82,7 +109,7 @@ jobs:
               method: 'POST', headers: {'Content-Type':'application/json'},
               body: JSON.stringify({
                 chat_id: process.env.TELEGRAM_CHAT_ID,
-                text: '🚨 <b>인스타 카드뉴스 생성 실패</b>\n\n로그: ' + process.env.RUN_URL,
+                text: '🚨 <b>인스타+스레드 생성 실패</b>\n\n로그: ' + process.env.RUN_URL,
                 parse_mode: 'HTML', disable_web_page_preview: true
               })
             }).then(r => r.json()).then(j => console.log(JSON.stringify(j)));

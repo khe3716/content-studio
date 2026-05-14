@@ -414,11 +414,26 @@ async function main() {
     console.log('✅ [3/3] 팩트 이슈 없음, 원본 유지\n');
   }
 
-  // 4. 저장 (본문 가독성: 진한 검정 + 줄간격 강제)
+  // 4. 저장 (본문 가독성: 인라인 style로 Blogger 테마 회색 덮어쓰기)
   const dayId = `day-${String(topic.day).padStart(2, '0')}`;
   const htmlRelPath = `economy-blog/drafts/${dayId}-${topic.slug}.html`;
   const htmlAbsPath = path.join(__dirname, htmlRelPath);
-  const wrappedHtml = `<div style="color:#1A1A1A;font-size:16px;line-height:1.8;">\n${articleHtml}\n</div>`;
+  // 태그별 인라인 style 강제 주입 (style 속성 없는 태그만 — 기존 색 보존)
+  const C_BODY = '#1A1A1A';
+  const C_BOLD = '#0F0F0F';
+  const forceColor = (h) => h
+    .replace(/<p(?![^>]*style=)/g, `<p style="color:${C_BODY};font-size:16px;line-height:1.8"`)
+    .replace(/<li(?![^>]*style=)/g, `<li style="color:${C_BODY};font-size:16px;line-height:1.8"`)
+    .replace(/<h1(?![^>]*style=)/g, `<h1 style="color:${C_BOLD}"`)
+    .replace(/<h2(?![^>]*style=)/g, `<h2 style="color:${C_BOLD}"`)
+    .replace(/<h3(?![^>]*style=)/g, `<h3 style="color:${C_BOLD}"`)
+    .replace(/<h4(?![^>]*style=)/g, `<h4 style="color:${C_BOLD}"`)
+    .replace(/<td(?![^>]*style=)/g, `<td style="color:${C_BODY}"`)
+    .replace(/<th(?![^>]*style=)/g, `<th style="color:${C_BOLD}"`)
+    .replace(/<strong(?![^>]*style=)/g, `<strong style="color:${C_BOLD};font-weight:700"`)
+    .replace(/<b(?![^>]*style=)(?![a-z])/g, `<b style="color:${C_BOLD};font-weight:700"`)
+    .replace(/<span(?![^>]*style=)/g, `<span style="color:${C_BODY}"`);
+  const wrappedHtml = `<div style="color:${C_BODY};font-size:16px;line-height:1.8;">\n${forceColor(articleHtml)}\n</div>`;
   fs.writeFileSync(htmlAbsPath, wrappedHtml, 'utf8');
   console.log(`💾 저장: ${htmlRelPath}\n`);
 

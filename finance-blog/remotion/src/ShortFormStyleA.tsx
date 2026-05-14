@@ -80,15 +80,15 @@ const StyleAHook: React.FC = () => {
       <SubtleGrid size={100} />
       <FloatingShapes tone="mix" />
 
-      <AbsoluteFill style={{ padding: `120px ${SIDE_PAD}px`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <AbsoluteFill style={{ padding: `70px ${SIDE_PAD}px 220px`, display: 'flex', flexDirection: 'column' }}>
         {/* Top label — 정적 (작은 글씨, 모션 X) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
           <div style={{ width: 56, height: 6, background: COLORS.primary, transformOrigin: 'left', transform: `scaleX(${lineGrow})` }} />
           <div style={{ fontWeight: 700, fontSize: 26, color: COLORS.muted, letterSpacing: 6 }}>MAY · NO. 01</div>
         </div>
 
-        {/* Hero typography — AE damped oscillation (회전·튀어오름·스케일 진동, blur 없음) */}
-        <div>
+        {/* Hero typography — flex 1로 화면 가운데 정렬 */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ fontWeight: 900, fontSize: 180, lineHeight: 0.95, letterSpacing: -8 }}>
             <BouncyDampedText
               text="5월 적금"
@@ -113,15 +113,15 @@ const StyleAHook: React.FC = () => {
               decay={8}
             />
           </div>
-        </div>
 
-        {/* 부제 + 큰 데이터 — 부제는 부드러운 spring, 데이터는 spring bounce */}
-        <div>
-          <div style={{ fontWeight: 500, fontSize: 36, color: COLORS.muted, letterSpacing: -1, opacity: subOp, transform: `translateY(${subY}px)` }}>
-            1위는 무려
-          </div>
-          <div style={{ fontWeight: 900, fontSize: 170, color: COLORS.data, letterSpacing: -7, transform: `scale(${rateScale}) scale(${ratePulse})`, transformOrigin: 'left', marginTop: 4 }}>
-            5.50%
+          {/* 1위는 7% — TOP 5 바로 밑, 한 줄 (부제는 spring fade, 숫자는 spring bounce) */}
+          <div style={{ marginTop: 40, display: 'flex', alignItems: 'baseline', gap: 18, opacity: subOp, transform: `translateY(${subY}px)` }}>
+            <div style={{ fontWeight: 500, fontSize: 56, color: COLORS.muted, letterSpacing: -2 }}>
+              1위는
+            </div>
+            <div style={{ fontWeight: 900, fontSize: 130, color: COLORS.data, letterSpacing: -5, transform: `scale(${rateScale}) scale(${ratePulse})`, transformOrigin: 'left' }}>
+              {TOP5[0].rate}%
+            </div>
           </div>
         </div>
       </AbsoluteFill>
@@ -148,8 +148,8 @@ const StyleARank: React.FC<{ data: Bank }> = ({ data }) => {
   const rateBlur = interpolate(rateSpring, [0, 1], [10, 0]);
   const ratePulse = isFirst ? 1 + Math.sin(frame / 6) * 0.04 : 1;
 
-  // 메타 (작은 글씨) — 짧고 부드러운 ease-out fade (정적에 가깝게)
-  const metaOp = interpolate(frame, [60, 75], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: easeOut });
+  // 메타 (한도/우대) — 처음부터 표시 (fade-in 제거)
+  const metaOp = 1;
 
   const bg = isFirst ? COLORS.bgDark : COLORS.bg;
   const fg = isFirst ? COLORS.textInverse : COLORS.text;
@@ -164,7 +164,7 @@ const StyleARank: React.FC<{ data: Bank }> = ({ data }) => {
       {!isFirst && <FloatingShapes tone={data.rank === 2 ? 'blue' : data.rank === 3 ? 'mint' : 'gold'} />}
       {isFirst && <Sparkles count={16} color={COLORS.accent} />}
 
-      <AbsoluteFill style={{ padding: `110px ${SIDE_PAD}px`, display: 'flex', flexDirection: 'column' }}>
+      <AbsoluteFill style={{ padding: `70px ${SIDE_PAD}px 220px`, display: 'flex', flexDirection: 'column' }}>
         {/* Top — 작은 글씨, 정적 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 44, height: 6, background: accent }} />
@@ -245,18 +245,18 @@ const StyleARank: React.FC<{ data: Bank }> = ({ data }) => {
             <CountUp to={parseFloat(data.rate)} startFrame={28} durationFrames={28} decimals={2} suffix="" />
             <span style={{ fontSize: 150 }}>%</span>
           </div>
-        </div>
 
-        {/* Bottom meta — 작은 글씨, 짧은 fade */}
-        <div style={{ display: 'flex', justifyContent: 'space-around', opacity: metaOp }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 500, fontSize: 22, color: muted, letterSpacing: 4 }}>한도</div>
-            <div style={{ fontWeight: 700, fontSize: 36, marginTop: 4 }}>{data.limit}</div>
-          </div>
-          <div style={{ width: 2, background: isFirst ? 'rgba(255,255,255,0.2)' : COLORS.line }} />
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 500, fontSize: 22, color: muted, letterSpacing: 4 }}>우대</div>
-            <div style={{ fontWeight: 700, fontSize: 36, marginTop: 4 }}>{data.condition}</div>
+          {/* 한도/우대 — % 바로 아래로 이동 */}
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'stretch', gap: 60, opacity: metaOp, marginTop: 10 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontWeight: 500, fontSize: 22, color: muted, letterSpacing: 4 }}>방식</div>
+              <div style={{ fontWeight: 700, fontSize: 36, marginTop: 4 }}>{data.limit}</div>
+            </div>
+            <div style={{ width: 2, background: isFirst ? 'rgba(255,255,255,0.2)' : COLORS.line }} />
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontWeight: 500, fontSize: 22, color: muted, letterSpacing: 4 }}>우대</div>
+              <div style={{ fontWeight: 700, fontSize: 36, marginTop: 4 }}>{data.condition}</div>
+            </div>
           </div>
         </div>
       </AbsoluteFill>
@@ -308,20 +308,69 @@ const StyleACta: React.FC = () => {
 // ─────────────────────────────────────────────────────────────────
 export const ShortFormStyleA: React.FC = () => {
   const top5Reversed = [...TOP5].reverse();
+  // ffmpeg silence detection으로 음성 발화 시점 측정 후 +4프레임 보정 일관 적용
+  // (사용자가 2위 화면(375 = 음성 12.371s + 0.13s)을 잘 맞다고 평가한 기준)
+  // Hook 0~106 · 5위 106~196 · 4위 196~271 · 3위 271~375 · 2위 375~460 · 1위 460~545 · CTA 545~720
+  const rankStarts = [106, 196, 271, 375, 460];
+  const rankDurations = [90, 75, 104, 89, 110];
   return (
     <AbsoluteFill style={{ background: COLORS.bg }}>
       <FontLoader />
-      <Audio src={staticFile(`audio/${SLUG}-short.wav`)} />
-      <Sequence from={0} durationInFrames={90}>
+      {/* 나레이션 — +2dB ≈ 볼륨 1.25 */}
+      <Audio src={staticFile(`audio/${SLUG}-short.wav`)} volume={1.25} />
+      {/* BGM (Lyria 3 Clip) — 102 BPM 펑키 로파이, -16dB ≈ 볼륨 0.16 */}
+      <Audio src={staticFile('audio/bgm/260428_funky-lofi-v3.mp3')} volume={0.16} />
+      <Sequence from={0} durationInFrames={106}>
         <StyleAHook />
       </Sequence>
       {top5Reversed.map((bank, i) => (
-        <Sequence key={bank.rank} from={90 + i * 144} durationInFrames={144}>
+        <Sequence key={bank.rank} from={rankStarts[i]} durationInFrames={rankDurations[i]}>
           <StyleARank data={bank} />
         </Sequence>
       ))}
-      <Sequence from={810} durationInFrames={90}>
+      <Sequence from={570} durationInFrames={150}>
         <StyleACta />
+      </Sequence>
+
+      {/* ───── SFX (사용자 제공 8개, 영상 시간순 매칭) ───── */}
+      {/* 01: 5월 적금 등장 (Hook frame 0) */}
+      <Sequence from={0} durationInFrames={30}>
+        <Audio src={staticFile('audio/sfx/user/u01.wav')} volume={0.7} />
+      </Sequence>
+      {/* 02: TOP 5 등장 (Hook frame 20) */}
+      <Sequence from={20} durationInFrames={30}>
+        <Audio src={staticFile('audio/sfx/user/u02.wav')} volume={0.7} />
+      </Sequence>
+      {/* 03: 1위는 7% 강조 (Hook frame 60 — rateSpring 시작 시점) */}
+      <Sequence from={60} durationInFrames={40}>
+        <Audio src={staticFile('audio/sfx/user/u03.wav')} volume={1.2} />
+      </Sequence>
+      {/* 04: 5위 화면 전환 */}
+      <Sequence from={106} durationInFrames={30}>
+        <Audio src={staticFile('audio/sfx/user/u04.wav')} volume={0.7} />
+      </Sequence>
+      {/* 06: 4위 화면 전환 */}
+      <Sequence from={196} durationInFrames={30}>
+        <Audio src={staticFile('audio/sfx/user/u06.wav')} volume={0.7} />
+      </Sequence>
+      {/* 07: 3위·2위 화면 전환 */}
+      <Sequence from={271} durationInFrames={30}>
+        <Audio src={staticFile('audio/sfx/user/u07.wav')} volume={0.7} />
+      </Sequence>
+      <Sequence from={375} durationInFrames={30}>
+        <Audio src={staticFile('audio/sfx/user/u07.wav')} volume={0.7} />
+      </Sequence>
+
+      {/* 05: 카운트업 SFX — 모든 위 (5·4·3·2·1위) 적용 */}
+      {[106, 196, 271, 375, 460].map(start => (
+        <Sequence key={`count-${start}`} from={start + 28} durationInFrames={36}>
+          <Audio src={staticFile('audio/sfx/user/u05.wav')} volume={0.9} />
+        </Sequence>
+      ))}
+
+      {/* 08: 1위 폭죽 */}
+      <Sequence from={460} durationInFrames={60}>
+        <Audio src={staticFile('audio/sfx/user/u08.wav')} volume={0.85} />
       </Sequence>
     </AbsoluteFill>
   );

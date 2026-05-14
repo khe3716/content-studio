@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const ADAPT_MODEL = 'gemini-2.5-pro';
+const ADAPT_MODEL = 'gemini-2.5-flash';
 
 // Same story list as build-story-excel.js (keep in sync)
 const STORIES = require('./stories.js');
@@ -134,7 +134,7 @@ async function main() {
   console.log(`출처: ${story.sourceUrl}`);
   console.log(`\n각색 본문:\n${story.adapted}\n`);
 
-  console.log('═══ Splitting into scenes (gemini-2.5-pro) ═══');
+  console.log('═══ Splitting into scenes (gemini-2.5-flash) ═══');
   const adapted = await splitIntoScenes(story);
   console.log(`✓ Title: ${adapted.video.title}`);
   console.log(`  Scenes: ${adapted.scenes.length}`);

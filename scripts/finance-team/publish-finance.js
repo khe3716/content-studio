@@ -664,12 +664,27 @@ async function injectImages(html, slug) {
   else console.log('   ℹ 정리할 중복 없음');
 
   console.log('\n[2/3] DRAFT 업로드');
-  const enriched = await enrichContent({ html, meta, slug });
+  const enrichedRaw = await enrichContent({ html, meta, slug });
   // 본문 길이 검증 — 빈 본문 발행 사고 방지
-  if (!enriched || enriched.length < 1500) {
-    throw new Error(`본문이 너무 짧음 (${enriched?.length || 0}자, 최소 1500자) — 발행 차단. drafts/${slug}.html 확인 필요.`);
+  if (!enrichedRaw || enrichedRaw.length < 1500) {
+    throw new Error(`본문이 너무 짧음 (${enrichedRaw?.length || 0}자, 최소 1500자) — 발행 차단. drafts/${slug}.html 확인 필요.`);
   }
-  console.log(`   ✓ 본문 검증 통과 (${enriched.length}자)`);
+  console.log(`   ✓ 본문 검증 통과 (${enrichedRaw.length}자)`);
+  // 가독성: 태그별 인라인 style 강제 (Blogger 테마 회색 덮어쓰기)
+  const C_BODY = '#1A1A1A';
+  const C_BOLD = '#0F0F0F';
+  const enriched = enrichedRaw
+    .replace(/<p(?![^>]*style=)/g, `<p style="color:${C_BODY};font-size:16px;line-height:1.8"`)
+    .replace(/<li(?![^>]*style=)/g, `<li style="color:${C_BODY};font-size:16px;line-height:1.8"`)
+    .replace(/<h1(?![^>]*style=)/g, `<h1 style="color:${C_BOLD}"`)
+    .replace(/<h2(?![^>]*style=)/g, `<h2 style="color:${C_BOLD}"`)
+    .replace(/<h3(?![^>]*style=)/g, `<h3 style="color:${C_BOLD}"`)
+    .replace(/<h4(?![^>]*style=)/g, `<h4 style="color:${C_BOLD}"`)
+    .replace(/<td(?![^>]*style=)/g, `<td style="color:${C_BODY}"`)
+    .replace(/<th(?![^>]*style=)/g, `<th style="color:${C_BOLD}"`)
+    .replace(/<strong(?![^>]*style=)/g, `<strong style="color:${C_BOLD};font-weight:700"`)
+    .replace(/<b(?![^>]*style=)(?![a-z])/g, `<b style="color:${C_BOLD};font-weight:700"`)
+    .replace(/<span(?![^>]*style=)/g, `<span style="color:${C_BODY}"`);
   const draft = await uploadDraft({
     accessToken,
     blogId,

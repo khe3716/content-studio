@@ -22,6 +22,7 @@ const BATCH_ECONOMY_WORKFLOW = 'batch-economy.yml';
 const NIGHT_RESEARCH_WORKFLOW = 'night-team-research.yml';
 const NIGHT_PUSH_WORKFLOW = 'night-team-push.yml';
 const FEEDBACK_WORKFLOW = 'feedback-log.yml';
+const FINANCE_WORKFLOW = 'auto-publish-finance.yml';
 const REPORTS_DIR_NAME = 'reports';
 
 export default {
@@ -68,14 +69,19 @@ async function handleCommand(env, chatId, text) {
       '<b>/publish</b> - 다음 주제 발행\n\n' +
       '🍎 <b>과일블로그 (Blogger)</b>\n' +
       '<b>/fruit</b> - 다음 주제 발행\n\n' +
+      '💼 <b>재테크블로그 "월급쟁이 재테크"</b>\n' +
+      '<b>/finance 4</b> - Day 4 글+영상 자동 생성 (DRAFT)\n' +
+      '<b>/finance 4 publish</b> - Day 4 즉시 발행\n' +
+      '<b>/financestatus</b> - 재테크 최근 실행 3건\n\n' +
       '📝 <b>네이버 블로그 변환</b>\n' +
       '<b>/naver</b> - 최근 과일블로그 글을 네이버용 HTML로 변환\n' +
       '<b>/naver 3</b> - 특정 Day (예: 3)\n\n' +
       '🛒 <b>스마트스토어</b>\n' +
       '<b>/seo</b> - 상품 SEO 진단 리포트 (21개 전부)\n\n' +
-      '📸 <b>인스타 카드뉴스</b>\n' +
-      '<b>/insta</b> - 다음 주제로 카드뉴스 5장 생성\n' +
-      '<b>/insta 3</b> - 특정 Day\n\n' +
+      '📸 <b>인스타 + 스레드</b>\n' +
+      '<b>/insta</b> - 다음 ready 주제 자동 생성 (format에 따라 카드/단일/인포 분기)\n' +
+      '<b>/insta 3</b> - 특정 Day\n' +
+      '   → 텔레그램에 인스타 캡션 + 스레드 캡션 따로 도착\n\n' +
       '📅 <b>예약 발행 배정</b>\n' +
       '<b>/schedule economy</b> - 경제 DRAFT 전부 오늘부터 07:30+17:00 슬롯에 순차\n' +
       '<b>/schedule fruit</b> - 과일 DRAFT 전부 오늘부터 18:00 슬롯에 순차\n' +
@@ -92,14 +98,17 @@ async function handleCommand(env, chatId, text) {
       '📊 <b>공통</b>\n' +
       '<b>/status</b> - 경제 최근 실행 3건\n' +
       '<b>/fruitstatus</b> - 과일 최근 실행 3건\n' +
+      '<b>/instastatus</b> - 인스타+스레드 최근 실행 3건\n' +
       '<b>/help</b> - 이 도움말'
     );
     return;
   }
 
-  if (text === '/status' || text === '/fruitstatus') {
-    const workflow = text === '/fruitstatus' ? FRUIT_WORKFLOW : env.GITHUB_WORKFLOW;
-    const label = text === '/fruitstatus' ? '🍎 과일블로그' : '💰 경제블로그';
+  if (text === '/status' || text === '/fruitstatus' || text === '/instastatus') {
+    let workflow, label;
+    if (text === '/fruitstatus') { workflow = FRUIT_WORKFLOW; label = '🍎 과일블로그'; }
+    else if (text === '/instastatus') { workflow = INSTA_WORKFLOW; label = '📸 인스타+스레드'; }
+    else { workflow = env.GITHUB_WORKFLOW; label = '💰 경제블로그'; }
     const runs = await githubFetch(env, `/actions/workflows/${workflow}/runs?per_page=3`);
     const lines = (runs.workflow_runs || []).slice(0, 3).map(r => {
       let icon = '🔄';
@@ -126,6 +135,43 @@ async function handleCommand(env, chatId, text) {
     return;
   }
 
+  if (text === '/finance' || text.startsWith('/finance ')) {
+    // /finance              → 다음 day, DRAFT
+    // /finance 4            → Day 4, DRAFT
+    // /finance 4 publish    → Day 4, 즉시 발행
+    // /finance 4 now        → Day 4, 즉시 발행 (publish 별칭)
+    const parts = text.split(/\s+/);
+    const dayArg = parts[1] && /^\d+$/.test(parts[1]) ? parts[1] : '';
+    const modeArg = parts[2] || parts[1];
+    const publishMode = (modeArg === 'publish' || modeArg === 'now') ? 'now' : 'draft';
+    await triggerWorkflowRaw(env, FINANCE_WORKFLOW, {
+      day: dayArg,
+      publish_mode: publishMode,
+    });
+    await sendMessage(env, chatId,
+      `💼 재테크블로그 자동화 시작${dayArg ? ` (Day ${dayArg})` : ''}!\n` +
+      `모드: ${publishMode === 'now' ? '즉시 발행' : 'DRAFT 저장'}\n` +
+      '15-25분 후 결과 알림 도착합니다.\n' +
+      '(글 + 이미지 + TTS + 롱폼/쇼츠 영상 + Blogspot)'
+    );
+    return;
+  }
+
+  if (text === '/financestatus') {
+    const runs = await githubFetch(env, `/actions/workflows/${FINANCE_WORKFLOW}/runs?per_page=3`);
+    const lines = (runs.workflow_runs || []).slice(0, 3).map(r => {
+      let icon = '🔄';
+      if (r.status === 'completed') icon = r.conclusion === 'success' ? '✅' : '❌';
+      const date = new Date(r.created_at).toLocaleString('ko-KR', {
+        timeZone: 'Asia/Seoul', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+      });
+      const trigger = r.event === 'workflow_dispatch' ? '수동' : '자동';
+      return `${icon} ${date} (${trigger})`;
+    });
+    await sendMessage(env, chatId, '<b>💼 재테크블로그 최근 실행 3건</b>\n\n' + (lines.join('\n') || '기록 없음'));
+    return;
+  }
+
   if (text === '/naver' || text.startsWith('/naver ')) {
     const parts = text.split(/\s+/);
     const day = parts[1] && /^\d+$/.test(parts[1]) ? parts[1] : '';
@@ -149,7 +195,8 @@ async function handleCommand(env, chatId, text) {
     const day = parts[1] && /^\d+$/.test(parts[1]) ? parts[1] : '';
     await triggerWorkflow(env, INSTA_WORKFLOW, { day });
     await sendMessage(env, chatId,
-      `📸 인스타 카드뉴스 생성 시작${day ? ` (Day ${day})` : ''}!\n2-3분 후 이미지 5장 + 캡션 도착합니다.`
+      `📸 인스타 + 스레드 생성 시작${day ? ` (Day ${day})` : ''}!\n` +
+      `2-4분 후 이미지 + 인스타 캡션 + 스레드 캡션 따로 도착합니다.`
     );
     return;
   }

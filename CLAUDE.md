@@ -1,11 +1,12 @@
 # CLAUDE.md
 
-이 저장소는 경제 블로그 + 과일 블로그 + (예정) YouTube Shorts 자동화 시스템입니다.
+이 저장소는 경제 블로그 + 과일 블로그 + 재테크 블로그(글+영상) + (예정) YouTube Shorts 자동화 시스템입니다.
 
 ## 프로젝트 현황
 
 - **경제 블로그**: 매일 07:30 + 17:00 KST 자동 발행 (Blogspot)
 - **과일 블로그**: 매일 18:00 KST 자동 발행 (Blogspot, fruitinfoguide.blogspot.com)
+- **재테크 블로그 "월급쟁이 재테크"**: 박재은 페르소나 + 8인 finance 팀 (수동 발행 중, Phase 2 자동화 예정)
 - **야간 리서치 팀**: 매일 01:00 KST 4라운드 자동 실행 → 08:00 텔레그램 브리핑
 - **텔레그램 봇**: `@Economyblog_bot` (/publish, /fruit, /status, /fruitstatus, /help)
 - **운영자**: 1인 스마트스토어 (달콤살랑) 과일 판매자, 비개발자
@@ -34,11 +35,13 @@
 
 ## 주요 폴더
 
-- `agents/` — 낮 작가 페르소나 8명 (김하나, 박과일, 박팩트 등)
+- `agents/` — 낮 작가 페르소나 9명 (김하나, 박과일, 박팩트, 박재은 등)
+- `agents/finance/` — 재테크 블로그 8인 작업팀 (orchestrator → researcher → copywriter(박재은) → visual-director → image-generator → html-builder → video-producer → qa-reviewer). 운영 가이드: [agents/finance/README.md](agents/finance/README.md)
 - `agents/night/` — 야간 리서치 팀 4명 (이호기심·서사업·구현실·박결재)
 - `agents/_paused/` — 보류 야간 페르소나 5명 (크롤링·API 연동 후 복귀 대기)
 - `economy-blog/` — 경제 블로그 원고·썸네일·주제 로드맵
 - `fruit-blog/` — 과일 블로그 원고·썸네일·AI 이미지·주제 로드맵
+- `finance-blog/` — 재테크 블로그 원고·이미지·영상(remotion)·주제 로드맵
 - `scripts/night-crew/` — 야간 리서치 팀 오케스트레이션 (crew-runner, data-collect, night-research, push-morning)
 - `reports/` — 야간 일일 리포트 (`YYYY-MM-DD.md` 박결재 브리핑 · `-raw.md` 4라운드 원본 · `feedback.jsonl` 사용자 실행/무시 기록)
 - `telegram-worker/` — Cloudflare Worker 코드 (텔레그램 → GitHub Actions 중계)

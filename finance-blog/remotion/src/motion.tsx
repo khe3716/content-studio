@@ -687,3 +687,308 @@ export const useCardFlip = (startFrame: number = 0) => {
   const op = interpolate(sp, [0, 0.5, 1], [0, 0.3, 1]);
   return { rotY, op };
 };
+
+// ─────────────────────────────────────────────────────────────────
+// NumberRoulette — 숫자가 룰렛처럼 빠르게 변하다 정착 (모션그래픽 핵심)
+// ─────────────────────────────────────────────────────────────────
+export const NumberRoulette: React.FC<{
+  value: number;
+  startFrame?: number;
+  durationFrames?: number;
+  format?: (n: number) => string;
+  style?: React.CSSProperties;
+}> = ({ value, startFrame = 0, durationFrames = 36, format = n => Math.round(n).toLocaleString('ko-KR'), style }) => {
+  const frame = useCurrentFrame();
+  const f = Math.max(0, frame - startFrame);
+
+  if (f >= durationFrames) {
+    return <span style={style}>{format(value)}</span>;
+  }
+
+  const progress = f / durationFrames;
+  // 룰렛 페이즈: 처음엔 무작위에 가깝게, 뒤로 갈수록 정답에 수렴
+  const noise = (1 - progress) * value * 0.6;
+  const oscillation = Math.sin(f * 0.9) * noise;
+  const current = value * Math.min(progress * 1.3, 1) + oscillation;
+
+  return <span style={style}>{format(Math.max(0, current))}</span>;
+};
+
+// ─────────────────────────────────────────────────────────────────
+// StickerPop — 스티커가 회전하면서 톡 튀어나오는 강조 모션
+// ─────────────────────────────────────────────────────────────────
+export const StickerPop: React.FC<{
+  children: React.ReactNode;
+  startFrame?: number;
+  rotateDeg?: number;
+  bouncePeak?: number;
+  style?: React.CSSProperties;
+  wobble?: boolean;
+}> = ({ children, startFrame = 0, rotateDeg = -8, bouncePeak = 1.18, style, wobble = true }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const f = frame - startFrame;
+  const sp = spring({ frame: f, fps, config: { damping: 9, stiffness: 140, mass: 0.6 } });
+
+  // 스케일: 0 → 1.18 → 1.0 (오버슈트)
+  const sc = interpolate(sp, [0, 0.55, 1], [0, bouncePeak, 1], { extrapolateRight: 'clamp' });
+  // 회전: 처음엔 더 강한 각도에서 정착 각도로
+  const rot = interpolate(sp, [0, 1], [rotateDeg * 2.5, rotateDeg], { extrapolateRight: 'clamp' });
+  // 이후 살짝 흔들림 (sticker가 살아있는 느낌)
+  const wob = wobble && f > 30 ? Math.sin((f - 30) / 8) * 1.2 : 0;
+
+  return (
+    <div style={{
+      display: 'inline-block',
+      transform: `scale(${sc}) rotate(${rot + wob}deg)`,
+      transformOrigin: 'center',
+      ...style,
+    }}>
+      {children}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────
+// ColorCycleBg — 30초 동안 배경 컬러 부드럽게 사이클
+// ─────────────────────────────────────────────────────────────────
+export const ColorCycleBg: React.FC<{
+  colors: string[];     // 거쳐갈 컬러들
+  totalFrames: number;  // 전체 사이클 길이
+  children?: React.ReactNode;
+}> = ({ colors, totalFrames, children }) => {
+  const frame = useCurrentFrame();
+  if (colors.length === 0) return <AbsoluteFill>{children}</AbsoluteFill>;
+
+  const segLength = totalFrames / colors.length;
+  const idx = Math.min(Math.floor(frame / segLength), colors.length - 1);
+  const nextIdx = (idx + 1) % colors.length;
+  const local = (frame - idx * segLength) / segLength;
+
+  // 두 컬러 사이 hex 보간 (rgb 평균)
+  const blend = (a: string, b: string, t: number) => {
+    const ar = parseInt(a.slice(1, 3), 16), ag = parseInt(a.slice(3, 5), 16), ab = parseInt(a.slice(5, 7), 16);
+    const br = parseInt(b.slice(1, 3), 16), bg = parseInt(b.slice(3, 5), 16), bb = parseInt(b.slice(5, 7), 16);
+    const r = Math.round(ar + (br - ar) * t);
+    const g = Math.round(ag + (bg - ag) * t);
+    const bl = Math.round(ab + (bb - ab) * t);
+    return `rgb(${r}, ${g}, ${bl})`;
+  };
+
+  const bg = blend(colors[idx], colors[nextIdx], local);
+  return <AbsoluteFill style={{ background: bg }}>{children}</AbsoluteFill>;
+};
+
+// ─────────────────────────────────────────────────────────────────
+// StampPop — 도장 찍히는 무빙 (위에서 빠르게 내려와 임팩트 후 정착)
+// ─────────────────────────────────────────────────────────────────
+export const StampPop: React.FC<{
+  children: React.ReactNode;
+  startFrame?: number;
+  finalRotateDeg?: number;
+  dropFromY?: number;     // 시작 높이 offset
+  impactFrames?: number;  // 떨어지는 프레임 수
+  style?: React.CSSProperties;
+}> = ({ children, startFrame = 0, finalRotateDeg = -8, dropFromY = -260, impactFrames = 7, style }) => {
+  const frame = useCurrentFrame();
+  const f = frame - startFrame;
+
+  if (f < 0) {
+    return <div style={{ display: 'inline-block', opacity: 0, ...style }}>{children}</div>;
+  }
+
+  // Phase 1: 떨어지는 단계 (0 → impactFrames). ease-in으로 가속.
+  // Phase 2: 임팩트 직후 살짝 튐 (impactFrames ~ impactFrames+8)
+  // Phase 3: 정착
+
+  const dropProgress = Math.min(1, f / impactFrames);
+  const dropEased = dropProgress * dropProgress;  // ease-in (가속해서 떨어짐)
+  const y = dropFromY * (1 - dropEased);
+
+  // 임팩트 직후 1~2프레임 살짝 짓눌림 (squash) → 다시 늘어남
+  const postImpact = f - impactFrames;
+  let scaleX = 1;
+  let scaleY = 1;
+  if (postImpact >= 0 && postImpact < 8) {
+    // 짓눌림 그래프: 0 → -0.08 → 0
+    const sq = Math.sin((postImpact / 8) * Math.PI) * 0.08;
+    scaleX = 1 + sq;
+    scaleY = 1 - sq;
+  }
+
+  // 떨어지는 동안엔 살짝 큰 스케일에서 시작
+  const baseScale = interpolate(dropProgress, [0, 1], [1.15, 1]);
+
+  // 회전: 떨어지는 동안 더 강한 각도 → 정착
+  const rot = interpolate(dropProgress, [0, 1], [finalRotateDeg * 1.8, finalRotateDeg]);
+
+  // 임팩트 순간 살짝 흔들림 (1~2프레임만)
+  const shakeF = postImpact;
+  const shake = shakeF >= 0 && shakeF < 4 ? Math.sin(shakeF * 4) * 3 : 0;
+
+  return (
+    <div style={{
+      display: 'inline-block',
+      transform: `translate(${shake}px, ${y}px) scale(${baseScale * scaleX}, ${baseScale * scaleY}) rotate(${rot}deg)`,
+      transformOrigin: 'center',
+      ...style,
+    }}>
+      {children}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────
+// StampImpactDust — 도장 임팩트 순간 잉크 튀김 (12개 작은 점이 방사형으로 튀어나감)
+// ─────────────────────────────────────────────────────────────────
+export const StampImpactDust: React.FC<{
+  startFrame?: number;
+  count?: number;
+  color?: string;
+  spread?: number;
+  size?: number;
+}> = ({ startFrame = 0, count = 14, color = '#1A1A1A', spread = 220, size = 12 }) => {
+  const frame = useCurrentFrame();
+  const f = frame - startFrame;
+  if (f < 0 || f > 24) return null;
+
+  const progress = Math.min(1, f / 24);
+  const eased = 1 - Math.pow(1 - progress, 3);
+
+  return (
+    <div style={{ position: 'absolute', top: '50%', left: '50%', pointerEvents: 'none' }}>
+      {Array.from({ length: count }).map((_, i) => {
+        const angle = (i / count) * Math.PI * 2;
+        const dist = spread * eased;
+        const x = Math.cos(angle) * dist;
+        const y = Math.sin(angle) * dist;
+        const op = 1 - progress;
+        const sc = (1 - progress * 0.6) * (i % 2 === 0 ? 1 : 0.7);
+        return (
+          <div key={i} style={{
+            position: 'absolute',
+            width: size,
+            height: size,
+            borderRadius: '50%',
+            background: color,
+            transform: `translate(${x - size / 2}px, ${y - size / 2}px) scale(${sc})`,
+            opacity: op,
+          }} />
+        );
+      })}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────
+// GlitchFlash — 1프레임 RGB split 충격 (Hook 강조)
+// ─────────────────────────────────────────────────────────────────
+export const GlitchFlash: React.FC<{
+  children: React.ReactNode;
+  triggerFrames: number[];   // 글리치 발생할 프레임 배열
+  splitX?: number;
+}> = ({ children, triggerFrames, splitX = 14 }) => {
+  const frame = useCurrentFrame();
+  const isGlitch = triggerFrames.includes(frame);
+
+  if (!isGlitch) {
+    return <div style={{ display: 'inline-block' }}>{children}</div>;
+  }
+
+  return (
+    <div style={{ display: 'inline-block', position: 'relative' }}>
+      <div style={{ position: 'absolute', top: 0, left: -splitX, color: '#FF005C', mixBlendMode: 'multiply', opacity: 0.9 }}>
+        {children}
+      </div>
+      <div style={{ position: 'absolute', top: 0, left: splitX, color: '#00C896', mixBlendMode: 'multiply', opacity: 0.9 }}>
+        {children}
+      </div>
+      <div style={{ position: 'relative', filter: 'contrast(1.3)' }}>{children}</div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────
+// ScribbleCircle — 핸드드로잉 원 (강조 표시)
+// stroke-dasharray로 점진적으로 그려짐
+// ─────────────────────────────────────────────────────────────────
+export const ScribbleCircle: React.FC<{
+  startFrame?: number;
+  durationFrames?: number;
+  width?: number;
+  height?: number;
+  color?: string;
+  strokeWidth?: number;
+  style?: React.CSSProperties;
+}> = ({ startFrame = 0, durationFrames = 24, width = 280, height = 110, color = '#C8341A', strokeWidth = 5, style }) => {
+  const frame = useCurrentFrame();
+  const t = Math.max(0, Math.min(1, (frame - startFrame) / durationFrames));
+  // 타원 둘레 근사
+  const a = width / 2, b = height / 2;
+  const perimeter = Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+  const dashOffset = perimeter * (1 - t);
+  // 살짝 손그림 느낌: 시작 각도 -30도 + 스트로크 끝부분 살짝 오버랩 (110% 그려짐)
+  return (
+    <svg width={width} height={height} style={{ overflow: 'visible', ...style }}>
+      <ellipse
+        cx={width / 2}
+        cy={height / 2}
+        rx={a - strokeWidth / 2 - 2}
+        ry={b - strokeWidth / 2 - 2}
+        fill="none"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeDasharray={perimeter * 1.05}
+        strokeDashoffset={dashOffset}
+        transform={`rotate(-30 ${width / 2} ${height / 2})`}
+      />
+    </svg>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────
+// BarChartGrow — 여러 막대 동시 차오름 + 정착 후 라벨 페이드인
+// ─────────────────────────────────────────────────────────────────
+export const BarChartGrow: React.FC<{
+  bars: Array<{ value: number; max: number; color: string; label: string; tail?: string }>;
+  startFrame?: number;
+  growFrames?: number;
+  barWidth?: number;
+  gap?: number;
+  height?: number;
+  style?: React.CSSProperties;
+}> = ({ bars, startFrame = 0, growFrames = 24, barWidth = 110, gap = 30, height = 460, style }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap, ...style }}>
+      {bars.map((b, i) => {
+        const sp = spring({
+          frame: frame - startFrame - i * 5,
+          fps,
+          config: { damping: 14, stiffness: 100, mass: 0.9 },
+        });
+        const ratio = b.value / b.max;
+        const h = height * ratio * sp;
+        const labelOp = interpolate(frame - startFrame - i * 5, [growFrames, growFrames + 8], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+        return (
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: barWidth,
+              height: h,
+              background: b.color,
+              borderRadius: '14px 14px 4px 4px',
+              boxShadow: '0 6px 20px rgba(26,26,26,0.18)',
+              opacity: Math.max(0.15, sp),
+            }} />
+            <div style={{ opacity: labelOp, textAlign: 'center', fontWeight: 700, fontSize: 22, color: '#1A1A1A' }}>
+              {b.label}
+              {b.tail && <div style={{ fontSize: 16, color: b.color, fontWeight: 800, marginTop: 4 }}>{b.tail}</div>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};

@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL = 'gemini-2.5-pro';
+const MODEL = 'gemini-2.5-flash';
 
 const EPISODES_DIR = path.join(__dirname, 'episodes');
 const IMAGES_BASE = path.join(__dirname, 'images');

@@ -8,17 +8,19 @@ export type Bank = {
   condition: string;
 };
 
+// 검증 출처: 금융감독원 금융상품한눈에 OpenAPI (2026-04-20 공시)
+// 한도(limit)는 공시에 없음 → "공시 기준" 또는 "은행 문의"
 export const SAVINGS_TOP10: Bank[] = [
-  { rank: 1,  bank: '토스뱅크',  product: '자유적금',           rate: '5.50', baseRate: '4.50', limit: '월 100만원', condition: '첫거래·자동이체' },
-  { rank: 2,  bank: '케이뱅크',  product: '코드K 자유적금',      rate: '5.20', baseRate: '4.20', limit: '월 30만원',  condition: '미션·자동이체' },
-  { rank: 3,  bank: '카카오뱅크', product: '자유적금',           rate: '5.00', baseRate: '4.00', limit: '월 30만원',  condition: '26주 챌린지' },
-  { rank: 4,  bank: '신한은행',  product: '쏠편한 정기적금',     rate: '4.80', baseRate: '3.85', limit: '월 100만원', condition: 'SOL·자동이체' },
-  { rank: 5,  bank: '우리은행',  product: '우리원적금',          rate: '4.65', baseRate: '3.70', limit: '월 50만원',  condition: 'WON·카드실적' },
-  { rank: 6,  bank: '국민은행',  product: 'KB스타정기적금',      rate: '4.50', baseRate: '3.60', limit: '월 100만원', condition: 'KB Pay·급여' },
-  { rank: 7,  bank: '농협',      product: '채움적금',            rate: '4.40', baseRate: '3.50', limit: '월 50만원',  condition: 'NH카드·자동이체' },
-  { rank: 8,  bank: '하나은행',  product: '급여하나 월복리',     rate: '4.30', baseRate: '3.40', limit: '월 100만원', condition: '급여이체' },
-  { rank: 9,  bank: 'iM뱅크',    product: '더쿠폰적금',          rate: '4.20', baseRate: '3.30', limit: '월 50만원',  condition: '첫거래·급여' },
-  { rank: 10, bank: 'SC제일',    product: 'e그린세이브',         rate: '4.10', baseRate: '3.20', limit: '월 30만원',  condition: '친환경·자동이체' },
+  { rank: 1,  bank: '경남은행',     product: '오면우대! 정기적금',       rate: '7.00', baseRate: '1.90', limit: '정액적립식', condition: '자동이체·마케팅' },
+  { rank: 2,  bank: '토스뱅크',     product: '굴비 적금',              rate: '4.30', baseRate: '1.80', limit: '자유적립식', condition: '만기 해지' },
+  { rank: 3,  bank: '수협은행',     product: '해양플라스틱Zero!적금',   rate: '4.15', baseRate: '3.65', limit: '자유적립식', condition: '자동이체·첫거래' },
+  { rank: 4,  bank: '수협은행',     product: '헤이(Hey)적금',          rate: '4.10', baseRate: '3.20', limit: '자유적립식', condition: '자동이체·첫거래' },
+  { rank: 5,  bank: '수협은행',     product: '해양플라스틱Zero!적금',   rate: '4.00', baseRate: '3.50', limit: '정액적립식', condition: '자동이체·첫거래' },
+  { rank: 6,  bank: '경남은행',     product: 'BNK더조은자유적금',      rate: '3.80', baseRate: '3.10', limit: '공시 기준',  condition: '자동이체·오픈뱅킹' },
+  { rank: 7,  bank: '토스뱅크',     product: '키워봐요 적금',          rate: '3.80', baseRate: '1.80', limit: '공시 기준',  condition: '자동이체' },
+  { rank: 8,  bank: '신한은행',     product: '신한 알.쏠 적금',         rate: '3.75', baseRate: '2.45', limit: '공시 기준',  condition: '마케팅·오픈뱅킹' },
+  { rank: 9,  bank: '광주은행',     product: '해피라이프_여행스케치',   rate: '3.70', baseRate: '2.50', limit: '공시 기준',  condition: '카드실적' },
+  { rank: 10, bank: '수협은행',     product: '헤이(Hey)적금',          rate: '3.70', baseRate: '2.80', limit: '정액적립식', condition: '자동이체·첫거래' },
 ];
 
 export const TOP5 = SAVINGS_TOP10.slice(0, 5);

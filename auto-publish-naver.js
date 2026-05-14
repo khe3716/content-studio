@@ -29,7 +29,7 @@ function loadEnv() {
 loadEnv();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = 'gemini-2.5-pro';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 
 const FRUIT_DRAFTS_DIR = path.join(__dirname, 'fruit-blog', 'drafts');
 const NAVER_DRAFTS_DIR = path.join(__dirname, 'naver-blog', 'drafts');

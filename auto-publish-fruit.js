@@ -36,7 +36,7 @@ function loadEnv() {
 }
 loadEnv();
 
-const GEMINI_MODEL = 'gemini-2.5-pro';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
   console.error('❌ GEMINI_API_KEY 환경변수 없음');
@@ -60,8 +60,11 @@ async function notifyTelegram(text) {
   }
 }
 
+const { incrementAndCheck } = require('./scripts/api-usage-tracker');
+
 // ========== 제미나이 ==========
 async function callGemini(userPrompt, systemPrompt, { temperature = 0.7, maxTokens = 16384, model = GEMINI_MODEL, disableThinking = false } = {}) {
+  await incrementAndCheck();
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -110,28 +113,29 @@ function loadWritingSamples(count = 3, maxCharsPerSample = 2500) {
   }).filter(Boolean);
 }
 
-// ========== Imagen 4 Fast 이미지 생성 (생성 후 리사이즈) ==========
+// ========== Gemini 2.5 Flash Image (Nano Banana) 이미지 생성 ==========
+// 무료 한도 일 500장. Imagen 4 Fast(25원/장) 대신 사용해서 비용 0원 운영.
 async function generateImage(prompt, outputPath) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${GEMINI_API_KEY}`;
+  const model = 'gemini-2.5-flash-image';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      instances: [{ prompt }],
-      parameters: { sampleCount: 1, aspectRatio: '1:1', personGeneration: 'dont_allow' },
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { responseModalities: ['IMAGE'] },
     }),
   });
-  if (!res.ok) throw new Error(`Imagen API ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  if (!res.ok) throw new Error(`Gemini Flash Image API ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const j = await res.json();
-  const b64 = j.predictions?.[0]?.bytesBase64Encoded;
-  if (!b64) throw new Error('Imagen 응답에 이미지 없음: ' + JSON.stringify(j).slice(0, 300));
-  // 본문 이미지는 600×600 JPG로 압축 (Blogger가 작은 파일을 대표 썸네일 후보에서 제외)
-  // → 디자인 썸네일(1500×1500 PNG, 30KB)이 대표로 선택됨
+  const parts = j.candidates?.[0]?.content?.parts || [];
+  const imagePart = parts.find(p => p.inlineData?.data);
+  const b64 = imagePart?.inlineData?.data;
+  if (!b64) throw new Error('Gemini Flash Image 응답에 이미지 없음: ' + JSON.stringify(j).slice(0, 400));
   const resized = await sharp(Buffer.from(b64, 'base64'))
     .resize(600, 600, { kernel: 'lanczos3' })
     .jpeg({ quality: 75 })
     .toBuffer();
-  // 확장자 .jpg로 저장 (outputPath이 .png여도 JPG로 저장)
   const jpgPath = outputPath.replace(/\.png$/i, '.jpg');
   fs.writeFileSync(jpgPath, resized);
   return jpgPath;
@@ -541,7 +545,7 @@ async function main() {
   const htmlAbsPath = path.join(__dirname, htmlRelPath);
 
   // AI 본문 이미지 2장 생성 + HTML에 삽입
-  console.log('🎨 [이미지] Imagen 4 Fast로 본문 이미지 2장 생성 중...');
+  console.log('🎨 [이미지] Gemini Flash Image로 본문 이미지 2장 생성 중...');
   try {
     const prompts = await generateImagePrompts(topic);
     console.log(`   프롬프트 1: ${prompts[0].slice(0, 80)}...`);
