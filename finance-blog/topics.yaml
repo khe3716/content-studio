@@ -271,3 +271,17 @@ topics:
     trending_source:
       - naver
     trending_score: 514
+  - day: 33
+    slug: minsaeng-1778769000000
+    category: policy
+    title: 2026년 민생회복지원금 신청 방법·대상·금액 총정리 💰
+    keywords:
+      - 민생회복지원금
+      - 정부지원금
+      - 재테크
+      - 월급쟁이
+    season: 5월
+    pattern: guide
+    trending_source:
+      - manual
+    trending_score: 999
