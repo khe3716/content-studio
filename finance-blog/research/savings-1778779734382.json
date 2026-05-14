@@ -1,0 +1,43 @@
+{
+  "generatedAt": "2026-05-14T17:28:56.243Z",
+  "todayKST": "2026-05-15",
+  "topic": {
+    "day": 34,
+    "slug": "savings-1778779734382",
+    "category": "savings",
+    "pattern": "guide",
+    "title": "2026년 5월 연금저축펀드 꼭 알아야 할 5가지 📈"
+  },
+  "main_keyword": "연금저축펀드",
+  "long_tail": [
+    "재테크",
+    "월급쟁이"
+  ],
+  "season": {
+    "category": "savings",
+    "avgRatio": 70.2,
+    "recentAvg": 44.9,
+    "momentumPct": -40.4,
+    "peakMonth": "2025-05-01",
+    "seasonMatch": "PEAK"
+  },
+  "playbook": {
+    "intro_pattern": "왜 알아야 하는지 + 제도/정책 시점 명기",
+    "body_structure": "단계형 (1단계 → 5단계) + 화면 흐름 + 자주 묻는 질문 Q&A",
+    "body_sections": 5,
+    "cta": "신청 가능 기간·조건 변경 시 갱신"
+  },
+  "fact_check_required": [
+    "모든 금리·한도·우대조건은 출처(은행연합회/한국은행/금융감독원) + 시점 명기",
+    "제도/정책명·시행일·시점 정확",
+    "광고 사용 시 \"광고 포함\" 명시"
+  ],
+  "verified_rate_data": null,
+  "forbidden": [
+    "정치인·정당·이념 발언",
+    "부동산 가격 전망",
+    "주식 종목 추천 (자본시장법)",
+    "\"100% 승인\", \"원금 보장\" 단정 표현",
+    "출처 없는 통계·금리·한도"
+  ]
+}
