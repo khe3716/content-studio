@@ -38,7 +38,7 @@ const GH_BRANCH = process.env.GITHUB_REF_NAME || 'main';
 const STYLE_BLOCK = `<style>
 .post-finance {
   font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #1f2937;
+  color: #1A1A1A;
   line-height: 1.75;
   font-size: 15pt;
   max-width: 720px;
@@ -74,7 +74,7 @@ const STYLE_BLOCK = `<style>
   border-left: 5px solid #2563eb;
 }
 .post-finance h2:first-of-type { margin-top: 36px; }
-.post-finance strong { color: #1e293b; font-weight: 700; }
+.post-finance strong { color: #0F0F0F; font-weight: 700; }
 .post-finance img {
   max-width: 540px;
   width: 100%;
@@ -126,7 +126,7 @@ const STYLE_BLOCK = `<style>
 }
 .post-finance td:last-child {
   font-size: 12.5pt;
-  color: #475569;
+  color: #2D2D2D;
   line-height: 1.55;
   word-break: keep-all;
 }
@@ -180,7 +180,7 @@ const STYLE_BLOCK = `<style>
   margin: 48px 0 8px;
   padding: 22px 0 8px;
   border-top: 1px solid #e5e7eb;
-  color: #6b7280;
+  color: #2D2D2D;
   font-weight: 600;
   font-size: 13pt;
 }
@@ -267,7 +267,7 @@ const STYLE_BLOCK = `<style>
   }
   .post-finance .finance-table-responsive td:before {
     content: attr(data-label);
-    color: #6b7280;
+    color: #2D2D2D;
     font-weight: 700;
     font-size: 12.5pt;
     min-width: 88px;

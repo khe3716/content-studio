@@ -414,11 +414,12 @@ async function main() {
     console.log('✅ [3/3] 팩트 이슈 없음, 원본 유지\n');
   }
 
-  // 4. 저장
+  // 4. 저장 (본문 가독성: 진한 검정 + 줄간격 강제)
   const dayId = `day-${String(topic.day).padStart(2, '0')}`;
   const htmlRelPath = `economy-blog/drafts/${dayId}-${topic.slug}.html`;
   const htmlAbsPath = path.join(__dirname, htmlRelPath);
-  fs.writeFileSync(htmlAbsPath, articleHtml, 'utf8');
+  const wrappedHtml = `<div style="color:#1A1A1A;font-size:16px;line-height:1.8;">\n${articleHtml}\n</div>`;
+  fs.writeFileSync(htmlAbsPath, wrappedHtml, 'utf8');
   console.log(`💾 저장: ${htmlRelPath}\n`);
 
   // 4. SEO 검색 설명 생성
