@@ -169,6 +169,22 @@ async function stepVideo({ slug }) {
   );
 }
 
+async function stepQaReview({ slug }) {
+  // exit 2 = QA 차단 (사실·정책 critical) → publish 스킵
+  // exit 0 = 통과
+  // exit 1 = 시스템 에러
+  return new Promise((resolve, reject) => {
+    const p = spawn('node', ['scripts/finance-team/qa-review.js', '--slug', slug], {
+      cwd: REPO_ROOT, shell: true, stdio: 'inherit',
+    });
+    p.on('close', code => {
+      if (code === 0) resolve({ blocked: false });
+      else if (code === 2) resolve({ blocked: true });
+      else reject(new Error(`qa-review exit ${code}`));
+    });
+  });
+}
+
 async function stepPublish({ slug, publish }) {
   const args = ['scripts/finance-team/publish-finance.js', '--slug', slug];
   if (publish) args.push('--publish', publish);
@@ -215,7 +231,17 @@ async function stepPublish({ slug, publish }) {
     steps.push('video');
   }
 
-  if (opts.skipPublish) {
+  // QA 검수 (publish 직전, 사실·정책 검증)
+  console.log('\n[QA] 🔍 검수 (사실·정책·톤·SEO)');
+  const qaResult = await stepQaReview({ slug });
+  steps.push('qa');
+
+  if (qaResult.blocked) {
+    console.log('\n🛑 QA가 발행 차단 — DRAFT만 저장됨 (사장님 검토 후 수동 발행 필요)');
+    await notifyTelegram(
+      `🚨 박재은 자동 발행 차단 (QA)\nslug: \`${slug}\`\n→ DRAFT 저장됨. 수동 검토 필요.`
+    );
+  } else if (opts.skipPublish) {
     console.log('\n[6/6] ⏭  발행 단계 스킵 (--skip-publish)');
   } else {
     console.log('\n[6/6] 📤 Blogspot 업로드');
