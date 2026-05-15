@@ -93,6 +93,8 @@ jobs:
           # 키워드 트렌드 (네이버 데이터랩)
           NAVER_DATALAB_CLIENT_ID: ${{ secrets.NAVER_DATALAB_CLIENT_ID }}
           NAVER_DATALAB_CLIENT_SECRET: ${{ secrets.NAVER_DATALAB_CLIENT_SECRET }}
+          # 금융감독원 실데이터 (적금·예금 등 환각 사고 방지)
+          FSS_FINLIFE_API_KEY: ${{ secrets.FSS_FINLIFE_API_KEY }}
           # Blogspot 발행
           FINANCE_BLOG_ID: ${{ secrets.FINANCE_BLOG_ID }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
