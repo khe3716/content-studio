@@ -102,7 +102,8 @@ function svgTone1({ season, mainTitle, bigStat, statSubtitle, signature }) {
     : (mainTitle.length <= 8 ? 168 : mainTitle.length <= 11 ? 124 : mainTitle.length <= 13 ? 100 : 86);
 
   const titleStartY = season ? 340 : 270;
-  const titleLineHeight = 95;
+  // 줄간격 = 폰트 × 1.15 (폰트가 커도 자동으로 적정 간격 유지)
+  const titleLineHeight = Math.round(titleFs * 1.15);
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
