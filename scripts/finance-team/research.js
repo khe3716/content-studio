@@ -168,34 +168,51 @@ function playbookFor(pattern) {
 
 // ========== 검증된 금리 데이터 (FSS Finlife API) ==========
 // 자동 수집된 rates JSON에서 카테고리에 맞는 데이터 추출 + 일반 개인 가입 가능 필터링
+// rates 없거나 7일 초과 시 fetch-rates.js 자동 호출 (사장님 화남 방지 — 환각 사고 차단)
 function loadVerifiedRates(category) {
-  // savings 카테고리: 적금
-  // 추후 deposit, loan 등도 매핑
+  // 카테고리 → FSS 상품 타입 매핑
   const typeMap = {
-    savings: 'savings',
-    // loan: 'creditLoan' 등
+    savings: 'savings',     // 적금
+    deposit: 'deposit',     // 정기예금
+    // loan, creditLoan 등은 fetch-rates.js에 활성화 후 추가
   };
   const type = typeMap[category];
   if (!type) return null;
 
-  if (!fs.existsSync(RATES_DIR)) return null;
-  const files = fs.readdirSync(RATES_DIR)
-    .filter(f => /^\d{4}-\d{2}-\d{2}-/.test(f) && f.endsWith(`${type}.json`))
-    .sort();
-  if (!files.length) return null;
-  const latest = files[files.length - 1];
-  const dataPath = path.join(RATES_DIR, latest);
+  if (!fs.existsSync(RATES_DIR)) fs.mkdirSync(RATES_DIR, { recursive: true });
 
-  // 갱신 권장: 7일 초과 시 경고 (자동 갱신 X — 사용자가 fetch-rates.js 재실행)
-  const m = latest.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  const fileDate = new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00Z`);
-  const ageDays = (Date.now() - fileDate.getTime()) / (1000 * 60 * 60 * 24);
-  if (ageDays > 7) {
-    console.warn(`   ⚠ 금리 데이터 ${ageDays.toFixed(0)}일 오래됨. fetch-rates.js 재실행 권장`);
+  const getLatest = () => {
+    const files = fs.readdirSync(RATES_DIR)
+      .filter(f => /^\d{4}-\d{2}-\d{2}-/.test(f) && f.endsWith(`${type}.json`))
+      .sort();
+    if (!files.length) return null;
+    const latest = files[files.length - 1];
+    const m = latest.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const fileDate = new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00Z`);
+    const ageDays = (Date.now() - fileDate.getTime()) / (1000 * 60 * 60 * 24);
+    return { file: latest, ageDays, path: path.join(RATES_DIR, latest) };
+  };
+
+  let latest = getLatest();
+  const needsFetch = !latest || latest.ageDays > 7;
+
+  if (needsFetch) {
+    const reason = !latest ? '금리 데이터 없음' : `${latest.ageDays.toFixed(0)}일 오래됨`;
+    console.log(`   ↳ FSS 금감원 API 호출 (${reason})`);
+    const result = spawnSync('node', [path.join('scripts', 'finance-team', 'fetch-rates.js'), type], {
+      cwd: REPO_ROOT,
+      stdio: 'inherit',
+    });
+    if (result.status !== 0) {
+      console.warn('   ⚠ FSS 호출 실패. 기존 데이터로 진행 (없으면 null)');
+    }
+    latest = getLatest();
   }
 
-  const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-  return { data, file: latest, ageDays };
+  if (!latest) return null;
+
+  const data = JSON.parse(fs.readFileSync(latest.path, 'utf8'));
+  return { data, file: latest.file, ageDays: latest.ageDays };
 }
 
 // 우대조건 텍스트에서 핵심 키워드만 추출 (모바일 표 가독성)
