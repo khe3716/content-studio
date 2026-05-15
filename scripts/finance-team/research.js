@@ -194,10 +194,13 @@ function loadVerifiedRates(category) {
   };
 
   let latest = getLatest();
-  const needsFetch = !latest || latest.ageDays > 7;
+  // 오늘 날짜 파일이 있으면 캐시, 없으면 fetch (= 하루 1번 자동 갱신)
+  const todayStr = todayKST();
+  const isToday = latest && latest.file.startsWith(`${todayStr}-`);
+  const needsFetch = !latest || !isToday;
 
   if (needsFetch) {
-    const reason = !latest ? '금리 데이터 없음' : `${latest.ageDays.toFixed(0)}일 오래됨`;
+    const reason = !latest ? '금리 데이터 없음' : `오늘(${todayStr}) 데이터 없음 (마지막: ${latest.file})`;
     console.log(`   ↳ FSS 금감원 API 호출 (${reason})`);
     const result = spawnSync('node', [path.join('scripts', 'finance-team', 'fetch-rates.js'), type], {
       cwd: REPO_ROOT,
