@@ -706,3 +706,23 @@ topics:
     trending_score: 524
     published_at: '2026-05-12T03:31:43.247Z'
     generated_at: '2026-05-12T03:31:43.247Z'
+  - day: 43
+    cluster: trending
+    title: ISA계좌 완벽 정리 — 직장인이 꼭 알아야 할 핵심
+    thumb_title: ISA계좌
+    subtitle:
+      - 오늘의 키워드
+      - 5분 정리
+    emoji: lightbulb
+    slug: trending-1778837734171
+    labels:
+      - ISA계좌
+      - 재테크
+      - 경제꿀팁
+      - 오늘의경제
+    status: published
+    trending_source:
+      - naver
+    trending_score: 565
+    published_at: '2026-05-15T09:36:18.502Z'
+    generated_at: '2026-05-15T09:36:18.502Z'
