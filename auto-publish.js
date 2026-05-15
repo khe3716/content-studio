@@ -111,9 +111,63 @@ function loadSamples(count = 3) {
 }
 
 // ========== 1단계: 김하나 초안 작성 ==========
+// 김하나가 적금/예금 글 쓸 때 FSS 금감원 실데이터 자동 로드
+// — 환각 차단 (예: 옛 "웰컴 14%" 정보가 아닌 오늘 공시 데이터)
+function loadFssRatesForTopic(topic) {
+  const text = `${topic.title || ''} ${topic.thumb_title || ''} ${topic.cluster || ''} ${(topic.labels || []).join(' ')}`;
+  let type = null;
+  if (/적금/.test(text)) type = 'savings';
+  else if (/예금|정기예금/.test(text)) type = 'deposit';
+  if (!type) return null;
+
+  const ratesDir = path.join(__dirname, 'finance-blog', 'rates');
+  if (!fs.existsSync(ratesDir)) fs.mkdirSync(ratesDir, { recursive: true });
+
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); // YYYY-MM-DD KST
+  const todayFile = path.join(ratesDir, `${todayStr}-${type}.json`);
+
+  if (!fs.existsSync(todayFile)) {
+    console.log(`   ↳ FSS 금감원 API 자동 호출 (${type})`);
+    const result = spawnSync('node', [path.join('scripts', 'finance-team', 'fetch-rates.js'), type], {
+      cwd: __dirname,
+      stdio: 'inherit',
+    });
+    if (result.status !== 0) {
+      console.warn('   ⚠ FSS 호출 실패. 데이터 없이 진행');
+      return null;
+    }
+  }
+  if (!fs.existsSync(todayFile)) return null;
+
+  const data = JSON.parse(fs.readFileSync(todayFile, 'utf8'));
+  // 일반 개인 가입 가능 상품만 (청년·소상공인 등 한정 제외)
+  const products = (data.products || []).filter(p =>
+    !/청년|만\s*\d+세|소상공인|개인사업자|사업자|아이|어린이|학생|장병|군|새출발/.test(
+      `${p.product || ''} ${p.joinMember || ''} ${p.special || ''} ${p.etcNote || ''}`
+    )
+  );
+  return {
+    type,
+    asOfPublishDate: data.asOfPublishDate,
+    asOfFetchDate: todayStr,
+    top10: products.slice(0, 10).map(p => ({
+      bank: p.bank,
+      product: p.product,
+      baseRate: p.base12m,
+      maxRate: p.max12m,
+      condition: (p.special || '').slice(0, 120).replace(/\s+/g, ' '),
+      maxLimit: p.maxLimit,
+    })),
+  };
+}
+
 async function writeArticle(topic, nextTopic) {
   const kimHana = loadPersona('kim-hana');
   const samples = loadSamples(3);
+  const fssData = loadFssRatesForTopic(topic);
+  if (fssData) {
+    console.log(`   ✓ FSS 실데이터 ${fssData.top10.length}개 상품 주입 (${fssData.asOfPublishDate} 공시)`);
+  }
 
   const systemPrompt = `${kimHana}
 
@@ -132,6 +186,21 @@ ${samples[2].content.slice(0, 4000)}`;
     ? `다음 글 예고 문구에는 반드시 "**${nextTopic.title}**" 이 주제를 언급할 것. 다른 주제 예고 금지!`
     : '다음 글 예고는 "앞으로도 꾸준히 올릴 예정입니다" 식으로 일반적으로.';
 
+  const fssContext = fssData ? `
+
+# 🏛️ 검증된 실데이터 (금융감독원 공시 ${fssData.asOfPublishDate} 기준 / ${fssData.asOfFetchDate} 수집)
+
+**⚠️ 이 데이터를 근거로만 글을 쓰세요. 학습 데이터의 옛 정보(예: "웰컴 14%")는 사용 금지.**
+**모든 금리·은행명·상품명은 아래 목록에서만 인용. 추측/창작 금지.**
+
+${fssData.type === 'savings' ? '## 적금 TOP 10 (12개월 자유적립식 기준)' : '## 정기예금 TOP 10 (12개월 기준)'}
+
+${fssData.top10.map((p, i) => `${i+1}. **${p.bank}** — ${p.product}
+   기본금리 ${p.baseRate}% / 최대금리 ${p.maxRate}% (우대조건 충족 시)
+   ${p.maxLimit ? `월 한도: ${p.maxLimit.toLocaleString()}원 / ` : ''}우대조건: ${p.condition || '없음'}`).join('\n\n')}
+
+표 작성 시 위 데이터 그대로 사용. "최대 14%" 같은 단정·환각 금지.` : '';
+
   const userPrompt = `오늘 쓸 글 정보:
 - Day: ${topic.day}
 - 주제: ${topic.title}
@@ -139,6 +208,7 @@ ${samples[2].content.slice(0, 4000)}`;
 - 썸네일 안 짧은 제목: ${topic.thumb_title}
 - 난이도: 초급
 - ${nextPreviewHint}
+${fssContext}
 
 # ⚠️ 중요: 출력 맨 앞 조심
 
