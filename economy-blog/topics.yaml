@@ -746,3 +746,23 @@ topics:
     trending_score: 548
     published_at: '2026-05-15T13:20:01.804Z'
     generated_at: '2026-05-15T13:20:01.805Z'
+  - day: 45
+    cluster: trending
+    title: 자동차보험 완벽 정리 — 직장인이 꼭 알아야 할 핵심
+    thumb_title: 자동차보험
+    subtitle:
+      - 오늘의 키워드
+      - 5분 정리
+    emoji: lightbulb
+    slug: trending-1778913656528
+    labels:
+      - 자동차보험
+      - 재테크
+      - 경제꿀팁
+      - 오늘의경제
+    status: published
+    trending_source:
+      - naver
+    trending_score: 527
+    published_at: '2026-05-16T06:41:30.618Z'
+    generated_at: '2026-05-16T06:41:30.618Z'
