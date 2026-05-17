@@ -786,3 +786,23 @@ topics:
     trending_score: 524
     published_at: '2026-05-16T11:32:55.980Z'
     generated_at: '2026-05-16T11:32:55.981Z'
+  - day: 47
+    cluster: trending
+    title: 청년도약계좌 완벽 정리 — 직장인이 꼭 알아야 할 핵심
+    thumb_title: 청년도약계좌
+    subtitle:
+      - 오늘의 키워드
+      - 5분 정리
+    emoji: lightbulb
+    slug: trending-1779003974068
+    labels:
+      - 청년도약계좌
+      - 재테크
+      - 경제꿀팁
+      - 오늘의경제
+    status: published
+    trending_source:
+      - naver
+    trending_score: 495
+    published_at: '2026-05-17T07:46:53.014Z'
+    generated_at: '2026-05-17T07:46:53.014Z'
