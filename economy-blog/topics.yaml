@@ -806,3 +806,23 @@ topics:
     trending_score: 495
     published_at: '2026-05-17T07:46:53.014Z'
     generated_at: '2026-05-17T07:46:53.014Z'
+  - day: 48
+    cluster: trending
+    title: 코스피 완벽 정리 — 직장인이 꼭 알아야 할 핵심
+    thumb_title: 코스피
+    subtitle:
+      - 오늘의 키워드
+      - 5분 정리
+    emoji: lightbulb
+    slug: trending-1779018173180
+    labels:
+      - 코스피
+      - 재테크
+      - 경제꿀팁
+      - 오늘의경제
+    status: published
+    trending_source:
+      - naver
+    trending_score: 397
+    published_at: '2026-05-17T11:43:30.833Z'
+    generated_at: '2026-05-17T11:43:30.833Z'
