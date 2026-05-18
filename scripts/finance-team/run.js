@@ -221,79 +221,137 @@ async function stepQaReview({ slug }) {
   });
 }
 
+async function stepFix({ slug }) {
+  await run('node', ['scripts/finance-team/fix-draft.js', '--slug', slug]);
+}
+
 async function stepPublish({ slug, publish }) {
   const args = ['scripts/finance-team/publish-finance.js', '--slug', slug];
   if (publish) args.push('--publish', publish);
   await run('node', args);
 }
 
-// ========== 메인 ==========
-(async () => {
-  const opts = parseArgs();
-  if (opts.trending && !opts.slug && !opts.day) {
-    opts.slug = await createTrendingTopic();
-  }
-  const slug = resolveSlug(opts);
-  const t0 = Date.now();
-
-  console.log('\n' + '═'.repeat(60));
-  console.log(`▶ 재테크 팀 풀 파이프라인 시작 — ${slug}`);
-  console.log('═'.repeat(60));
-  await notifyTelegram(`💼 재테크 자동화 시작\nslug: \`${slug}\``);
-
+// ========== 한 주제로 글 생성 + QA→Fix 루프 ==========
+// 반환: { passed, slug, steps, lastQa }
+// passed=true 면 publish까지 호출됐고 끝.
+// passed=false 면 4번 검수 후에도 실패 → 호출자가 주제 변경 결정.
+async function tryOneTopic({ slug, opts }) {
   const steps = [];
 
-  console.log('\n[1/6] 🔎 Researcher (Datalab + 플레이북)');
+  console.log('\n[1] 🔎 Researcher');
   await stepResearch({ day: opts.day, slug, forceTrend: opts.forceTrend });
   steps.push('research');
 
-  console.log('\n[2/6] ✍️  Copywriter (박재은 본문 + 영상 대본)');
+  console.log('\n[2] ✍️  Copywriter (박재은)');
   await stepWrite({ slug });
   steps.push('write');
 
-  console.log('\n[3/6] 🎨 Image Generator (Nano Banana)');
+  console.log('\n[3] 🎨 Image Generator');
   await stepImages({ slug });
   steps.push('images');
 
-  if (opts.skipVideo) {
-    console.log('\n[4-5/6] ⏭  영상 단계 스킵 (--skip-video)');
-  } else {
-    console.log('\n[4/6] 🎙️  TTS (Gemini Leda 1.3x)');
+  if (!opts.skipVideo) {
+    console.log('\n[4] 🎙️  TTS');
     await stepTTS({ slug });
     steps.push('tts');
 
-    console.log('\n[5/6] 🎬 Remotion 렌더 (롱폼 + 쇼츠)');
+    console.log('\n[5] 🎬 Remotion 렌더');
     await stepVideo({ slug });
     steps.push('video');
   }
 
-  // QA 검수 (publish 직전, 사실·정책 검증)
-  console.log('\n[QA] 🔍 검수 (사실·정책·톤·SEO)');
-  const qaResult = await stepQaReview({ slug });
-  steps.push('qa');
+  // QA→Fix 루프 (최대 4번 검수 = 첫 QA + 수정 3회)
+  let lastQa = null;
+  for (let attempt = 0; attempt <= 3; attempt += 1) {
+    const label = attempt === 0 ? '첫 검수' : `재검수 ${attempt}/3`;
+    console.log(`\n[QA] 🔍 ${label}`);
+    lastQa = await stepQaReview({ slug });
+    steps.push(`qa${attempt}`);
 
-  if (qaResult.blocked) {
-    console.log('\n🛑 QA가 발행 차단 — DRAFT만 저장됨 (사장님 검토 후 수동 발행 필요)');
-    await notifyTelegram(
-      `🚨 박재은 자동 발행 차단 (QA)\nslug: \`${slug}\`\n→ DRAFT 저장됨. 수동 검토 필요.`
-    );
-  } else if (opts.skipPublish) {
-    console.log('\n[6/6] ⏭  발행 단계 스킵 (--skip-publish)');
-  } else {
-    console.log('\n[6/6] 📤 Blogspot 업로드');
-    await stepPublish({ slug, publish: opts.publish });
-    steps.push('publish');
+    if (!lastQa.blocked) {
+      // 통과 → 발행
+      if (opts.skipPublish) {
+        console.log('\n[publish] ⏭  --skip-publish 지정 → 발행 생략');
+      } else {
+        console.log('\n[publish] 📤 Blogspot 업로드');
+        await stepPublish({ slug, publish: opts.publish });
+        steps.push('publish');
+      }
+      return { passed: true, slug, steps, lastQa };
+    }
+
+    if (attempt < 3) {
+      console.log(`\n[fix] 🔧 QA 피드백 반영 수정 (${attempt + 1}/3)`);
+      try {
+        await stepFix({ slug });
+        steps.push(`fix${attempt + 1}`);
+      } catch (e) {
+        console.warn(`   ⚠ Fix 실패: ${e.message.split('\n')[0]} — 다음 단계로`);
+        // fix 자체가 실패해도 루프는 계속 (다음 QA는 동일 본문 검수 → 또 실패 → 어차피 종료)
+        break;
+      }
+    }
+  }
+
+  console.log('\n⚠ 4회 검수 모두 실패');
+  return { passed: false, slug, steps, lastQa };
+}
+
+// ========== 메인 ==========
+(async () => {
+  const opts = parseArgs();
+  const t0 = Date.now();
+  const isTrending = !!(opts.trending && !opts.slug && !opts.day);
+
+  // 첫 주제
+  let slug = isTrending ? await createTrendingTopic() : resolveSlug(opts);
+  console.log('\n' + '═'.repeat(60));
+  console.log(`▶ 재테크 팀 풀 파이프라인 — ${slug}`);
+  console.log('═'.repeat(60));
+  await notifyTelegram(`💼 재테크 자동화 시작\nslug: \`${slug}\``);
+
+  let result = await tryOneTopic({ slug, opts });
+  const allSteps = [...result.steps];
+
+  // 첫 주제 6번(write 3 + QA 4) 다 막혔으면 → trending 모드일 때만 새 주제로 1회 더 시도
+  if (!result.passed && isTrending) {
+    console.log('\n' + '─'.repeat(60));
+    console.log('🔄 첫 주제 6회 실패 — 다른 주제로 1회 재시도');
+    console.log('─'.repeat(60));
+    try {
+      slug = await createTrendingTopic();
+      await notifyTelegram(`🔄 박재은 주제 교체\n새 slug: \`${slug}\` (이전 주제 검수 통과 못함)`);
+      result = await tryOneTopic({ slug, opts });
+      allSteps.push('---', ...result.steps);
+    } catch (e) {
+      console.warn(`주제 교체 실패: ${e.message}`);
+    }
   }
 
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
   console.log('\n' + '═'.repeat(60));
-  console.log(`✓ 풀 파이프라인 완료 (${elapsed}s)`);
-  console.log(`  단계: ${steps.join(' → ')}`);
-  console.log('═'.repeat(60));
 
-  await notifyTelegram(
-    `✅ 재테크 자동화 완료 (${elapsed}s)\nslug: \`${slug}\`\n단계: ${steps.join(' → ')}`
-  );
+  if (result.passed) {
+    console.log(`✓ 풀 파이프라인 완료 (${elapsed}s)`);
+    console.log(`  단계: ${allSteps.join(' → ')}`);
+    console.log('═'.repeat(60));
+    await notifyTelegram(
+      `✅ 재테크 자동화 완료 (${elapsed}s)\nslug: \`${result.slug}\`\n단계: ${allSteps.join(' → ')}`
+    );
+  } else {
+    // 모든 시도 실패 → DRAFT만 + 알림 (옵션 B)
+    console.log(`🛑 모든 시도 실패 — DRAFT만 저장 (${elapsed}s)`);
+    console.log(`  단계: ${allSteps.join(' → ')}`);
+    console.log('═'.repeat(60));
+    const criticals = (result.lastQa?.criticalCount ?? '?');
+    await notifyTelegram(
+      `🚨 *박재은 자동 발행 차단*\n` +
+      `최종 slug: \`${result.slug}\`\n` +
+      `검수·수정 6회 모두 실패. DRAFT만 저장됨.\n` +
+      `→ 사장님이 직접 검토 후 수동 발행 필요.`
+    );
+    // 워크플로는 success로 끝남 (점검이 의도대로 막은 것 = 에러 아님)
+  }
 })().catch(async e => {
   console.error('\n❌ 파이프라인 실패:', e.message);
   await notifyTelegram(`❌ 재테크 자동화 실패\n${e.message.slice(0, 300)}`);

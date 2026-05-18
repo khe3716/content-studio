@@ -173,17 +173,14 @@ ${html.slice(0, 12000)}`;
 
   console.log(`\n💾 ${reportPath}`);
 
-  // 정책 키워드 + critical → 발행 자동 차단
+  // 정책 키워드 + critical → 발행 자동 차단 (텔레그램 알림은 run.js가 최종 결과로만 보냄)
   const hasCriticalPolicy = policyHits.length > 0 && (result.critical_failures?.length || 0) > 0;
   if (hasCriticalPolicy || !result.passed) {
     const reason = hasCriticalPolicy
-      ? `정책 글 critical 이슈 (${policyHits.join(', ')}) — 자동 발행 차단`
-      : `QA 미통과 — 자동 발행 차단`;
-    console.log(`\n🛑 ${reason}`);
-    await notifyTelegram(
-      `🚨 *박재은 QA 차단*\nslug: \`${slug}\`\n제목: ${meta.title}\n사유: ${reason}\ncritical: ${result.critical_failures?.length || 0}건\n\n글은 DRAFT로만 저장되고 발행은 차단됩니다.`
-    );
-    process.exit(2); // exit 2 → run.js에서 publish 단계 스킵
+      ? `정책 글 critical 이슈 (${policyHits.join(', ')}) — 발행 보류`
+      : `QA 미통과 — 발행 보류`;
+    console.log(`\n🛑 ${reason} (run.js의 fix-draft 루프가 이어서 수정 시도)`);
+    process.exit(2); // exit 2 → run.js에서 fix-draft 호출
   }
 
   console.log('\n✅ QA 통과 → 다음 단계 진행');
