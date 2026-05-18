@@ -826,3 +826,23 @@ topics:
     trending_score: 397
     published_at: '2026-05-17T11:43:30.833Z'
     generated_at: '2026-05-17T11:43:30.833Z'
+  - day: 49
+    cluster: trending
+    title: 환율 완벽 정리 — 직장인이 꼭 알아야 할 핵심
+    thumb_title: 환율
+    subtitle:
+      - 오늘의 키워드
+      - 5분 정리
+    emoji: lightbulb
+    slug: trending-1779105670834
+    labels:
+      - 환율
+      - 재테크
+      - 경제꿀팁
+      - 오늘의경제
+    status: published
+    trending_source:
+      - naver
+    trending_score: 318
+    published_at: '2026-05-18T12:01:52.896Z'
+    generated_at: '2026-05-18T12:01:52.896Z'
