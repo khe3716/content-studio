@@ -59,18 +59,54 @@ function parseArgs() {
   return out;
 }
 
+// ========== Blogger OAuth (회피 풀 fetch용) ==========
+async function getBloggerAccessToken() {
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+      grant_type: 'refresh_token',
+    }),
+  });
+  const data = await tokenRes.json();
+  if (!data.access_token) throw new Error('Blogger 토큰 발급 실패: ' + JSON.stringify(data));
+  return data.access_token;
+}
+
 // 트렌드 키워드를 박재은 토픽으로 변환 + topics.yaml에 추가
-function createTrendingTopic() {
+async function createTrendingTopic() {
   const { spawnSync } = require('child_process');
   console.log('🔍 트렌드 조사 중 (네이버 + 구글)...');
   const r = spawnSync('node', ['scripts/trend-research.js', '--count', '20'], { cwd: REPO_ROOT, encoding: 'utf8' });
   if (r.status !== 0) throw new Error(`트렌드 조사 실패: ${r.stderr}`);
   const trendData = JSON.parse(r.stdout);
 
-  // 최근 발행 토픽 키워드 회피
+  // 중복 회피 강화: yaml + Blogger API 둘 다
+  //  - yaml: 로컬 토픽 (최근 20개) — commit 실패 시 빈 풀
+  //  - Blogger API: 실제 발행된 글 (박재은+김하나 최근 30개씩 cross-blog)
   const config = yaml.load(fs.readFileSync(TOPICS_PATH, 'utf8'));
-  const recentTitles = (config.topics || []).slice(-10).map(t => t.title || '').join(' ');
-  const pick = trendData.keywords.find(k => !recentTitles.includes(k.keyword)) || trendData.keywords[0];
+  const yamlTitles = (config.topics || []).slice(-20).map(t => t.title || '').join(' ');
+  let bloggerTitles = '';
+  try {
+    const accessToken = await getBloggerAccessToken();
+    const blogIds = [process.env.FINANCE_BLOG_ID, process.env.BLOG_ID].filter(Boolean);
+    for (const bid of blogIds) {
+      const url = `https://www.googleapis.com/blogger/v3/blogs/${bid}/posts?maxResults=30&fetchBodies=false`;
+      const bRes = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+      if (bRes.ok) {
+        const bData = await bRes.json();
+        bloggerTitles += ' ' + (bData.items || []).map(p => p.title).join(' ');
+      }
+    }
+    console.log(`   ↳ Blogger 회피 풀: 박재은·김하나 최근 글 ${bloggerTitles.length}자`);
+  } catch (e) {
+    console.warn(`   ⚠ Blogger 회피 실패 (yaml만 사용): ${e.message}`);
+  }
+  const allRecentTitles = yamlTitles + ' ' + bloggerTitles;
+  const pick = trendData.keywords.find(k => !allRecentTitles.includes(k.keyword)) || trendData.keywords[0];
   if (!pick) throw new Error('트렌드 키워드 추출 실패');
   console.log(`   ✓ 선정 키워드: ${pick.keyword} (점수 ${pick.total_score})`);
 
@@ -195,7 +231,7 @@ async function stepPublish({ slug, publish }) {
 (async () => {
   const opts = parseArgs();
   if (opts.trending && !opts.slug && !opts.day) {
-    opts.slug = createTrendingTopic();
+    opts.slug = await createTrendingTopic();
   }
   const slug = resolveSlug(opts);
   const t0 = Date.now();
