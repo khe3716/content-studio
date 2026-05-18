@@ -24,10 +24,10 @@ on:
         type: boolean
         default: false
 
-  # 자동 스케줄: 매일 KST 07:00 시작 → 약 45~60분 작업 + 큐 지연 = KST 08:00 ± 30분 도착
-  # UTC 22:00 = KST 07:00
-  schedule:
-    - cron: '0 22 * * *'
+  # 자동 스케줄: 2026-05-18 사용자 요청으로 일시 중단됨 (가져오는 내용이 알차지 않음)
+  # 재개하려면 아래 schedule 블록 주석만 풀면 됨. 파일·페르소나·기존 리포트는 모두 보존.
+  # schedule:
+  #   - cron: '0 22 * * *'
 
 permissions:
   contents: write
