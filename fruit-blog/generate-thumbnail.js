@@ -10,8 +10,10 @@ function generateBaseSvg({ title, subtitle, brand = '과일정보연구소' }) {
   const size = 800;
   const c = size / 2;
 
-  // 타이틀 길이 기반 폰트 크기 (작은 썸네일에서도 잘 보이게 확대)
-  const titleFontSize = title.length <= 5 ? 170 : title.length <= 8 ? 130 : title.length <= 11 ? 100 : 80;
+  // 타이틀 길이 기반 폰트 크기 — 캔버스 안쪽 폭(680px) 안 넘게 동적 계산
+  // 한글 1자 폭 ≈ 폰트 사이즈 * 1.0, 공백·영문은 그보다 작음
+  const MAX_WIDTH = 680;
+  const titleFontSize = Math.min(170, Math.floor(MAX_WIDTH / Math.max(title.length, 3)));
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">

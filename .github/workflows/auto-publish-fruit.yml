@@ -112,6 +112,10 @@ jobs:
           ARGS=""
           if [ -n "${{ inputs.day }}" ]; then
             ARGS="$ARGS --day ${{ inputs.day }}"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            # cron 자동 실행 시 ready 토픽 없으면 시즌 사전 + 회피 풀로 자동 토픽 생성
+            ARGS="$ARGS --trending"
+            echo "🤖 트렌드 자동 모드 (시즌 사전 + Blogger 회피 풀)"
           fi
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             ARGS="$ARGS --dry-run"

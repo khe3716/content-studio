@@ -472,10 +472,148 @@ function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// ========== 트렌드 자동 모드: 시즌 사전 + 회피 풀 ==========
+// 월별 한국 제철 과일 사전 (시중 유통 기준)
+const SEASONAL_FRUITS = {
+  1: ['딸기', '귤', '한라봉', '레드향', '천혜향', '키위', '사과'],
+  2: ['딸기', '한라봉', '레드향', '천혜향', '키위', '사과', '오렌지'],
+  3: ['딸기', '한라봉', '오렌지', '바나나', '망고', '파인애플', '청견'],
+  4: ['딸기', '한라봉', '오렌지', '바나나', '망고', '파인애플'],
+  5: ['수박', '참외', '체리', '매실', '앵두', '딸기', '오디'],
+  6: ['수박', '참외', '복숭아', '자두', '체리', '매실', '블루베리', '오디'],
+  7: ['수박', '복숭아', '자두', '천도복숭아', '망고', '블루베리', '체리'],
+  8: ['수박', '복숭아', '포도', '샤인머스캣', '청포도', '자두', '사과'],
+  9: ['포도', '샤인머스캣', '사과', '배', '대추', '무화과', '석류'],
+  10: ['사과', '배', '감', '단감', '대추', '석류', '귤'],
+  11: ['귤', '한라봉', '사과', '단감', '곶감', '석류', '키위', '대봉시'],
+  12: ['귤', '한라봉', '딸기', '레드향', '천혜향', '사과'],
+};
+
+// 박과일 토픽 패턴 (양질 가이드 형식)
+const TOPIC_PATTERNS = [
+  { suffix: '고르는 법', cluster: 'selection', sub1: '핵심 체크', sub2: '실패 없이' },
+  { suffix: '보관법', cluster: 'storage', sub1: '오래 신선하게', sub2: '핵심 5가지' },
+  { suffix: '효능과 영양', cluster: 'health', sub1: '건강 효능', sub2: '권장량' },
+  { suffix: '맛있게 먹는 법', cluster: 'eating', sub1: '꿀팁 모음', sub2: '실전 가이드' },
+  { suffix: '제철 시기와 산지', cluster: 'season', sub1: '언제가 맛있나', sub2: '산지 정리' },
+];
+
+const FRUIT_EMOJI = {
+  '수박': 'watermelon', '참외': 'cantaloupe', '메론': 'cantaloupe', '멜론': 'cantaloupe',
+  '복숭아': 'peach', '천도복숭아': 'peach', '자두': 'plum', '살구': 'plum',
+  '체리': 'cherry', '매실': 'plum', '앵두': 'cherry', '오디': 'blueberry',
+  '망고': 'mango', '파인애플': 'pineapple', '키위': 'kiwi',
+  '딸기': 'strawberry', '블루베리': 'blueberry',
+  '사과': 'apple', '배': 'pear', '감': 'persimmon', '단감': 'persimmon',
+  '곶감': 'persimmon', '대봉시': 'persimmon',
+  '귤': 'tangerine', '한라봉': 'tangerine', '레드향': 'tangerine',
+  '천혜향': 'tangerine', '청견': 'tangerine', '오렌지': 'orange',
+  '포도': 'grape', '샤인머스캣': 'grape', '청포도': 'grape',
+  '석류': 'pomegranate', '무화과': 'fig', '대추': 'jujube',
+  '바나나': 'banana',
+};
+
+async function getFruitBloggerToken() {
+  const r = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+      grant_type: 'refresh_token',
+    }),
+  });
+  const data = await r.json();
+  if (!data.access_token) throw new Error('OAuth 실패: ' + JSON.stringify(data).slice(0, 200));
+  return data.access_token;
+}
+
+async function createTrendingFruitTopic(topicsData) {
+  console.log('🔍 트렌드 자동 모드 — 시즌 사전 + Blogger 회피 풀');
+  const monthKST = parseInt(new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(5, 7), 10);
+  const seasonal = SEASONAL_FRUITS[monthKST] || SEASONAL_FRUITS[5];
+
+  // 회피 풀: yaml 최근 50개 + Blogger API 박과일 최근 30개
+  const yamlTitles = (topicsData.topics || []).slice(-50).map(t => t.title || '').join(' ');
+  let bloggerTitles = '';
+  try {
+    const accessToken = await getFruitBloggerToken();
+    const bid = process.env.FRUIT_BLOG_ID;
+    if (bid) {
+      const r = await fetch(`https://www.googleapis.com/blogger/v3/blogs/${bid}/posts?maxResults=30&fetchBodies=false`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (r.ok) {
+        const j = await r.json();
+        bloggerTitles = (j.items || []).map(p => p.title).join(' ');
+      }
+    }
+    console.log(`   ↳ Blogger 회피 풀: 박과일 최근 글 ${bloggerTitles.length}자`);
+  } catch (e) {
+    console.warn(`   ⚠ Blogger 회피 fetch 실패 (yaml만 사용): ${e.message}`);
+  }
+  const recentTitles = yamlTitles + ' ' + bloggerTitles;
+
+  // 과일 × 패턴 조합 셔플 → 첫 번째 회피 안 된 조합 선정
+  const shuffledFruits = [...seasonal].sort(() => Math.random() - 0.5);
+  const shuffledPatterns = [...TOPIC_PATTERNS].sort(() => Math.random() - 0.5);
+
+  let pickedFruit = null;
+  let pickedPattern = null;
+  outer: for (const fruit of shuffledFruits) {
+    for (const pattern of shuffledPatterns) {
+      const candidateTitle = `${fruit} ${pattern.suffix}`;
+      if (!recentTitles.includes(candidateTitle)) {
+        pickedFruit = fruit;
+        pickedPattern = pattern;
+        break outer;
+      }
+    }
+  }
+
+  // 전 조합 회피 매칭이면 fallback (첫 셔플 결과)
+  if (!pickedFruit) {
+    pickedFruit = shuffledFruits[0];
+    pickedPattern = shuffledPatterns[0];
+    console.log(`   ⚠ 모든 조합 회피풀 매칭 — fallback 사용`);
+  }
+
+  console.log(`   ✓ 선정: ${pickedFruit} ${pickedPattern.suffix} (${monthKST}월 시즌)`);
+
+  const nextDay = ((topicsData.topics || []).slice(-1)[0]?.day || 0) + 1;
+  const fruitSlug = pickedFruit.replace(/\s+/g, '-');
+  const slug = `${pickedPattern.cluster}-${fruitSlug}-${Date.now()}`;
+  const topic = {
+    day: nextDay,
+    cluster: pickedPattern.cluster,
+    title: `${pickedFruit} ${pickedPattern.suffix}`,
+    thumb_title: `${pickedFruit} ${pickedPattern.suffix}`,
+    subtitle: [pickedPattern.sub1, pickedPattern.sub2],
+    emoji: FRUIT_EMOJI[pickedFruit] || 'banana',
+    slug,
+    labels: [pickedFruit, pickedPattern.suffix, '제철과일', '과일정보', '과일추천'],
+    status: 'ready',
+    generated_at: new Date().toISOString(),
+    trending_source: 'seasonal-fallback',
+  };
+  topicsData.topics = topicsData.topics || [];
+  topicsData.topics.push(topic);
+  saveTopicsFruit(topicsData);
+  console.log(`   ✓ yaml에 Day ${nextDay} 추가\n`);
+  return topic;
+}
+
+function saveTopicsFruit(data) {
+  const p = path.join(__dirname, 'fruit-blog', 'topics.yaml');
+  fs.writeFileSync(p, yaml.dump(data, { lineWidth: 120, noRefs: true }), 'utf8');
+}
+
 // ========== 메인 ==========
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
+  const trending = args.includes('--trending');
   const dayArg = args.indexOf('--day') >= 0 ? parseInt(args[args.indexOf('--day') + 1]) : null;
   const publishDate = resolvePublishDate(args);
 
@@ -487,9 +625,23 @@ async function main() {
   } else {
     topic = topicsData.topics.find(t => t.status === 'ready');
     if (!topic) {
-      console.log('✋ 다음 쓸 주제 없음 (ready 없음).');
-      await notifyTelegram('ℹ️ <b>과일블로그 발행 스킵</b>\n다음 쓸 주제 없음 (ready 상태인 topic 없음).');
-      return;
+      // 안전장치: 미래 scheduled 글이 있으면 자동 트렌딩 보류
+      // (5/22~5/24 같이 이미 Blogger에 예약된 글이 있을 때 중복 발행 방지)
+      const now = Date.now();
+      const hasFutureScheduled = (topicsData.topics || []).some(t =>
+        t.status === 'scheduled' && t.scheduled_for && new Date(t.scheduled_for).getTime() > now
+      );
+      if (hasFutureScheduled) {
+        console.log('✋ ready 없음 + 미래 scheduled 글 있음 → 자동 트렌딩 보류 (중복 발행 방지)');
+        return;
+      }
+      if (trending) {
+        topic = await createTrendingFruitTopic(topicsData);
+      } else {
+        console.log('✋ 다음 쓸 주제 없음 (ready 없음, --trending 미지정).');
+        await notifyTelegram('ℹ️ <b>과일블로그 발행 스킵</b>\n다음 쓸 주제 없음 (ready 없음, --trending 미지정).');
+        return;
+      }
     }
   }
 

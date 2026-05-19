@@ -48,6 +48,34 @@ const DEFAULT_LOCATION = {
   lng: 126.9780,
 };
 
+// 본문 가독성 + 파란 포인트 디자인: 태그별 인라인 style 강제 (Blogger 테마 회색 덮어쓰기)
+// ⚠️ 박스(빨강 톤)만 본문 별도로 박혀있어 보존. 나머지는 모두 파랑 톤.
+function forceReadableStyle(html) {
+  const C_BODY = '#1A1A1A';
+  const C_BOLD = '#0F0F0F';
+  const C_ACC = '#1976D2';        // 파랑 메인
+  const C_ACC_DARK = '#0D47A1';   // 네이비
+  const C_ACC_BG = '#E3F2FD';     // 연파랑 배경
+  const C_ACC_BORDER = '#90CAF9'; // 파란 보더
+  const C_HIGHLIGHT = '#BBDEFB';  // 형광펜
+  return html
+    .replace(/<p(?=[\s>])(?![^>]*style=)/g, `<p style="color:${C_BODY};font-size:17px;line-height:1.9;margin:14px 0"`)
+    .replace(/<li(?=[\s>])(?![^>]*style=)/g, `<li style="color:${C_BODY};font-size:17px;line-height:1.9;margin:8px 0"`)
+    .replace(/<h1(?=[\s>])(?![^>]*style=)/g, `<h1 style="color:${C_BOLD};font-size:28px;font-weight:800;margin:36px 0 18px 0"`)
+    // ⚠️ 또는 위험·경고 키워드 들어간 H2는 빨강 톤 — 자연스러운 위험 신호
+    .replace(/<h2(?=[\s>])(?![^>]*style=)([^>]*)>([^<]*(?:⚠️|주의|피하세요|피해야|조심|위험|금지)[^<]*)<\/h2>/g, `<h2 style="color:#0F0F0F;font-size:24px;font-weight:800;margin:40px 0 18px 0;line-height:1.4;border-left:6px solid #E53935;padding:6px 0 6px 16px"$1>$2</h2>`)
+    // 나머지 H2는 파랑 톤
+    .replace(/<h2(?=[\s>])(?![^>]*style=)/g, `<h2 style="color:${C_BOLD};font-size:24px;font-weight:800;margin:40px 0 18px 0;line-height:1.4;border-left:6px solid ${C_ACC};padding:6px 0 6px 16px"`)
+    .replace(/<h3(?=[\s>])(?![^>]*style=)/g, `<h3 style="color:${C_ACC_DARK};font-size:20px;font-weight:700;margin:28px 0 12px 0;line-height:1.5;border-left:4px solid ${C_ACC};padding-left:14px"`)
+    .replace(/<h4(?=[\s>])(?![^>]*style=)/g, `<h4 style="color:${C_BOLD};font-size:17px;font-weight:700;margin:20px 0 10px 0"`)
+    .replace(/<td(?=[\s>])(?![^>]*style=)/g, `<td style="color:${C_BODY};font-size:15px;line-height:1.6;padding:10px;border:1px solid ${C_HIGHLIGHT}"`)
+    .replace(/<th(?=[\s>])(?![^>]*style=)/g, `<th style="color:${C_ACC_DARK};font-size:15px;font-weight:700;padding:12px 10px;background:${C_ACC_BG};border:1px solid ${C_ACC_BORDER}"`)
+    .replace(/<strong(?=[\s>])(?![^>]*style=)/g, `<strong style="color:${C_ACC_DARK};font-weight:700"`)
+    .replace(/<b(?=[\s>])(?![^>]*style=)/g, `<b style="color:${C_ACC_DARK};font-weight:700"`)
+    .replace(/<span(?=[\s>])(?![^>]*style=)/g, `<span style="color:${C_BODY}"`)
+    .replace(/<img(?=[\s>])(?![^>]*border-radius)/g, `<img style="border-radius:12px;box-shadow:0 4px 12px rgba(25,118,210,0.12);margin:20px 0"`);
+}
+
 async function getAccessToken() {
   const r = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -166,9 +194,11 @@ async function publishPost(token, postId, publishDate) {
       /<div style="text-align:center;margin:0 0 (?:24|32)px 0;"><img src="[^"]+" alt="[^"]*"[^>]*\/><\/div>\s*/g,
       ''
     );
-    const finalHtml = coverTag + cleanedHtml;
+    // 가독성: 태그별 인라인 style 강제 (Blogger 테마 회색 덮어쓰기)
+    const styledHtml = forceReadableStyle(cleanedHtml);
+    const finalHtml = coverTag + styledHtml;
     fs.writeFileSync(htmlFullPath, finalHtml);
-    console.log(`  ✓ HTML 업데이트됨`);
+    console.log(`  ✓ HTML 업데이트됨 (인라인 가독성 style 주입 완료)`);
 
     // 3. Blogger 업로드
     console.log(`\n[3/3] ☁️  Blogger 임시저장 업로드 중...`);

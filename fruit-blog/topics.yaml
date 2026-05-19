@@ -520,19 +520,20 @@ topics:
     scheduled_for: '2026-05-23T18:00:00+09:00'
     generated_at: '2026-05-06T12:04:44.073Z'
   - day: 30
-    cluster: wrap-up
-    title: 30일 과일 가이드 총정리 + 다음 시리즈 예고
-    thumb_title: 30일 완결
+    cluster: selection
+    title: 수박 고르는 7가지 체크포인트 — 꼭지·줄무늬·꼭다리로 단맛 가늠하기
+    thumb_title: 수박 고르는 법
     subtitle:
-      - 총정리 +
-      - 다음 예고
-    emoji: mango
-    slug: 30-day-fruit-guide-recap
+      - 7가지 체크
+      - 단맛 가늠
+    emoji: watermelon
+    slug: how-to-pick-sweet-watermelon
     labels:
-      - 과일가이드
-      - 30일완결
-      - 총정리
-      - 시리즈
+      - 수박고르는법
+      - 제철수박
+      - 수박꼭지
+      - 단맛수박
+      - 과일고르는법
     status: scheduled
     scheduled_for: '2026-05-24T18:00:00+09:00'
-    generated_at: '2026-05-06T12:06:38.383Z'
+    generated_at: '2026-05-18T14:50:00.000Z'
