@@ -886,3 +886,23 @@ topics:
     trending_score: 271
     published_at: '2026-05-19T10:54:27.631Z'
     generated_at: '2026-05-19T10:54:27.631Z'
+  - day: 52
+    cluster: trending
+    title: 신용카드추천 완벽 정리 — 직장인이 꼭 알아야 할 핵심
+    thumb_title: 신용카드추천
+    subtitle:
+      - 오늘의 키워드
+      - 5분 정리
+    emoji: lightbulb
+    slug: trending-1779234151961
+    labels:
+      - 신용카드추천
+      - 재테크
+      - 경제꿀팁
+      - 오늘의경제
+    status: published
+    trending_source:
+      - naver
+    trending_score: 242
+    published_at: '2026-05-19T23:43:04.361Z'
+    generated_at: '2026-05-19T23:43:04.362Z'
