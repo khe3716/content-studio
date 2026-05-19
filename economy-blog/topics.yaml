@@ -866,3 +866,23 @@ topics:
     trending_score: 349
     published_at: '2026-05-19T10:50:05.885Z'
     generated_at: '2026-05-19T10:50:05.886Z'
+  - day: 51
+    cluster: trending
+    title: 기준금리 완벽 정리 — 직장인이 꼭 알아야 할 핵심
+    thumb_title: 기준금리
+    subtitle:
+      - 오늘의 키워드
+      - 5분 정리
+    emoji: lightbulb
+    slug: trending-1779188007638
+    labels:
+      - 기준금리
+      - 재테크
+      - 경제꿀팁
+      - 오늘의경제
+    status: published
+    trending_source:
+      - naver
+    trending_score: 271
+    published_at: '2026-05-19T10:54:27.631Z'
+    generated_at: '2026-05-19T10:54:27.631Z'
