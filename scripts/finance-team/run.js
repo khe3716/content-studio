@@ -106,7 +106,15 @@ async function createTrendingTopic() {
     console.warn(`   ⚠ Blogger 회피 실패 (yaml만 사용): ${e.message}`);
   }
   const allRecentTitles = yamlTitles + ' ' + bloggerTitles;
-  const pick = trendData.keywords.find(k => !allRecentTitles.includes(k.keyword)) || trendData.keywords[0];
+
+  // 박재은 페르소나 위반 키워드 차단 (자본시장법: 종목 추천 금지 / 환테크 가격 전망 금지)
+  // 5/18 사고: "비트코인", "코스피"가 잡혀 QA에서 막힘 → 재발 방지
+  const BANNED = /비트코인|코스피|코스닥|삼성전자|SK하이닉스|네이버\b|카카오\b|주식|종목|상장|환율|환테크|달러|코인|이더리움|리플|도지|솔라나|선물|옵션|레버리지|공매도|채권|부동산|재개발|아파트값|집값/;
+  const safeKeywords = trendData.keywords.filter(k => !BANNED.test(k.keyword));
+  console.log(`   ↳ 안전 키워드: ${safeKeywords.length}/${trendData.keywords.length}개 (자본시장 종목·환율·부동산 가격 제외)`);
+
+  const candidates = safeKeywords.length > 0 ? safeKeywords : trendData.keywords;
+  const pick = candidates.find(k => !allRecentTitles.includes(k.keyword)) || candidates[0];
   if (!pick) throw new Error('트렌드 키워드 추출 실패');
   console.log(`   ✓ 선정 키워드: ${pick.keyword} (점수 ${pick.total_score})`);
 

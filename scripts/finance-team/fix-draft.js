@@ -51,16 +51,35 @@ function parseArgs() {
 function extractDraftJSON(raw) {
   let cleaned = raw.trim();
   cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
-  try {
-    return JSON.parse(cleaned);
-  } catch (e) {
-    const start = cleaned.indexOf('{');
-    const end = cleaned.lastIndexOf('}');
-    if (start >= 0 && end > start) {
-      return JSON.parse(cleaned.slice(start, end + 1));
-    }
-    throw e;
+  // JSON 안에서 깨지는 control character 제거 (Bad control character in JSON 방지)
+  // \x09(tab), \x0A(\n), \x0D(\r)은 문자열 내부에서 escape 안 된 채 나타나면 에러
+  // → 본문 HTML이 한 줄로 들어가야 하는데 Gemini가 줄바꿈 박는 경우 처리
+  cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+
+  const tryParse = (s) => {
+    try { return JSON.parse(s); } catch (e) { return null; }
+  };
+
+  let parsed = tryParse(cleaned);
+  if (parsed) return parsed;
+
+  // 1차 시도 실패 → JSON 문자열 안의 unescaped \n / \r / \t 자동 escape 시도
+  const escaped = cleaned.replace(/("(?:[^"\\]|\\.)*?")|[\n\r\t]/g, (m, str) => {
+    if (str) return str;  // 이미 quoted string 안이면 보존 (JSON 구조 부분)
+    return ' ';            // 구조 외 공백문자는 단순 공백으로
+  });
+  parsed = tryParse(escaped);
+  if (parsed) return parsed;
+
+  // 2차 시도: 첫 { 부터 마지막 } 까지 슬라이스
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start >= 0 && end > start) {
+    parsed = tryParse(cleaned.slice(start, end + 1));
+    if (parsed) return parsed;
   }
+
+  throw new Error('Gemini 응답 JSON 파싱 실패 (control character + slice 모두 실패). 앞 300자: ' + cleaned.slice(0, 300));
 }
 
 function validateDraft(draft) {
