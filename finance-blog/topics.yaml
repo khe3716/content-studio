@@ -285,3 +285,20 @@ topics:
     trending_source:
       - manual
     trending_score: 999
+  - day: 34
+    slug: isa-deep-dive-tax-optimization
+    category: savings
+    title: 월급쟁이 ISA 계좌 똑똑하게 굴리는 법 — 절세 극대화 5가지 노하우 💼
+    keywords:
+      - ISA계좌
+      - ISA운용
+      - 절세
+      - 재테크
+      - 월급쟁이
+    season: 5월
+    pattern: guide
+    trending_source:
+      - preview-from-prev-post
+    trending_score: 900
+    status: scheduled
+    scheduled_for: '2026-05-19T20:00:00+09:00'

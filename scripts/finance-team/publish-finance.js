@@ -673,18 +673,23 @@ async function injectImages(html, slug) {
   // 가독성: 태그별 인라인 style 강제 (Blogger 테마 회색 덮어쓰기)
   const C_BODY = '#1A1A1A';
   const C_BOLD = '#0F0F0F';
-  const enriched = enrichedRaw
-    .replace(/<p(?![^>]*style=)/g, `<p style="color:${C_BODY};font-size:16px;line-height:1.8"`)
-    .replace(/<li(?![^>]*style=)/g, `<li style="color:${C_BODY};font-size:16px;line-height:1.8"`)
-    .replace(/<h1(?![^>]*style=)/g, `<h1 style="color:${C_BOLD}"`)
-    .replace(/<h2(?![^>]*style=)/g, `<h2 style="color:${C_BOLD}"`)
-    .replace(/<h3(?![^>]*style=)/g, `<h3 style="color:${C_BOLD}"`)
-    .replace(/<h4(?![^>]*style=)/g, `<h4 style="color:${C_BOLD}"`)
-    .replace(/<td(?![^>]*style=)/g, `<td style="color:${C_BODY}"`)
-    .replace(/<th(?![^>]*style=)/g, `<th style="color:${C_BOLD}"`)
-    .replace(/<strong(?![^>]*style=)/g, `<strong style="color:${C_BOLD};font-weight:700"`)
-    .replace(/<b(?![^>]*style=)(?![a-z])/g, `<b style="color:${C_BOLD};font-weight:700"`)
-    .replace(/<span(?![^>]*style=)/g, `<span style="color:${C_BODY}"`);
+  // 본문 첫 h1.title 제거 (Blogger 게시물 제목과 중복)
+  // 시각 효과: 두 줄로 가는 긴 제목이 line-height 부족으로 겹치는 사고 방지
+  const stripped = enrichedRaw.replace(/<h1[^>]*class="title"[^>]*>[\s\S]*?<\/h1>\s*/i, '');
+
+  // 정규식 끝에 (?=[\s>]) 단어 경계 — <thead>를 <th>로 오매칭하던 버그 수정
+  const enriched = stripped
+    .replace(/<p(?=[\s>])(?![^>]*style=)/g, `<p style="color:${C_BODY};font-size:16px;line-height:1.8"`)
+    .replace(/<li(?=[\s>])(?![^>]*style=)/g, `<li style="color:${C_BODY};font-size:16px;line-height:1.8"`)
+    .replace(/<h1(?=[\s>])(?![^>]*style=)/g, `<h1 style="color:${C_BOLD};line-height:1.3"`)
+    .replace(/<h2(?=[\s>])(?![^>]*style=)/g, `<h2 style="color:${C_BOLD}"`)
+    .replace(/<h3(?=[\s>])(?![^>]*style=)/g, `<h3 style="color:${C_BOLD}"`)
+    .replace(/<h4(?=[\s>])(?![^>]*style=)/g, `<h4 style="color:${C_BOLD}"`)
+    .replace(/<td(?=[\s>])(?![^>]*style=)/g, `<td style="color:${C_BODY}"`)
+    .replace(/<th(?=[\s>])(?![^>]*style=)/g, `<th style="color:${C_BOLD}"`)
+    .replace(/<strong(?=[\s>])(?![^>]*style=)/g, `<strong style="color:${C_BOLD};font-weight:700"`)
+    .replace(/<b(?=[\s>])(?![^>]*style=)/g, `<b style="color:${C_BOLD};font-weight:700"`)
+    .replace(/<span(?=[\s>])(?![^>]*style=)/g, `<span style="color:${C_BODY}"`);
   const draft = await uploadDraft({
     accessToken,
     blogId,

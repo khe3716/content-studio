@@ -311,6 +311,25 @@ async function tryOneTopic({ slug, opts }) {
   const t0 = Date.now();
   const isTrending = !!(opts.trending && !opts.slug && !opts.day);
 
+  // 안전장치: trending 모드일 때 yaml에 미래 scheduled 글 있으면 보류 (중복 발행 방지)
+  // 사장님이 수동으로 미리 예약한 글이 있으면 cron이 또 발행하지 않도록
+  if (isTrending) {
+    const topicsCheck = yaml.load(fs.readFileSync(TOPICS_PATH, 'utf8'));
+    const now = Date.now();
+    const hasFutureScheduled = (topicsCheck.topics || []).some(t =>
+      t.status === 'scheduled' && t.scheduled_for && new Date(t.scheduled_for).getTime() > now
+    );
+    if (hasFutureScheduled) {
+      const futureTopics = (topicsCheck.topics || [])
+        .filter(t => t.status === 'scheduled' && t.scheduled_for && new Date(t.scheduled_for).getTime() > now)
+        .map(t => `${t.title} (${t.scheduled_for})`);
+      console.log('✋ 미래 scheduled 글 있음 → 트렌딩 보류 (중복 발행 방지)');
+      console.log(`   대기 중 (${futureTopics.length}개):\n   - ${futureTopics.join('\n   - ')}`);
+      await notifyTelegram(`ℹ️ 박재은 발행 스킵\n미래 scheduled 글 ${futureTopics.length}개 대기 중`);
+      return;
+    }
+  }
+
   // 첫 주제
   let slug = isTrending ? await createTrendingTopic() : resolveSlug(opts);
   console.log('\n' + '═'.repeat(60));
