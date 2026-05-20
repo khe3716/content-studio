@@ -926,3 +926,23 @@ topics:
     trending_score: 183
     published_at: '2026-05-20T10:42:17.508Z'
     generated_at: '2026-05-20T10:42:17.509Z'
+  - day: 54
+    cluster: trending
+    title: 주택담보대출 완벽 정리 — 직장인이 꼭 알아야 할 핵심
+    thumb_title: 주택담보대출
+    subtitle:
+      - 오늘의 키워드
+      - 5분 정리
+    emoji: lightbulb
+    slug: trending-1779320993376
+    labels:
+      - 주택담보대출
+      - 재테크
+      - 경제꿀팁
+      - 오늘의경제
+    status: published
+    trending_source:
+      - naver
+    trending_score: 179
+    published_at: '2026-05-20T23:50:24.772Z'
+    generated_at: '2026-05-20T23:50:24.772Z'
