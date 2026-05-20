@@ -906,3 +906,23 @@ topics:
     trending_score: 242
     published_at: '2026-05-19T23:43:04.361Z'
     generated_at: '2026-05-19T23:43:04.362Z'
+  - day: 53
+    cluster: trending
+    title: 청년희망적금 완벽 정리 — 직장인이 꼭 알아야 할 핵심
+    thumb_title: 청년희망적금
+    subtitle:
+      - 오늘의 키워드
+      - 5분 정리
+    emoji: lightbulb
+    slug: trending-1779273683639
+    labels:
+      - 청년희망적금
+      - 재테크
+      - 경제꿀팁
+      - 오늘의경제
+    status: published
+    trending_source:
+      - naver
+    trending_score: 183
+    published_at: '2026-05-20T10:42:17.508Z'
+    generated_at: '2026-05-20T10:42:17.509Z'
