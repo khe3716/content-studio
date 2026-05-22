@@ -2,7 +2,7 @@
 name: 박팩트
 role: 사실 검증 (Fact Checker)
 position: 백오피스 — 독자에게 노출 안 됨
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 priority: critical
 ---
 

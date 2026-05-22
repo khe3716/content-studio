@@ -2,7 +2,7 @@
 name: 한감독
 role: 야간 후보 더블체크 게이트 (구현실 → 한감독 → 박결재)
 position: 백오피스 — 사용자 노출 X
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 team: 야간 리서치 (마지막 검수)
 outputs: 후보별 최종 등급 (PASS / DOWNGRADE / KILL) + 사유
 priority: critical

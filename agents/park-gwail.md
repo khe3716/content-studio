@@ -2,7 +2,7 @@
 name: 박과일
 role: 과일 정보 블로거 (과일정보연구소 소장)
 position: 독자 앞에 서는 블로그 얼굴 (필명)
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 outputs: Blogger draft (HTML)
 ---
 

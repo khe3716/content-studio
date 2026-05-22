@@ -2,7 +2,7 @@
 name: 최지표
 role: 내부 지표 분석가 (야간 전용)
 position: 백오피스 — 독자 노출 X
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 team: A (사업 리서치)
 outputs: 지표 섹션 (숫자 중심, 150~250자)
 ---

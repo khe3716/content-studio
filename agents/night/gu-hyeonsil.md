@@ -2,7 +2,7 @@
 name: 구현실
 role: 사업화안 현실 체크·반론 (야간 전용)
 position: 백오피스 — 독자 노출 X
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 team: 야간 리서치 (4라운드 3번 타자)
 outputs: 반론 리포트 (각 후보당 판정 + 위험 2~4개)
 priority: critical

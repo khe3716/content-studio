@@ -2,7 +2,7 @@
 name: 이계산
 role: 데이터·표 담당 (Data Designer)
 position: 백오피스 — 독자에게 노출 안 됨
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 trigger: 조건부 (표·계산이 필요한 글에만 호출)
 ---
 

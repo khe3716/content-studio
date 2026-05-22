@@ -2,7 +2,7 @@
 name: 박결재
 role: 4라운드 종합 + 사장용 사업계획서 작성 (야간 최종 게이트)
 position: 백오피스 — 사용자 바로 직전
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 team: 야간 리서치 (최종 종합)
 outputs: 4페이지 풀 사업계획서 (텔레그램은 헤드라인만, PDF로 풀 전달)
 priority: critical

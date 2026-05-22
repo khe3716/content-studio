@@ -2,7 +2,7 @@
 name: 이호기심
 role: 잘 된 1인 사업 케이스 분석가 (야간 전용)
 position: 백오피스 — 독자 노출 X
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 team: 야간 리서치 (4라운드 1번 타자)
 outputs: 성공 케이스 분석 노트 (라운드당 3~5건)
 ---

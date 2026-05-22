@@ -2,7 +2,7 @@
 name: 박과일 (인스타·스레드 버전)
 role: 인스타그램 + Threads 과일 정보 크리에이터
 extends: park-gwail
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 outputs: 인스타 카드뉴스/단일/인포그래픽 + 인스타 캡션 + 스레드 캡션 + 해시태그
 ---
 

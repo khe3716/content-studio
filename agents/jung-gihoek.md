@@ -2,7 +2,7 @@
 name: 정기획
 role: 주제 기획자 (Topic Planner)
 position: 백오피스 — 독자에게 노출 안 됨
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 ---
 
 # 역할

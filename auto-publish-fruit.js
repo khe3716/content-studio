@@ -113,9 +113,38 @@ function loadWritingSamples(count = 3, maxCharsPerSample = 2500) {
   }).filter(Boolean);
 }
 
-// ========== Gemini 2.5 Flash Image (Nano Banana) 이미지 생성 ==========
-// 무료 한도 일 500장. Imagen 4 Fast(25원/장) 대신 사용해서 비용 0원 운영.
-async function generateImage(prompt, outputPath) {
+// ========== Pexels/Pixabay 우선 + Gemini fallback ==========
+// 1순위: Pexels/Pixabay (30일 중복 회피, 무료)
+// 2순위: 30일 내 사진 재사용 (한 번 더만)
+// 3순위: Gemini Flash Image (AI 생성, 비용 발생)
+const { findStockPhoto, downloadPhoto } = require('./scripts/lib/stock-photos');
+const { toQuery } = require('./scripts/lib/topic-keywords');
+
+async function generateImage(prompt, outputPath, opts = {}) {
+  const { queryHint, blog = 'fruit' } = opts;
+  const jpgPath = outputPath.replace(/\.png$/i, '.jpg');
+
+  // 1·2순위: Pexels/Pixabay (헬퍼가 fallback 다 처리)
+  try {
+    const query = queryHint || toQuery(prompt, blog);
+    const stock = await findStockPhoto(query, { blog });
+    if (stock) {
+      const tempPath = jpgPath + '.tmp';
+      await downloadPhoto(stock.url, tempPath);
+      await sharp(tempPath)
+        .resize(600, 600, { kernel: 'lanczos3', fit: 'cover' })
+        .jpeg({ quality: 75 })
+        .toFile(jpgPath);
+      try { fs.unlinkSync(tempPath); } catch {}
+      console.log(`   ✓ stock 사진 사용 (${stock.source}${stock.reused ? ', 재사용' : ''})`);
+      return jpgPath;
+    }
+  } catch (e) {
+    console.warn(`   ⚠️ stock 사진 실패 (${e.message}), AI 생성으로 fallback`);
+  }
+
+  // 3순위: Gemini Flash Image (AI 생성)
+  console.log('   🤖 stock 결과 없음, AI 생성 fallback');
   const model = 'gemini-2.5-flash-image';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
   const res = await fetch(url, {
@@ -136,7 +165,6 @@ async function generateImage(prompt, outputPath) {
     .resize(600, 600, { kernel: 'lanczos3' })
     .jpeg({ quality: 75 })
     .toBuffer();
-  const jpgPath = outputPath.replace(/\.png$/i, '.jpg');
   fs.writeFileSync(jpgPath, resized);
   return jpgPath;
 }
@@ -718,10 +746,12 @@ async function main() {
       oldImgs.forEach(f => fs.unlinkSync(path.join(imgDir, f)));
     } catch {}
 
-    await generateImage(prompts[0], img1AbsPath);
+    const queryHint = toQuery((topic.title || '') + ' ' + (topic.thumb_title || '') + ' ' + (topic.labels || []).join(' '), 'fruit');
+    console.log(`   stock 검색어: "${queryHint}"`);
+    await generateImage(prompts[0], img1AbsPath, { queryHint, blog: 'fruit' });
     const img1Size = fs.statSync(img1AbsPath).size;
     console.log(`   ✓ 이미지 1 저장: ${img1RelPath} (${Math.round(img1Size / 1024)}KB)`);
-    await generateImage(prompts[1], img2AbsPath);
+    await generateImage(prompts[1], img2AbsPath, { queryHint, blog: 'fruit' });
     const img2Size = fs.statSync(img2AbsPath).size;
     console.log(`   ✓ 이미지 2 저장: ${img2RelPath} (${Math.round(img2Size / 1024)}KB)`);
 

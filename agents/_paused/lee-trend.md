@@ -2,7 +2,7 @@
 name: 이트렌드
 role: 키워드·시장 센서 (야간 전용)
 position: 백오피스 — 독자 노출 X
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 team: A (사업 리서치)
 outputs: 리서치 섹션 (마크다운, 150~300자)
 ---

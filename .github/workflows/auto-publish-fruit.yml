@@ -14,8 +14,10 @@ on:
         default: false
 
   # 자동 스케줄: 매일 오후 6시 KST (UTC 09:00)
-  schedule:
-    - cron: '0 9 * * *'
+  # 2026-05-22 사용자 요청 — 연휴 3일 정지 (재개 시 아래 cron 주석 풀기)
+  schedule: []
+  # schedule:
+  #   - cron: '0 9 * * *'
 
 permissions:
   contents: write
@@ -129,7 +131,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git pull --rebase --autostash || true
-          git add fruit-blog/topics.yaml fruit-blog/drafts/*.html fruit-blog/thumbnails/*.png fruit-blog/thumbnails/*.svg fruit-blog/images/*.jpg fruit-blog/images/*.png fruit-blog/products.json 2>/dev/null || true
+          git add fruit-blog/topics.yaml fruit-blog/drafts/*.html fruit-blog/thumbnails/*.png fruit-blog/thumbnails/*.svg fruit-blog/images/*.jpg fruit-blog/images/*.png fruit-blog/products.json data/image-usage.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "변경사항 없음, 커밋 스킵"
           else

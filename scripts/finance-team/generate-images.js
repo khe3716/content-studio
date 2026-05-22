@@ -80,7 +80,34 @@ const TARGETS = customPrompts
     }))
   : DEFAULT_TARGETS;
 
-async function generateImage(prompt, outputPath, w, h) {
+// ========== Pexels/Pixabay 우선 + Gemini fallback ==========
+const { findStockPhoto, downloadPhoto } = require('../lib/stock-photos');
+const { toQuery } = require('../lib/topic-keywords');
+
+async function generateImage(prompt, outputPath, w, h, opts = {}) {
+  const { queryHint } = opts;
+
+  // 1·2순위: Pexels/Pixabay
+  try {
+    const query = queryHint || toQuery(prompt, 'finance');
+    const stock = await findStockPhoto(query, { blog: 'finance' });
+    if (stock) {
+      const tempPath = outputPath + '.tmp';
+      await downloadPhoto(stock.url, tempPath);
+      await sharp(tempPath)
+        .resize(w, h, { kernel: 'lanczos3', fit: 'cover' })
+        .jpeg({ quality: 85 })
+        .toFile(outputPath);
+      try { fs.unlinkSync(tempPath); } catch {}
+      process.stdout.write(`(${stock.source}${stock.reused ? '·재사용' : ''}) `);
+      return;
+    }
+  } catch (e) {
+    process.stdout.write(`(stock 실패: ${e.message.slice(0, 30)}) `);
+  }
+
+  // 3순위: Gemini Flash Image (AI 생성)
+  process.stdout.write('(AI 생성) ');
   const model = 'gemini-2.5-flash-image';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
   const safePrompt = `${FRONT_RULES}\n${prompt}${BACK}`;
@@ -109,12 +136,15 @@ async function generateImage(prompt, outputPath, w, h) {
 const OUT_DIR = path.join(__dirname, '..', '..', 'finance-blog', 'images');
 if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
 
+// slug에서 stock 검색 키워드 추출 (예: "day-01-may-high-rate-savings-top10" → "savings")
+const slugQuery = toQuery(slug.replace(/-/g, ' '), 'finance');
+
 (async () => {
   for (const t of TARGETS) {
     const outPath = path.join(OUT_DIR, `${slug}-${t.slot}.jpg`);
     process.stdout.write(`🎨 ${path.basename(outPath)} ... `);
     try {
-      await generateImage(t.prompt, outPath, t.aspect.w, t.aspect.h);
+      await generateImage(t.prompt, outPath, t.aspect.w, t.aspect.h, { queryHint: slugQuery });
       console.log('✓');
     } catch (e) {
       console.log(`❌ ${e.message}`);

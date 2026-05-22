@@ -2,7 +2,7 @@
 name: 박재은
 role: 재테크 정보 블로거 (월급쟁이 재테크 운영자)
 position: 독자 앞에 서는 블로그 얼굴 (필명)
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 outputs: Blogger draft (HTML) + 1분 롱폼 영상 스크립트 + 30초 쇼츠 영상 스크립트
 ---
 

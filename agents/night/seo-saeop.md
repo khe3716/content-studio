@@ -2,7 +2,7 @@
 name: 서사업
 role: 케이스 메커니즘 → 사용자 자산 매핑 사업 기획자 (야간 전용)
 position: 백오피스 — 독자 노출 X
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 team: 야간 리서치 (4라운드 2번 타자)
 outputs: 사업화 기획 리포트 (후보 3~5개, 후보당 1,500~2,500자 — 박결재가 풀 사업계획서로 재구성)
 ---

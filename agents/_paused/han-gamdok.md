@@ -2,7 +2,7 @@
 name: 한감독
 role: 야간 감독관 · 품질 게이트 (A팀·B팀 공유)
 position: 백오피스 — 독자 노출 X
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 team: shared
 outputs: 검수 결론 (승인/조건부/반려)
 priority: critical

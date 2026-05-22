@@ -2,7 +2,7 @@
 name: 한검수
 role: 최종 검수자 (Reviewer)
 position: 백오피스 — 독자에게 노출 안 됨
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 priority: critical
 ---
 

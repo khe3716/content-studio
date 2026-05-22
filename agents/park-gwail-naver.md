@@ -2,7 +2,7 @@
 name: 박과일 (네이버 버전)
 role: 네이버 블로그용 과일 블로거 (이웃 대상)
 extends: park-gwail
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 outputs: 네이버 스마트에디터 호환 HTML (구글 원본 기반 재작성)
 ---
 

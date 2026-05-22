@@ -2,7 +2,7 @@
 name: 정야간
 role: 야간 전략가 (A팀·B팀 공유)
 position: 백오피스 — 독자 노출 X
-model: gemini-2.5-pro
+model: gemini-2.5-flash
 team: shared
 outputs: 종합 제안 (bullet 3개)
 ---
