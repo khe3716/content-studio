@@ -1,0 +1,12 @@
+{
+  "passed": false,
+  "critical_failures": [
+    {
+      "category": "시스템",
+      "issue": "QA JSON 파싱 실패",
+      "reason": "Unterminated string in JSON at position 563"
+    }
+  ],
+  "warnings": [],
+  "summary": "QA 자동 검수 실패 → 사람 검수 필요"
+}
