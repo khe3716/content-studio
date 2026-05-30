@@ -20,11 +20,11 @@
   <text x="80" y="108" class="brand" font-size="24" fill="#E53935">FRUIT GUIDE</text>
 
   <!-- 메인 타이틀 (빨강 볼드) -->
-  <text x="400" y="380" class="title" font-size="85" fill="#C62828" text-anchor="middle" dominant-baseline="middle">오디 고르는 법</text>
+  <text x="400" y="380" class="title" font-size="75" fill="#C62828" text-anchor="middle" dominant-baseline="middle">앵두 효능과 영양</text>
 
   <!-- 서브 타이틀 (진한 핑크) -->
-  <text x="400" y="520" class="subtitle" font-size="60" fill="#AD1457" text-anchor="middle" dominant-baseline="middle">핵심 체크</text>
-  <text x="400" y="592" class="subtitle" font-size="60" fill="#AD1457" text-anchor="middle" dominant-baseline="middle">실패 없이</text>
+  <text x="400" y="520" class="subtitle" font-size="60" fill="#AD1457" text-anchor="middle" dominant-baseline="middle">건강 효능</text>
+  <text x="400" y="592" class="subtitle" font-size="60" fill="#AD1457" text-anchor="middle" dominant-baseline="middle">권장량</text>
 
   <!-- 하단 장식 (얇은 빨간 선 + 브랜드) -->
   <rect x="640" y="674" width="80" height="6" fill="#E53935"/>
