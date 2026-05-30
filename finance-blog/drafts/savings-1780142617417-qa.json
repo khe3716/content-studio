@@ -1,0 +1,22 @@
+{
+  "passed": false,
+  "critical_failures": [],
+  "warnings": [
+    {
+      "category": "톤",
+      "issue": "이모지 사용 개수",
+      "reason": "가이드라인(1~2개)보다 많은 8개의 이모지(제목 1개, 본문 7개)가 사용되었습니다. 과도하지는 않으나 가이드라인 준수를 위해 조절이 필요합니다."
+    },
+    {
+      "category": "SEO",
+      "issue": "meta description 누락",
+      "reason": "제공된 HTML 초안에 meta description이 포함되어 있지 않아 검증할 수 없습니다. SEO 최적화를 위해 150자 이내의 meta description 추가가 필요합니다."
+    },
+    {
+      "category": "SEO",
+      "issue": "이미지 alt 속성 누락",
+      "reason": "제공된 HTML 초안에 이미지 태그(<img>)가 없어 alt 속성 존재 여부를 검증할 수 없습니다. 이미지 사용 시 SEO 및 접근성을 위해 모든 이미지에 alt 속성을 추가해야 합니다."
+    }
+  ],
+  "summary": "사실 정확성과 정책 준수 측면에서 매우 우수하며, 미래 시점 정보에 대한 명확한 고지 및 출처 명기가 잘 되어 있습니다. 다만, 이모지 사용 개수와 SEO 관련 일부 항목(meta description, 이미지 alt)이 누락되어 보완이 필요합니다."
+}
